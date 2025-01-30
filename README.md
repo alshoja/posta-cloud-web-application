@@ -1,6 +1,15 @@
-# Posta Cloud
+# Posta Cloud (The Postman Assistant)
 ## Overview
-Posta Cloud is a web application that consists of a frontend, backend, and a PostgreSQL database. This repository provides a `docker-compose.yml` file for setting up the development environment using Docker.
+Postman Assistant – Smart Contact Management System
+Postman Assistant is an open-source contact management system designed for field workers, couriers, and delivery personnel who need quick access to addresses without memorization. It allows users to search for names, emails, or phone numbers instantly while keeping records organized.
+
+🔥 Key Features:
+🔍 Smart Search – Find contacts easily using names, emails, or phone numbers.
+📌 Location-Aware – Store and retrieve address data with geo-tagging.
+📄 OCR & Voice Input – Capture information using document scanning and speech recognition.
+📊 Data Export/Import – Easily transfer records in multiple formats.
+🔐 Secure & Scalable – Role-based access and cloud-ready.
+💡 Contribute today and help improve address management for field workers!
 
 This is a project for collecting personal data. For sensitive data, there is a password, and it is encrypted in storage and decrypted on the fly.
 
