@@ -8,7 +8,7 @@ The current password is `alshoja`. when u want to open in front end on form
 
 This is a hobby project I created during my relocation to Berlin from India using Vue 3, Vuetify, and NestJS.
 
-The main use of this app will be aimed at POSTMEN in India, allowing them to store information about their area. It serves as a record-keeping tool for each person they interact with, functioning as an India Post record collector.
+The main use of this app will be aimed at POSTMAN in India, allowing them to store information about their area. It serves as a record-keeping tool for each person they interact with, functioning as an India Post record collector.
 
 ![Screenshot from 2025-01-30 20-55-09](https://github.com/user-attachments/assets/6df7fc33-0d4c-4753-a637-4a1124997674)
 
