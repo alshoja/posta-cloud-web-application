@@ -3,7 +3,9 @@
 ## Overview
 Posta Cloud is a web application that consists of a frontend, backend, and a PostgreSQL database. This repository provides a `docker-compose.yml` file for setting up the development environment using Docker.
 
-This is a project for collecting personal data. For sensitive data, there is a password, and it is encrypted in storage and decrypted on the fly. The current password is `alshoja`.
+This is a project for collecting personal data. For sensitive data, there is a password, and it is encrypted in storage and decrypted on the fly.
+
+The current password is `alshoja`. when u want to open in front end on form 
 
 This is a hobby project I created during my relocation to Berlin from India using Vue 3, Vuetify, and NestJS.
 
