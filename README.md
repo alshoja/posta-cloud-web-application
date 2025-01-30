@@ -1,5 +1,10 @@
 # Posta Cloud
 
+![Screenshot from 2025-01-30 20-55-09](https://github.com/user-attachments/assets/6df7fc33-0d4c-4753-a637-4a1124997674)
+![Screenshot from 2025-01-30 20-54-24](https://github.com/user-attachments/assets/46d8a67a-ff77-4cfc-b7a9-2c0ac4fe2a8a)
+
+![Screenshot from 2025-01-30 20-54-20](https://github.com/user-attachments/assets/deff9a56-4c98-4587-aa53-6a934794eb20)
+
 ## Overview
 Posta Cloud is a web application that consists of a frontend, backend, and a PostgreSQL database. This repository provides a `docker-compose.yml` file for setting up the development environment using Docker.
 
