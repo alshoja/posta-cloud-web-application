@@ -1,5 +1,7 @@
 # Node.js dependencies
 node_modules/
+posta-cloud-be/node_modules/
+posta-cloud-fe/node_modules/
 npm-debug.log
 yarn-error.log
 .pnpm-debug.log
