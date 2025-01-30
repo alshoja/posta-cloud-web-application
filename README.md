@@ -115,14 +115,3 @@ docker-compose logs -f backend
 - The database uses a volume (`db-data`) to persist data across restarts.
 - Ensure that environment variables are correctly set in the `.env` file.
 
-
-# Docker
-docker-compose.override.yml
-```
-
-## Contributing
-Pull Requests (PRs) are welcomed.
-
-## License
-This project is licensed under the MIT License.
-
