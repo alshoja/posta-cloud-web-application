@@ -105,6 +105,7 @@ docker-compose logs -f backend
 ## Technologies Used
 - Vue 3
 - Vuetify
+- Pinia
 - NestJS
 - PostgreSQL
 - Docker
