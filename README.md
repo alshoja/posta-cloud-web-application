@@ -1,0 +1,110 @@
+# Posta Cloud
+
+## Overview
+Posta Cloud is a web application that consists of a frontend, backend, and a PostgreSQL database. This repository provides a `docker-compose.yml` file for setting up the development environment using Docker.
+
+This is a project for collecting personal data. For sensitive data, there is a password, and it is encrypted in storage and decrypted on the fly. The current password is `alshoja`.
+
+This is a hobby project I created during my relocation to Berlin from India using Vue 3, Vuetify, and NestJS.
+
+The main use of this app will be aimed at POSTMEN in India, allowing them to store information about their area. It serves as a record-keeping tool for each person they interact with, functioning as an India Post record collector.
+
+## Prerequisites
+Make sure you have the following installed:
+- [Docker](https://www.docker.com/get-started)
+- [Docker Compose](https://docs.docker.com/compose/install/)
+
+## Getting Started
+
+### 1. Clone the Repository
+```sh
+git clone https://github.com/your-username/posta-cloud.git
+cd posta-cloud
+```
+
+### 2. Set Up Environment Variables
+Create a `.env` file in the root directory and define the necessary environment variables:
+```sh
+POSTGRESQL_PORT=5432
+POSTGRESQL_DATABASE=your_database
+POSTGRESQL_USERNAME=your_user
+POSTGRESQL_PASSWORD=your_password
+VITE_API_URL=http://localhost:5000
+VITE_ASSET_URL=http://localhost:3000
+NODE_ENV=development
+DB_HOST=posta_cloud_db
+DB_PORT=5432
+DB_NAME=your_database
+DB_USER=your_user
+DB_PASSWORD=your_password
+PORT=5000
+```
+
+### 3. Start the Application
+Run the following command to start all services:
+```sh
+docker-compose up --build
+```
+This will:
+- Start a PostgreSQL database container (`posta_cloud_db`)
+- Start the backend service (`posta-cloud-be`)
+- Start the frontend service (`posta-cloud-fe`)
+
+### 4. Access the Application
+- Frontend: [http://localhost:3000](http://localhost:3000)
+- Backend API: [http://localhost:5000](http://localhost:5000)
+
+## Services
+### PostgreSQL (`posta_cloud_db`)
+- Uses the Bitnami PostgreSQL image.
+- Stores persistent data in a Docker volume `db-data`.
+- Initializes the database using scripts from `./database/` (if provided).
+
+### Frontend (`posta-cloud-fe`)
+- Built with Vue 3 and Vuetify.
+- Runs in development mode with `npm run dev`.
+
+### Backend (`posta-cloud-be`)
+- A NestJS-based API service.
+- Connects to the PostgreSQL database.
+- Runs in development mode with `npm run start:dev`.
+
+## Stopping the Application
+To stop and remove the containers, run:
+```sh
+docker-compose down
+```
+
+## Logs and Debugging
+To view logs for a specific service, use:
+```sh
+docker-compose logs -f <service_name>
+```
+Example:
+```sh
+docker-compose logs -f backend
+```
+
+## Technologies Used
+- Vue 3
+- Vuetify
+- NestJS
+- PostgreSQL
+- Docker
+- Docker Compose
+
+## Notes
+- The database uses a volume (`db-data`) to persist data across restarts.
+- Ensure that environment variables are correctly set in the `.env` file.
+
+
+# Docker
+docker-compose.override.yml
+```
+
+## Contributing
+Pull Requests (PRs) are welcomed.
+
+## License
+This project is licensed under the MIT License.
+
