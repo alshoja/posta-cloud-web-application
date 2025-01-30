@@ -1,23 +1,22 @@
-# Posta Cloud (The Postman Assistant)
-## Overview
-Postman Assistant – Smart Contact Management System
+
+# Postman Assistant – Smart Contact Management System
+
 Postman Assistant is an open-source contact management system designed for field workers, couriers, and delivery personnel who need quick access to addresses without memorization. It allows users to search for names, emails, or phone numbers instantly while keeping records organized.
 
-🔥 Key Features:
-🔍 Smart Search – Find contacts easily using names, emails, or phone numbers.
-📌 Location-Aware – Store and retrieve address data with geo-tagging.
-📄 OCR & Voice Input – Capture information using document scanning and speech recognition.
-📊 Data Export/Import – Easily transfer records in multiple formats.
-🔐 Secure & Scalable – Role-based access and cloud-ready.
-💡 Contribute today and help improve address management for field workers!
-
-This is a project for collecting personal data. For sensitive data, there is a password, and it is encrypted in storage and decrypted on the fly.
-
-The current password is `alshoja`. when u want to open in front end on form 
+This is a project for collecting personal data. For sensitive data, there is a password, and it is encrypted in storage and decrypted on the fly.The current password is `alshoja`. when u want to open in front end on form 
 
 This is a hobby project I created during my relocation to Berlin from India using Vue 3, Vuetify, and NestJS.
-
 The main use of this app will be aimed at POSTMAN in India, allowing them to store information about their area. It serves as a record-keeping tool for each person they interact with, functioning as an India Post record collector.
+
+## 🔥 Key Features:
+- 🔍 **Smart Search** – Find contacts easily using names, emails, or phone numbers.
+- 📌 **Location-Aware** – Store and retrieve address data with geo-tagging.
+- 📊 **Data Export/Import** – Easily transfer records in multiple formats (CSV, JSON, Excel). [PR WELCOMED]
+- 🔐 **Secure & Scalable** – Role-based access and cloud-ready. [PR WELCOMED]
+
+## 💡 Contribute Today
+Help improve address management for field workers! If you're interested in contributing, feel free to fork this repo and submit your pull requests.
+
 
 ![Screenshot from 2025-01-30 20-55-09](https://github.com/user-attachments/assets/6df7fc33-0d4c-4753-a637-4a1124997674)
 
