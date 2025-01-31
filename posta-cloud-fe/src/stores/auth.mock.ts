@@ -31,7 +31,7 @@ export const useAuthStore = defineStore('auth', {
       //   firstName,
       //   lastName
       // })
-      this.logins(username, password)
+      // this.logins(username, password)
       // router.push(this.returnUrl || '/auth/login')
     },
     logout() {
