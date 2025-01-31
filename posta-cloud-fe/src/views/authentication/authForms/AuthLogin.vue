@@ -3,6 +3,8 @@ import { ref } from 'vue';
 import Google from '@/assets/images/auth/social-google.svg';
 import { useAuthStore } from '@/stores/auth.mock';
 import { Form } from 'vee-validate';
+import { router } from '@/router'
+
 
 const checkbox = ref(false);
 const valid = ref(false);
@@ -18,7 +20,21 @@ const emailRules = ref([(v: string) => !!v || 'E-mail is required', (v: string) 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function validate(values: any, { setErrors }: any) {
   const authStore = useAuthStore();
-  return authStore.login(username.value, password.value)
+  const { user, access_token } = {
+        user: {
+          firsName: 'Post ',
+          lastName: 'Man',
+          email: 'postman@gmail.com'
+        },
+        access_token: 'secret_token'
+      }
+
+      // const _user = user
+      localStorage.setItem('user', JSON.stringify(user))
+      localStorage.setItem('token', access_token)
+      router.push('/dashboard/default')
+
+  // return authStore.login(username.value, password.value)
 }
 </script>
 
