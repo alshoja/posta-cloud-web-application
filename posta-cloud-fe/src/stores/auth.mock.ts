@@ -7,7 +7,8 @@ export const useAuthStore = defineStore('auth', {
     returnUrl: null
   }),
   actions: {
-    async login(username: string, password: string) {
+     login(username: string, password: string) {
+      console.log("🚀 ~ login ~ username:", username)
       // const response = await axiosInstance.post(`${baseUrl}/auth/login`, { username, password })
       const { user, access_token } = {
         user: {
@@ -30,7 +31,7 @@ export const useAuthStore = defineStore('auth', {
       //   firstName,
       //   lastName
       // })
-      this.login(username, password)
+      this.logins(username, password)
       // router.push(this.returnUrl || '/auth/login')
     },
     logout() {
