@@ -1,3 +1,4 @@
+## Getting Started
 
 # Postman Assistant – Smart Contact Management System
 
@@ -14,9 +15,6 @@ The main use of this app will be aimed at POSTMAN in India, allowing them to sto
 - 📊 **Data Export/Import** – Easily transfer records in multiple formats (CSV, JSON, Excel). [PR WELCOMED]
 - 🔐 **Secure & Scalable** – Role-based access and cloud-ready. [PR WELCOMED]
 
-## 💡 Contribute Today
-Help improve address management for field workers! If you're interested in contributing, feel free to fork this repo and submit your pull requests.
-
 
 ![Screenshot from 2025-01-30 20-55-09](https://github.com/user-attachments/assets/6df7fc33-0d4c-4753-a637-4a1124997674)
 
@@ -31,7 +29,7 @@ Make sure you have the following installed:
 - [Docker](https://www.docker.com/get-started)
 - [Docker Compose](https://docs.docker.com/compose/install/)
 
-## Getting Started
+
 
 ### 1. Clone the Repository
 ```sh
@@ -114,4 +112,7 @@ docker-compose logs -f backend
 ## Notes
 - The database uses a volume (`db-data`) to persist data across restarts.
 - Ensure that environment variables are correctly set in the `.env` file.
+
+- ## 💡 Contribute Today
+Help improve address management for field workers! If you're interested in contributing, feel free to fork this repo and submit your pull requests.
 
