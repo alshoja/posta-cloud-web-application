@@ -23,7 +23,6 @@ export const useRecordStore = defineStore('Record', {
         const response = await axios.post(`${baseUrl}/step/one`, formData, {
           headers: { 'Content-Type': 'application/json' }
         })
-        // this.addRecord(formData)
         return response.data
       } catch (err) {
         console.error('Error creating record:', err)
@@ -128,7 +127,7 @@ export const useRecordStore = defineStore('Record', {
       }
     },
     addRecord(newRecord: StepOne) {
-      this.records.data = [...this.records.data, newRecord] // ✅ Replacing state reactively
+      this.records.data = [...this.records.data, newRecord]
     }
   }
 })

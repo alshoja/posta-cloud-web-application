@@ -2,7 +2,7 @@
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import UiParentCard from '@/components/shared/UiParentCard.vue';
 import type { RecordDetail } from '@/interfaces/record.interface';
-import { useRecordStore } from '@/stores/record';
+import { useRecordStore } from '@/stores/record.mock';
 import { useSnackbarStore } from '@/stores/snackbar.store';
 import ViewComponent from '@/views/record/components/ViewComponent.vue';
 import _ from "lodash";

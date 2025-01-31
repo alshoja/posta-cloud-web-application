@@ -56,7 +56,7 @@ export interface RecordDetail
     IdentityDocuments,
     MarriageInfo,
     RedirectionAddress {
-  id?: string
+  id?: string | ''
   profileImage?: string
   address: Address
   panchayat: string

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import Google from '@/assets/images/auth/social-google.svg';
-import { useAuthStore } from '@/stores/auth';
+import { useAuthStore } from '@/stores/auth.mock';
 import { Form } from 'vee-validate';
 
 const checkbox = ref(false);

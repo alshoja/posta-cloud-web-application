@@ -4,7 +4,7 @@ import UiParentCard from '@/components/shared/UiParentCard.vue';
 import { useForm } from '@/composables/useForm';
 import { useValidation } from '@/composables/useValidation';
 import type { RecordDetail } from '@/interfaces/record.interface';
-import { useRecordStore } from '@/stores/record';
+import { useRecordStore } from '@/stores/record.mock';
 import { useSnackbarStore } from '@/stores/snackbar.store';
 import FileUpload from '@/views/record/components/FileUpload.vue';
 import FileViewer from '@/views/record/components/FileViewer.vue';
@@ -103,6 +103,11 @@ const addPolicy = () => {
 const removePolicy = (index: number) => {
     stepFive.policies.splice(index, 1);
 }
+
+const setFormFields = (record: RecordDetail) => {
+    const steps = [stepOne, stepTwo, stepThree, stepFour, stepFive, stepSix];
+    steps.forEach(step => Object.assign(step, record));
+};
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const resetForm = (form: any, initialState: object) => Object.assign(form, initialState);
 watch(
@@ -113,6 +118,7 @@ watch(
         if (ids) {
             const id = Array.isArray(ids) ? ids[0] : ids;
             let record = recordStore.records?.data?.find((r) => r.id === id);
+            console.log("🚀 ~ record:", record)
 
             try {
                 if (!record) {
@@ -133,12 +139,6 @@ watch(
     },
     { immediate: true }
 );
-
-
-const setFormFields = (record: RecordDetail) => {
-    const steps = [stepOne, stepTwo, stepThree, stepFour, stepFive, stepSix];
-    steps.forEach(step => Object.assign(step, record));
-};
 
 onMounted(() => {
     // const One = {
