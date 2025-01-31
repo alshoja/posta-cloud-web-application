@@ -24,7 +24,7 @@ export class CreateProfileDto {
   id: number;
 
   @IsOptional()
-  @IsUrl({ require_tld: false })
+  // @IsUrl({ require_tld: false })
   profileImage: string;
 
   @IsNotEmpty({ message: 'First name is required.' })

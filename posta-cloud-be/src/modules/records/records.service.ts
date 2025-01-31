@@ -20,6 +20,7 @@ import { Child } from './entities/child.entity';
 import { Document } from './entities/document.entity';
 import { Policy } from './entities/policy.entity';
 import { Record } from './entities/record.entity';
+import { ElasticsearchService } from '../../shared/elastic-search/elasticsearch.service';
 
 @Injectable({ scope: Scope.REQUEST })
 export class RecordsService {
@@ -29,6 +30,7 @@ export class RecordsService {
     @InjectRepository(Record)
     private readonly recordRepository: Repository<Record>,
     private dataSource: DataSource,
+    private esService: ElasticsearchService,
   ) {}
 
   async createStepOne(
@@ -56,7 +58,17 @@ export class RecordsService {
       } else {
         updateProfileDto.userId = this.request.user.sub;
         const newRecord = await recordRepository.insert(updateProfileDto);
+
         recordId = newRecord.identifiers[0].id;
+        const _existingRecord = await recordRepository.findOne({
+          where: { id: recordId },
+        });
+
+        await this.esService.indexRecord({
+          id: recordId,
+          email: _existingRecord.email,
+          mobile: _existingRecord.mobileNumber,
+        });
       }
       await queryRunner.commitTransaction();
       return {
@@ -321,5 +333,9 @@ export class RecordsService {
       console.error('Error removing record:', err);
       throw new InternalServerErrorException('Error removing record');
     }
+  }
+
+  async searchRecords(query: string) {
+    return this.esService.searchRecords(query);
   }
 }

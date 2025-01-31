@@ -6,8 +6,6 @@ import { join } from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AppConfig, DatabaseConfig } from './config';
-import { SharedModule } from './shared/shared.module';
-import { SeederModule } from './shared/seeder/seeder.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { RecordsModule } from './modules/records/records.module';
 import { UsersModule } from './modules/users/users.module';
@@ -34,10 +32,8 @@ import { UsersModule } from './modules/users/users.module';
       }),
       inject: [ConfigService],
     }),
-    ConfigModule.forRoot(),
-    SharedModule,
+    // SeederModule,
     RecordsModule,
-    SeederModule,
     AuthModule,
     UsersModule,
   ],

@@ -62,8 +62,19 @@ services:
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - PORT=${PORT}
+      - ELASTICSEARCH_URL=${ELASTICSEARCH_URL}
     depends_on:
+      - elasticsearch
       - postgres_db
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.6.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+      - "9300:9300"
 
 volumes:
   db-data:

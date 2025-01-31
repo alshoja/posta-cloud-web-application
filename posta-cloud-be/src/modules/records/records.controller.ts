@@ -96,4 +96,9 @@ export class RecordsController {
   remove(@Param('id') id: string) {
     return this.recordsService.remove(+id);
   }
+
+  @Get('elastic/search')
+  search(@Query('query') query: string) {
+    return this.recordsService.searchRecords(query);
+  }
 }
