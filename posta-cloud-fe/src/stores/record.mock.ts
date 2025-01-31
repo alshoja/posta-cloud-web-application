@@ -9,7 +9,7 @@ import type {
 } from '@/interfaces/record.interface'
 import { defineStore } from 'pinia'
 export const useRecordStore = defineStore('Record', {
-  state: () => ({
+  state: (): { records: { data: RecordDetail[]; total: number }; record: RecordDetail } => ({
     records: {
       data: [
         {
@@ -30,10 +30,23 @@ export const useRecordStore = defineStore('Record', {
           locationType: 'Urban',
           panchayat: 'Greenwood Panchayat',
           district: 'Central District',
+          address: {
+            houseName: '',
+            houseNumber: '',
+            streetName: '',
+            streetNumber: '',
+            village: '',
+            postOffice: '',
+            locationType: ''
+          },
           addresses: [],
           policies: [],
           documents: [],
-          createdAt: new Date()
+          createdAt: new Date(),
+          valid: true,
+          redirectionAddress: false,
+          isAbroad: false,
+          isRedirected: false
         }
       ],
       total: 1
@@ -52,14 +65,27 @@ export const useRecordStore = defineStore('Record', {
       streetName: 'Main Street',
       streetNumber: '101',
       village: 'Greenwood',
-      postOffice: 'Greenwood PO',
+      postOffice: '685553',
       locationType: 'Urban',
       panchayat: 'Greenwood Panchayat',
       district: 'Central District',
+      address: {
+        houseName: '',
+        houseNumber: '',
+        streetName: '',
+        streetNumber: '',
+        village: '',
+        postOffice: '',
+        locationType: ''
+      },
       addresses: [],
       policies: [],
       documents: [],
-      createdAt: new Date()
+      createdAt: new Date(),
+      valid: true,
+      redirectionAddress: false,
+      isAbroad: false,
+      isRedirected: false
     }
   }),
   actions: {
@@ -105,10 +131,6 @@ export const useRecordStore = defineStore('Record', {
       console.log(`Mock remove called with ID: ${id}`)
       if (this.record.id) this.records.data = this.records.data.filter((record) => record.id !== id)
       return { success: true }
-    },
-    addRecord(newRecord: StepOne) {
-      console.log('Mock addRecord called with:', newRecord)
-      this.records.data.push(newRecord)
     }
   }
 })

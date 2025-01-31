@@ -118,7 +118,6 @@ watch(
         if (ids) {
             const id = Array.isArray(ids) ? ids[0] : ids;
             let record = recordStore.records?.data?.find((r) => r.id === id);
-            console.log("🚀 ~ record:", record)
 
             try {
                 if (!record) {
