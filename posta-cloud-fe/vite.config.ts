@@ -41,5 +41,6 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['vuetify'],
     entries: ['./src/**/*.vue']
-  }
+  },
+  base: '/posta-cloud-web-application/'
 })
