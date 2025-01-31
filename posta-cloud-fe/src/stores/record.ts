@@ -23,7 +23,6 @@ export const useRecordStore = defineStore('Record', {
         const response = await axios.post(`${baseUrl}/step/one`, formData, {
           headers: { 'Content-Type': 'application/json' }
         })
-        // this.addRecord(formData)
         return response.data
       } catch (err) {
         console.error('Error creating record:', err)
@@ -96,6 +95,28 @@ export const useRecordStore = defineStore('Record', {
         const response = await axios.get(baseUrl, {
           params: {
             search,
+            page,
+            limit,
+            sortBy,
+            sortOrder
+          }
+        })
+        this.records = response.data
+      } catch (err) {
+        console.error('Failed to fetch records:', err)
+      }
+    },
+    async elasticSearchOnRecords({
+      search = '',
+      page = 1,
+      limit = 10,
+      sortBy = 'id',
+      sortOrder = 'DESC'
+    } = {}) {
+      try {
+        const response = await axios.get(baseUrl+'/elastic/search', {
+          params: {
+            query: search,
             page,
             limit,
             sortBy,

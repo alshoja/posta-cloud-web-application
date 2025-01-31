@@ -24,6 +24,7 @@ import { ElasticsearchService } from '../../shared/elastic-search/elasticsearch.
 
 @Injectable({ scope: Scope.REQUEST })
 export class RecordsService {
+  private readonly elasticIndex = 'records;';
   constructor(
     @Inject(REQUEST)
     private request: AuthenticatedRequest,
@@ -64,11 +65,15 @@ export class RecordsService {
           where: { id: recordId },
         });
 
-        await this.esService.indexRecord({
-          id: recordId,
-          email: _existingRecord.email,
-          mobile: _existingRecord.mobileNumber,
-        });
+        await this.esService.indexRecord(
+          {
+            id: recordId,
+            email: _existingRecord.email,
+            mobile: _existingRecord.mobileNumber,
+            firstName: _existingRecord.firstName,
+          },
+          this.elasticIndex,
+        );
       }
       await queryRunner.commitTransaction();
       return {
@@ -329,6 +334,7 @@ export class RecordsService {
       if (result.affected === 0) {
         throw new NotFoundException(`Record with ID ${id} not found`);
       }
+      await this.esService.deleteDocumentById(String(id), this.elasticIndex);
     } catch (err) {
       console.error('Error removing record:', err);
       throw new InternalServerErrorException('Error removing record');
@@ -336,6 +342,6 @@ export class RecordsService {
   }
 
   async searchRecords(query: string) {
-    return this.esService.searchRecords(query);
+    return this.esService.searchRecords(query, this.elasticIndex);
   }
 }

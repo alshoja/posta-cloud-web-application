@@ -45,7 +45,7 @@ const closeDelete = () => {
     dialogDelete.value = false;
 };
 
-const debouncedLoadRecords = _.debounce((options) => loadRecords(options), 300);
+const debouncedLoadRecords = _.debounce((options) => searchRecords(options), 300);
 
 const deleteItem = (item: RecordDetail) => {
     if (serverItems.value) {
@@ -79,6 +79,20 @@ const editItem = (item: RecordDetail) => {
 const loadRecords = async ({ page, itemsPerPage, sortBy, searchQuery }: { page: number, itemsPerPage: number, sortBy: { key: string, order: string }[], searchQuery: string }) => {
     loading.value = true;
     await recordStore.fetchAllRecords({
+        page: page,
+        limit: itemsPerPage,
+        sortBy: sortBy.length ? sortBy[0].key : undefined,
+        sortOrder: sortBy.length ? sortBy[0].order : undefined,
+        search: searchQuery
+    });
+    serverItems.value = recordStore.records.data;
+    loading.value = false;
+    totalItems.value = recordStore.records.total;
+};
+
+const searchRecords = async ({ page, itemsPerPage, sortBy, searchQuery }: { page: number, itemsPerPage: number, sortBy: { key: string, order: string }[], searchQuery: string }) => {
+    loading.value = true;
+    await recordStore.elasticSearchOnRecords({
         page: page,
         limit: itemsPerPage,
         sortBy: sortBy.length ? sortBy[0].key : undefined,
