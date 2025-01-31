@@ -1,8 +1,7 @@
 ## Postman Assistant – Smart Contact Management System
-
-### Getting Started
 Postman Assistant is an open-source contact management system designed for field workers, couriers, and delivery personnel who need quick access to addresses without memorization. It allows users to search for names, emails, or phone numbers instantly while keeping records organized.
 
+### Getting Started
 This is a project for collecting personal data. For sensitive data, there is a password, and it is encrypted in storage and decrypted on the fly.The current password is `alshoja`. when u want to open in front end on form 
 
 This is a hobby project I created during my relocation to Berlin from India using Vue 3, Vuetify, and NestJS.
