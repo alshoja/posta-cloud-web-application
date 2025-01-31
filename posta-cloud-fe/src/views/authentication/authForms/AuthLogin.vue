@@ -10,8 +10,8 @@ const checkbox = ref(false);
 const valid = ref(false);
 const show1 = ref(false);
 //const logform = ref();
-const password = ref('');
-const username = ref('');
+const password = ref('alshoja@gmail.com');
+const username = ref('password');
 const passwordRules = ref([
   (v: string) => !!v || 'Password is required'
 ]);
