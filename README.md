@@ -111,6 +111,6 @@ docker-compose logs -f backend
 - The database uses a volume (`db-data`) to persist data across restarts.
 - Ensure that environment variables are correctly set in the `.env` file.
 
-- ## 💡 Contribute Today
+## 💡 Contribute Today
 Help improve address management for field workers! If you're interested in contributing, feel free to fork this repo and submit your pull requests.
 
