@@ -1,4 +1,4 @@
-# Backend Dockerfile
+# Frontend Dockerfile
 FROM node:20
 
 WORKDIR /app
@@ -8,6 +8,6 @@ RUN npm install
 
 COPY . .
 
-EXPOSE 5000
+EXPOSE 3000
 
-CMD ["npm", "run", "start:dev"]
+CMD ["npm", "run", "dev"]
