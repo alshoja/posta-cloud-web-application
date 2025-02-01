@@ -84,6 +84,8 @@ services:
       - elasticsearch
     environment:
       - ELASTICSEARCH_HOSTS=${ELASTICSEARCH_URL}
+      - SERVER_NAME=kibana
+      - XPACK_SECURITY_ENABLED=false
     networks:
       - common-net
     logging: *default-logging
