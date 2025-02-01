@@ -31,11 +31,11 @@ services:
 
   frontend:
     build:
-      context: ./posta-cloud-fe
+      context: ./frontend
     ports:
       - "3000:3000"
     volumes:
-      - ./posta-cloud-fe:/app
+      - ./frontend:/app
       - /app/node_modules
     environment:
       - VITE_API_URL=${VITE_API_URL}
@@ -46,11 +46,11 @@ services:
 
   backend:
     build:
-      context: ./posta-cloud-be
+      context: ./backend
     ports:
       - "5000:5000"
     volumes:
-      - ./posta-cloud-be:/app
+      - ./backend:/app
       - /app/node_modules
     command: npm run start:dev
     environment:
