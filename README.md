@@ -1,10 +1,3 @@
-## Features
-
-- Angular-based responsive UI
-- Role-based access control
-- Postman data management
-- PostgreSQL backend
-- JWT authentication
 
 ### Getting Started
 This is a project for collecting personal data. For sensitive data, there is a password, and it is encrypted in storage and decrypted on the fly.The current password is `alshoja`. when u want to open in front end on form 
