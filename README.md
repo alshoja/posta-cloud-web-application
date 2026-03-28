@@ -31,36 +31,8 @@ Make sure you have the following installed:
 git clone https://github.com/your-username/posta-cloud.git
 cd posta-cloud
 ```
-
-### 2. Set Up Environment Variables
-Create a `.env` file in the root directory and define the necessary environment variables:
-```sh
-# App Specific
-DB_HOST=postgres_db
-DB_PORT=5432
-DB_NAME=posta_cloud
-DB_USER=posta_cloud_db
-DB_PASSWORD=posta_cloud123
-NODE_ENV=development
-PORT=5000
-
-# Docker Specific
-POSTGRESQL_PORT=5432
-POSTGRESQL_USERNAME=posta_cloud_db
-POSTGRESQL_DATABASE=posta_cloud
-POSTGRESQL_PASSWORD=posta_cloud123
-
-# pgAdmin
-PGADMIN_DEFAULT_EMAIL=admin@example.com
-PGADMIN_DEFAULT_PASSWORD=admin123
-
-# Frontend
-VITE_API_URL=http://localhost:5000/api
-VITE_ASSET_URL=http://localhost:5000
-```
-
-### 3. Start the Application
-Run the following command to start all services fro windows use git bash as terminal to run this:
+### 2. Start the Application
+Run the following command to start all services for windows use git bash as terminal to run this:
 ```sh
 ./setup.sh
  
@@ -70,14 +42,15 @@ This will:
 - Start the backend service (`posta-cloud-be`)
 - Start the frontend service (`posta-cloud-fe`)
 
-### 4. Access the Application
+### 3. Access the Application
 - Frontend: [http://localhost:3000](http://localhost:3000)
 - Backend API: [http://localhost:5000](http://localhost:5000)
-- pgAdmin: [http://localhost:8080](http://localhost:8080) (if u asked for password type ´posta_cloud123´)
+- pgAdmin: [http://localhost:8080](http://localhost:8080) 
 
   Default pgAdmin credentials:
   - Email: `admin@localhost`
   - Password: `admin123`
+  - if u asked for db password type ´posta_cloud123´
 
 ## Services
 ### PostgreSQL (`posta_cloud_db`)
