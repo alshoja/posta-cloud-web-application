@@ -1,4 +1,3 @@
-
 ### Getting Started
 This is a project for collecting personal data. For sensitive data, there is a password, and it is encrypted in storage and decrypted on the fly.The current password is `alshoja`. when u want to open in front end on form 
 
@@ -36,25 +35,35 @@ cd posta-cloud
 ### 2. Set Up Environment Variables
 Create a `.env` file in the root directory and define the necessary environment variables:
 ```sh
-POSTGRESQL_PORT=5432
-POSTGRESQL_DATABASE=your_database
-POSTGRESQL_USERNAME=your_user
-POSTGRESQL_PASSWORD=your_password
-VITE_API_URL=http://localhost:5000
-VITE_ASSET_URL=http://localhost:3000
-NODE_ENV=development
-DB_HOST=posta_cloud_db
+# App Specific
+DB_HOST=postgres_db
 DB_PORT=5432
-DB_NAME=your_database
-DB_USER=your_user
-DB_PASSWORD=your_password
+DB_NAME=posta_cloud
+DB_USER=posta_cloud_db
+DB_PASSWORD=posta_cloud123
+NODE_ENV=development
 PORT=5000
+
+# Docker Specific
+POSTGRESQL_PORT=5432
+POSTGRESQL_USERNAME=posta_cloud_db
+POSTGRESQL_DATABASE=posta_cloud
+POSTGRESQL_PASSWORD=posta_cloud123
+
+# pgAdmin
+PGADMIN_DEFAULT_EMAIL=admin@example.com
+PGADMIN_DEFAULT_PASSWORD=admin123
+
+# Frontend
+VITE_API_URL=http://localhost:5000/api
+VITE_ASSET_URL=http://localhost:5000
 ```
 
 ### 3. Start the Application
-Run the following command to start all services:
+Run the following command to start all services fro windows use git bash as terminal to run this:
 ```sh
-docker-compose up --build
+./setup.sh
+ 
 ```
 This will:
 - Start a PostgreSQL database container (`posta_cloud_db`)
@@ -64,6 +73,11 @@ This will:
 ### 4. Access the Application
 - Frontend: [http://localhost:3000](http://localhost:3000)
 - Backend API: [http://localhost:5000](http://localhost:5000)
+- pgAdmin: [http://localhost:8080](http://localhost:8080) (if u asked for password type ´posta_cloud123´)
+
+  Default pgAdmin credentials:
+  - Email: `admin@localhost`
+  - Password: `admin123`
 
 ## Services
 ### PostgreSQL (`posta_cloud_db`)
@@ -83,17 +97,17 @@ This will:
 ## Stopping the Application
 To stop and remove the containers, run:
 ```sh
-docker-compose down
+docker compose down
 ```
 
 ## Logs and Debugging
 To view logs for a specific service, use:
 ```sh
-docker-compose logs -f <service_name>
+docker compose logs -f <service_name>
 ```
 Example:
 ```sh
-docker-compose logs -f backend
+docker compose logs -f backend
 ```
 
 ## Technologies Used

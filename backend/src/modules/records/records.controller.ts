@@ -24,6 +24,7 @@ export class RecordsController {
   @Post('step/one')
   @UseInterceptors(ClassSerializerInterceptor)
   createStepOne(@Body() updateProfileDto: UpdateProfileDto) {
+    
     return this.recordsService.createStepOne(updateProfileDto);
   }
 
