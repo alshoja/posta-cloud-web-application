@@ -15,12 +15,11 @@ import { UsersModule } from './modules/users/users.module';
 @Module({
   imports: [
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', '../uploads'),
+      rootPath: '/app/uploads',
       serveStaticOptions: {
         redirect: false,
         index: false,
       },
-      exclude: ['/api/(.*)'],
     }),
     ConfigModule.forRoot({
       isGlobal: true,

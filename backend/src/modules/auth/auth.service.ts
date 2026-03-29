@@ -9,7 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import * as bcrypt from 'bcrypt';
 import { REQUEST } from '@nestjs/core';
-import { AuthenticatedRequest } from './types/express';
+import  type { AuthenticatedRequest } from './types/express';
 
 @Injectable({ scope: Scope.REQUEST })
 export class AuthService {

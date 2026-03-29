@@ -4,6 +4,7 @@ import {
   PrimaryGeneratedColumn,
   ManyToOne,
   JoinColumn,
+  Relation,
 } from 'typeorm';
 import { Record } from './record.entity';
 
@@ -37,7 +38,7 @@ export class Address {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'recordsId' })
-  records: Record;
+  records:  Relation<Record>;
 
   @Column({ nullable: false })
   recordsId: number;

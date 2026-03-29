@@ -15,6 +15,13 @@ fi
 echo "🔹 Fixing project folder permissions..."
 sudo chown -R $USER:$USER .
 
+# Step 2: install worker dependencies
+echo "🔹 Installing OCR worker dependencies..."
+cd ocr-worker
+rm -rf node_modules package-lock.json
+npm install
+cd ..
+
 # Step 2: install backend dependencies
 echo "🔹 Installing backend dependencies..."
 cd backend
@@ -36,5 +43,6 @@ docker compose up -d --build
 
 echo "✅ Setup complete!"
 echo "Backend: http://localhost:5000"
+echo "OCR Worker: http://localhost:6000"
 echo "Frontend: http://localhost:3000"
 echo "pgAdmin: http://localhost:8080 (Email: admin@example.com, Password: admin123)"

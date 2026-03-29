@@ -4,6 +4,7 @@ import {
   PrimaryGeneratedColumn,
   ManyToOne,
   JoinColumn,
+  Relation,
 } from 'typeorm';
 import { Record } from './record.entity';
 import { Gender } from '../enums/gender.enum';
@@ -30,7 +31,7 @@ export class Child {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'recordsId' })
-  records: Record;
+  records:  Relation<Record>;
 
   @Column({ nullable: false })
   recordsId: number;

@@ -8,8 +8,6 @@ import {
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
 import { AppService } from './app.service';
 import { UploadInterceptor } from './shared/interceptors/file-upload.interceptor';
 
@@ -19,10 +17,10 @@ export class AppController {
 
   @Get()
   getHello(): string {
-    return this.appService.getHello();
+    return this.appService.ping();
   }
 
-  @Post('upload')
+  @Post('ocr/recognize')
   @UseInterceptors(
   UploadInterceptor('file'),
     ClassSerializerInterceptor,
@@ -36,6 +34,6 @@ export class AppController {
     )
     file: Express.Multer.File,
   ) {
-    return this.appService.getFileUrl(file);
+    return this.appService.extractTextFromFile(file);
   }
 }

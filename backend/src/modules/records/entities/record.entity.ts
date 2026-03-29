@@ -8,6 +8,7 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  Relation,
 } from 'typeorm';
 
 import { Gender } from '../enums/gender.enum';
@@ -136,7 +137,7 @@ export class Record {
     cascade: true,
   })
   @JoinColumn()
-  addresses: Address[];
+  addresses: Relation<Address>[];
 
   @Column({ nullable: true })
   marriageDate: string;
@@ -149,25 +150,25 @@ export class Record {
 
   @OneToMany(() => Child, (child) => child.records, { cascade: true })
   @JoinColumn()
-  children: Child[];
+  children:  Relation<Child>[];
 
   @OneToMany(() => Document, (document) => document.records, {
     cascade: true,
   })
   @JoinColumn()
-  documents: Document[];
+  documents:  Relation<Document>[];
 
   @OneToMany(() => Policy, (policy) => policy.records, {
     cascade: true,
   })
   @JoinColumn()
-  policies: Policy[];
+  policies:  Relation<Policy>[];
 
   @ManyToOne(() => User, (user) => user.records, {
     onDelete: 'CASCADE',
     nullable: false,
   })
-  user: User;
+  user:  Relation<User>;
 
   @Column({ nullable: false })
   userId: number;
