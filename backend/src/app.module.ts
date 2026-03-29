@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { join } from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AppConfig, DatabaseConfig } from './config';
@@ -11,6 +10,7 @@ import { SeederModule } from './shared/seeder/seeder.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { RecordsModule } from './modules/records/records.module';
 import { UsersModule } from './modules/users/users.module';
+import { BullModule } from '@nestjs/bullmq/dist/bull.module';
 
 @Module({
   imports: [
@@ -19,6 +19,12 @@ import { UsersModule } from './modules/users/users.module';
       serveStaticOptions: {
         redirect: false,
         index: false,
+      },
+    }),
+    BullModule.forRoot({
+      connection: {
+        host: process.env.REDIS_HOST || 'redis',
+        port: Number(process.env.REDIS_PORT) || 6379,
       },
     }),
     ConfigModule.forRoot({

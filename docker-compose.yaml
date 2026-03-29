@@ -27,7 +27,7 @@ services:
       - POSTGRESQL_LOG_STATEMENTS=all
     logging: *default-logging
     networks:
-    - common-net
+      - common-net
   pgadmin:
     container_name: posta_cloud_pgadmin
     image: dpage/pgadmin4:latest
@@ -60,13 +60,14 @@ services:
     depends_on:
       - redis
     volumes:
-      - .ocr-worker/uploads:/app/uploads
+      - ./ocr-worker:/app
+      - ./backend/uploads:/app/uploads
     environment:
-    - REDIS_HOST=${REDIS_HOST}
-    - REDIS_PORT=${REDIS_PORT}
-    - QUEUE_NAME=${QUEUE_NAME}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - OCR_QUEUE_NAME=${OCR_QUEUE_NAME}
     networks:
-    - common-net
+      - common-net
 
   frontend:
     build:
@@ -101,13 +102,13 @@ services:
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - PORT=${PORT}
+      - OCR_QUEUE_NAME=${OCR_QUEUE_NAME}
     depends_on:
       - postgres_db
       - redis
     networks:
       - common-net
 
-  
 volumes:
   db-data:
     name: posta_cloud_db_data
