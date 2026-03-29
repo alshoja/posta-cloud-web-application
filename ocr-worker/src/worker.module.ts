@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { OcrProcessor } from './ocr.processor';
+import { RedisModule } from './redis.module';
 
 @Module({
   imports: [
+    RedisModule,
     BullModule.forRoot({
       connection: {
         host: process.env.REDIS_HOST || 'redis',

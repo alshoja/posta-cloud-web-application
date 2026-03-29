@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   MaxFileSizeValidator,
+  Param,
   ParseFilePipe,
   Post,
   UploadedFile,
@@ -18,7 +19,7 @@ export class AppController {
   constructor(
     private readonly appService: AppService,
     private readonly ocrService: OcrService,
-  ) {}
+  ) { }
 
   @Get()
   getHello(): string {
@@ -44,12 +45,18 @@ export class AppController {
   extractText(
     @UploadedFile(
       new ParseFilePipe({
-        validators: [new MaxFileSizeValidator({ maxSize: 1048576 })],
+        validators: [new MaxFileSizeValidator({ maxSize: 2048576 })],
         fileIsRequired: true,
       }),
     )
     file: Express.Multer.File,
   ) {
     return this.ocrService.uploadAndQueue(file);
+  }
+
+  @Get('extract/text/:jobId')
+  async getResult(@Param('jobId') jobId: string) {
+    const result = await this.ocrService.getJobResult(jobId);
+    return { jobId, result };
   }
 }
