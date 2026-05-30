@@ -1,5 +1,6 @@
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
 import { useContainer } from 'class-validator';
 import { SharedModule } from './shared/shared.module';
@@ -7,11 +8,15 @@ import { AllHttpExceptionFilter } from './shared/filter/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
+  const appConfig = configService.get<{
+    port: number;
+    isDevelopment: boolean;
+    corsOrigins: string[];
+  }>('config');
 
-  const isDevelopment = process.env.NODE_ENV === 'development';
-  const corsOrigins = process.env.CORS_ORIGINS?.split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean);
+  const isDevelopment = appConfig?.isDevelopment ?? true;
+  const corsOrigins = appConfig?.corsOrigins ?? [];
 
   app.enableCors(
     isDevelopment
@@ -36,6 +41,6 @@ async function bootstrap() {
   app.useGlobalFilters(new AllHttpExceptionFilter(app.get(HttpAdapterHost)));
   useContainer(app.select(SharedModule), { fallbackOnErrors: true });
   app.setGlobalPrefix('api');
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(appConfig?.port ?? 5001);
 }
 bootstrap();

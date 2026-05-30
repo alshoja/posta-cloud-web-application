@@ -1,5 +1,7 @@
 import { registerAs } from '@nestjs/config';
 
+const nodeEnv = process.env.NODE_ENV ?? 'development';
+
 export default registerAs('database', () => ({
   type: 'postgres',
   host: process.env.DB_HOST || 'localhost',
@@ -8,8 +10,8 @@ export default registerAs('database', () => ({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   entities: [`${__dirname}/../**/*.entity{.ts,.js}`],
-  synchronize: process.env.NODE_ENV === 'development',
-  logging: process.env.NODE_ENV === 'development',
+  synchronize: nodeEnv === 'development',
+  logging: nodeEnv === 'development',
   migrations: [`${__dirname}/../../db/migrations/*{.ts,.js}`],
   migrationsTableName: 'migrations',
 }));

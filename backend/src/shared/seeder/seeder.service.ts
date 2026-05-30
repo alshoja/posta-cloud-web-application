@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { faker } from '@faker-js/faker';
@@ -12,6 +13,7 @@ export class SeederService {
   private readonly logger = new Logger(SeederService.name);
 
   constructor(
+    private readonly configService: ConfigService,
     @InjectRepository(Record)
     private readonly recordRepository: Repository<Record>,
     @InjectRepository(User)
@@ -81,8 +83,10 @@ export class SeederService {
   }
 
   private async getOrCreateSeedUser(): Promise<User> {
-    const seedUsername = process.env.SEED_USER_NAME || 'seed_admin';
-    const seedPassword = process.env.SEED_USER_PASSWORD || 'SeedPass123!';
+    const seedUsername = this.configService.get<string>('config.seedUserName');
+    const seedPassword = this.configService.get<string>(
+      'config.seedUserPassword',
+    );
 
     let seedUser = await this.userRepository.findOne({
       where: { username: seedUsername },

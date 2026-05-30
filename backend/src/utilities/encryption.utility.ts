@@ -4,20 +4,23 @@ export class EncryptionUtility {
   private static readonly IV_LENGTH = 16; // AES requires a 16-byte IV
   private static encryptionKey: Buffer;
 
-  private static getEncryptionKey(): Buffer {
-    if (!EncryptionUtility.encryptionKey) {
-      const key = process.env.ENCRYPTION_KEY;
-
-      if (!key || key.trim() === '') {
-        throw new Error('Missing required environment variable: ENCRYPTION_KEY');
-      }
-
-      EncryptionUtility.encryptionKey = crypto
-        .createHash('sha256')
-        .update(key)
-        .digest();
+  static configureFromRawKey(rawKey: string): void {
+    if (!rawKey || rawKey.trim() === '') {
+      throw new Error('Missing required configuration value: ENCRYPTION_KEY');
     }
 
+    EncryptionUtility.encryptionKey = crypto
+      .createHash('sha256')
+      .update(rawKey)
+      .digest();
+  }
+
+  private static getEncryptionKey(): Buffer {
+    if (!EncryptionUtility.encryptionKey) {
+      throw new Error(
+        'Encryption key is not configured. Ensure encryption config bootstrap runs on startup.',
+      );
+    }
     return EncryptionUtility.encryptionKey;
   }
 

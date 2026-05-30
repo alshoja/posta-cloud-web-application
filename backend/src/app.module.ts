@@ -23,18 +23,22 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
         index: false,
       },
     }),
-    BullModule.forRoot({
-      connection: {
-        host: process.env.REDIS_HOST || 'redis',
-        port: Number(process.env.REDIS_PORT) || 6379,
-      },
-    }),
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
       envFilePath: ['.env', '../.env'],
       load: [AppConfig, DatabaseConfig],
       validate: validateEnv,
+    }),
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        connection: {
+          host: configService.get<string>('config.redisHost'),
+          port: configService.get<number>('config.redisPort'),
+        },
+      }),
+      inject: [ConfigService],
     }),
     ThrottlerModule.forRoot([
       {

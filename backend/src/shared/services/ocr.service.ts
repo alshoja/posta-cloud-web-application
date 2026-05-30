@@ -2,11 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { RedisService } from './redis.service';
+import { OCR_QUEUE_NAME } from '../constants/queue.constants';
 
 @Injectable()
 export class OcrService {
   constructor(
-    @InjectQueue(process.env.OCR_QUEUE_NAME) private ocrQueue: Queue,
+    @InjectQueue(OCR_QUEUE_NAME) private ocrQueue: Queue,
     private redisService: RedisService
   ) { }
 
