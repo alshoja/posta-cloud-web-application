@@ -1,101 +1,107 @@
-### Getting Started
-This is a project for collecting personal data. For sensitive data, there is a password, and it is encrypted in storage and decrypted on the fly.The current password is `alshoja`. when u want to open in front end on form 
+# Posta Cloud
 
-This is a hobby project I created during my relocation to Berlin from India using Vue 3, Vuetify, and NestJS.
-The main use of this app will be aimed at POSTMAN in India, allowing them to store information about their area. It serves as a record-keeping tool for each person they interact with, functioning as an India Post record collector.
+Posta Cloud is a full-stack, Docker-managed record collection platform built with Vue 3, Vuetify, NestJS, PostgreSQL, Redis, and an OCR worker.
 
-## 🔥 Key Features:
-- 🔍 **Smart Search** – Find contacts easily using names, emails, or phone numbers.
-- 📌 **Location-Aware** – Store and retrieve address data with geo-tagging.
-- 📊 **Data Export/Import** – Easily transfer records in multiple formats (CSV, JSON, Excel). [PR WELCOMED]
-- 🔐 **Secure & Scalable** – Role-based access and cloud-ready. [PR WELCOMED]
+I built this as a practical sample project for field-data workflows: users can store structured records for people in a local area, manage address and personal details, upload documents, and use OCR support to reduce manual typing.
 
+## Highlights
 
-![Screenshot from 2025-01-30 20-55-09](https://github.com/user-attachments/assets/6df7fc33-0d4c-4753-a637-4a1124997674)
+- Full-stack TypeScript-style architecture with a Vue frontend and NestJS backend.
+- Docker Compose orchestration for frontend, backend, database, Redis, OCR worker, and pgAdmin.
+- PostgreSQL persistence with TypeORM entities and migration workflow.
+- Redis-backed background processing for OCR tasks.
+- Document upload support with a dedicated worker reading from shared uploads.
+- Environment-driven configuration for local and production deployments.
+- Security-focused documentation for secrets, personal data, and production setup.
 
-![Screenshot from 2025-01-30 20-54-24](https://github.com/user-attachments/assets/46d8a67a-ff77-4cfc-b7a9-2c0ac4fe2a8a)
+## Tech Stack
 
-![Screenshot from 2025-01-30 20-54-20](https://github.com/user-attachments/assets/deff9a56-4c98-4587-aa53-6a934794eb20)
+| Area | Tools |
+| --- | --- |
+| Frontend | Vue 3, Vite, Vuetify, Pinia |
+| Backend | NestJS, TypeORM, class-validator |
+| Database | PostgreSQL |
+| Queue / Worker | Redis, OCR worker service |
+| Infrastructure | Docker, Docker Compose, pgAdmin |
 
+## Architecture
 
-
-## Prerequisites
-Make sure you have the following installed:
-- [Docker](https://www.docker.com/get-started)
-- [Docker Compose](https://docs.docker.com/compose/install/)
-
-
-
-### 1. Clone the Repository
-```sh
-git clone https://github.com/your-username/posta-cloud.git
-cd posta-cloud
+```text
+frontend -> backend API -> PostgreSQL
+                   |
+                   v
+                 Redis -> OCR worker -> uploaded documents
 ```
-### 2. Start the Application
-Run the following command to start all services for windows use git bash as terminal to run this:
+
+Services:
+
+- `frontend`: Vue app on `http://localhost:3000`
+- `backend`: NestJS API on `http://localhost:5001`
+- `ocr-worker`: background OCR processor
+- `postgres_db`: PostgreSQL database
+- `redis`: queue backend
+- `pgadmin`: database admin UI on `http://localhost:8080`
+
+## Screenshots
+
+![Posta Cloud records screen](https://github.com/user-attachments/assets/6df7fc33-0d4c-4753-a637-4a1124997674)
+
+![Posta Cloud form screen](https://github.com/user-attachments/assets/46d8a67a-ff77-4cfc-b7a9-2c0ac4fe2a8a)
+
+![Posta Cloud detail screen](https://github.com/user-attachments/assets/deff9a56-4c98-4587-aa53-6a934794eb20)
+
+## Quick Start
+
+Copy `.env.example` to `.env` if needed, then start the full project:
+
 ```sh
 ./setup.sh
- 
 ```
-This will:
-- Start a PostgreSQL database container (`posta_cloud_db`)
-- Start the backend service (`posta-cloud-be`)
-- Start the frontend service (`posta-cloud-fe`)
 
-### 3. Access the Application
-- Frontend: [http://localhost:3000](http://localhost:3000)
-- Backend API: [http://localhost:5001](http://localhost:5001)
-- pgAdmin: [http://localhost:8080](http://localhost:8080) 
+Useful Docker commands:
 
-  Default pgAdmin credentials:
-  - Email: `admin@localhost`
-  - Password: `admin123`
-  - if u asked for db password type ´posta_cloud123´
-
-## Services
-### PostgreSQL (`posta_cloud_db`)
-- Uses the Bitnami PostgreSQL image.
-- Stores persistent data in a Docker volume `db-data`.
-- Initializes the database using scripts from `./database/` (if provided).
-
-### Frontend (`posta-cloud-fe`)
-- Built with Vue 3 and Vuetify.
-- Runs in development mode with `npm run dev`.
-
-### Backend (`posta-cloud-be`)
-- A NestJS-based API service.
-- Connects to the PostgreSQL database.
-- Runs in development mode with `npm run start:dev`.
-
-## Stopping the Application
-To stop and remove the containers, run:
 ```sh
+docker compose up -d
+docker compose up --build -d
+docker compose logs -f backend
 docker compose down
 ```
 
-## Logs and Debugging
-To view logs for a specific service, use:
+Open:
+
+- Frontend: `http://localhost:3000`
+- Backend API: `http://localhost:5001`
+- pgAdmin: `http://localhost:8080`
+
+## Database
+
+Migration files live in `backend/database/migrations/`.
+
 ```sh
-docker compose logs -f <service_name>
+docker compose exec backend npm run migration:generate --name=<migration-name>
+docker compose exec backend npm run migration:run
+docker compose exec backend npm run seed
 ```
-Example:
+
+See [Database](docs/DATABASE.md) for the full workflow.
+
+## Production
+
+Production uses the existing Dockerfiles and `docker-compose.prod.yaml`:
+
 ```sh
-docker compose logs -f backend
+docker compose -f docker-compose.prod.yaml up --build -d
+docker compose -f docker-compose.prod.yaml logs -f backend
+docker compose -f docker-compose.prod.yaml down
 ```
 
-## Technologies Used
-- Vue 3
-- Vuetify
-- Pinia
-- NestJS
-- PostgreSQL
-- Docker
-- Docker Compose
+Production secrets belong in environment configuration and should never be committed.
 
-## Notes
-- The database uses a volume (`db-data`) to persist data across restarts.
-- Ensure that environment variables are correctly set in the `.env` file.
+## Documentation
 
-## 💡 Contribute Today
-Help improve address management for field workers! If you're interested in contributing, feel free to fork this repo and submit your pull requests.
-
+- [Architecture](docs/ARCHITECTURE.md)
+- [Development](docs/DEVELOPMENT.md)
+- [Database](docs/DATABASE.md)
+- [Security](docs/SECURITY.md)
+- [Deployment](docs/DEPLOYMENT.md)
+- [Agent Instructions](AGENTS.md)

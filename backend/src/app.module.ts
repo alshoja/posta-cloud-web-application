@@ -32,6 +32,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
+      envFilePath: ['.env', '../.env'],
       load: [AppConfig, DatabaseConfig],
       validate: validateEnv,
     }),

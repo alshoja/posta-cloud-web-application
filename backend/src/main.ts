@@ -4,12 +4,9 @@ import { ValidationPipe } from '@nestjs/common';
 import { useContainer } from 'class-validator';
 import { SharedModule } from './shared/shared.module';
 import { AllHttpExceptionFilter } from './shared/filter/http-exception.filter';
-// import { SeederService } from './shared/seeder/seeder.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  // const seederService = app.get(SeederService);
-  // await seederService.seedRecords(100);
 
   const isDevelopment = process.env.NODE_ENV === 'development';
   const corsOrigins = process.env.CORS_ORIGINS?.split(',')
