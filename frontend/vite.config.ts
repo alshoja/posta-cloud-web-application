@@ -1,9 +1,26 @@
 import { fileURLToPath, URL } from 'node:url'
 
-import { defineConfig } from 'vite'
+import { defineConfig, type PluginOption } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import vuetify from 'vite-plugin-vuetify'
+
+const plugins: PluginOption[] = [
+  vue({
+    template: {
+      compilerOptions: {
+        isCustomElement: (tag) => ['v-list-recognize-title'].includes(tag)
+      }
+    }
+  }),
+  vuetify({
+    autoImport: true
+  })
+]
+
+if (process.env.NODE_ENV !== 'production') {
+  plugins.push(vueDevTools())
+}
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -12,19 +29,7 @@ export default defineConfig({
     host: '0.0.0.0',
     allowedHosts: ['posta-cloud.onrender.com']
   },
-  plugins: [
-    vue({
-      template: {
-        compilerOptions: {
-          isCustomElement: (tag) => ['v-list-recognize-title'].includes(tag)
-        }
-      }
-    }),
-    vuetify({
-      autoImport: true
-    }),
-    vueDevTools()
-  ],
+  plugins,
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))

@@ -4,13 +4,15 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { AppConfig, DatabaseConfig } from './config';
+import { AppConfig, DatabaseConfig, validateEnv } from './config';
 import { SharedModule } from './shared/shared.module';
 import { SeederModule } from './shared/seeder/seeder.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { RecordsModule } from './modules/records/records.module';
 import { UsersModule } from './modules/users/users.module';
 import { BullModule } from '@nestjs/bullmq/dist/bull.module';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
@@ -31,7 +33,14 @@ import { BullModule } from '@nestjs/bullmq/dist/bull.module';
       isGlobal: true,
       cache: true,
       load: [AppConfig, DatabaseConfig],
+      validate: validateEnv,
     }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60_000,
+        limit: 100,
+      },
+    ]),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
@@ -39,7 +48,6 @@ import { BullModule } from '@nestjs/bullmq/dist/bull.module';
       }),
       inject: [ConfigService],
     }),
-    ConfigModule.forRoot(),
     SharedModule,
     RecordsModule,
     SeederModule,
@@ -47,6 +55,12 @@ import { BullModule } from '@nestjs/bullmq/dist/bull.module';
     UsersModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

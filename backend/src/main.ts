@@ -11,7 +11,18 @@ async function bootstrap() {
   // const seederService = app.get(SeederService);
   // await seederService.seedRecords(100);
 
-  app.enableCors();
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  const corsOrigins = process.env.CORS_ORIGINS?.split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  app.enableCors(
+    isDevelopment
+      ? true
+      : {
+          origin: corsOrigins,
+        },
+  );
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,

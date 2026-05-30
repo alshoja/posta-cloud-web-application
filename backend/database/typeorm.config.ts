@@ -5,7 +5,6 @@ import { config } from 'dotenv';
 config();
 
 const configService = new ConfigService();
-console.log('Connecting with password:', configService.get('DB_PASSWORD'));
 export default new DataSource({
   type: 'postgres',
   host: configService.get('DB_HOST'),

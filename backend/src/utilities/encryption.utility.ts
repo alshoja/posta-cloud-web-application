@@ -2,18 +2,31 @@ import * as crypto from 'crypto';
 
 export class EncryptionUtility {
   private static readonly IV_LENGTH = 16; // AES requires a 16-byte IV
-  private static readonly ENCRYPTION_KEY = crypto
-    .createHash('sha256')
-    .update(String(process.env.ENCRYPTION_KEY || 'default_secret_key'))
-    .digest('base64')
-    .substring(0, 32); // AES-256 key must be 32 bytes
+  private static encryptionKey: Buffer;
+
+  private static getEncryptionKey(): Buffer {
+    if (!EncryptionUtility.encryptionKey) {
+      const key = process.env.ENCRYPTION_KEY;
+
+      if (!key || key.trim() === '') {
+        throw new Error('Missing required environment variable: ENCRYPTION_KEY');
+      }
+
+      EncryptionUtility.encryptionKey = crypto
+        .createHash('sha256')
+        .update(key)
+        .digest();
+    }
+
+    return EncryptionUtility.encryptionKey;
+  }
 
   // Encrypt text using AES-256-CBC
   static encrypt(text: string): string {
     const iv = crypto.randomBytes(EncryptionUtility.IV_LENGTH);
     const cipher = crypto.createCipheriv(
       'aes-256-cbc',
-      EncryptionUtility.ENCRYPTION_KEY,
+      EncryptionUtility.getEncryptionKey(),
       iv,
     );
     let encrypted = cipher.update(text, 'utf8', 'base64');
@@ -26,7 +39,7 @@ export class EncryptionUtility {
     const [iv, data] = encrypted.split(':');
     const decipher = crypto.createDecipheriv(
       'aes-256-cbc',
-      EncryptionUtility.ENCRYPTION_KEY,
+      EncryptionUtility.getEncryptionKey(),
       Buffer.from(iv, 'base64'),
     );
     let decrypted = decipher.update(data, 'base64', 'utf8');

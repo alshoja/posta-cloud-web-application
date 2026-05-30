@@ -13,6 +13,7 @@ import {
 import { AppService } from './app.service';
 import { UploadInterceptor } from './shared/interceptors/file-upload.interceptor';
 import { OcrService } from './shared/services/ocr.service';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller()
 export class AppController {
@@ -27,6 +28,7 @@ export class AppController {
   }
 
   @Post('upload')
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
   @UseInterceptors(UploadInterceptor('file'), ClassSerializerInterceptor)
   upload(
     @UploadedFile(
@@ -41,6 +43,7 @@ export class AppController {
   }
 
   @Post('extract/text')
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
   @UseInterceptors(UploadInterceptor('file'), ClassSerializerInterceptor)
   extractText(
     @UploadedFile(

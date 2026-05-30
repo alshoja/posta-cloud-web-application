@@ -1,0 +1,84 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "100m"
+    max-file: "100"
+
+networks:
+  common-net: {}
+
+services:
+  postgres_db:
+    image: bitnami/postgresql:latest
+    restart: always
+    volumes:
+      - db-data:/bitnami/postgresql
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+    environment:
+      - POSTGRESQL_DATABASE=${POSTGRESQL_DATABASE}
+      - POSTGRESQL_USERNAME=${POSTGRESQL_USERNAME}
+      - POSTGRESQL_PASSWORD=${POSTGRESQL_PASSWORD}
+      - POSTGRESQL_LOGGING_COLLECTOR=true
+      - POSTGRESQL_LOG_MIN_ERROR_STATEMENT=error
+      - POSTGRESQL_LOG_STATEMENTS=none
+    logging: *default-logging
+    networks:
+      - common-net
+
+  redis:
+    image: redis:7
+    restart: always
+    logging: *default-logging
+    networks:
+      - common-net
+
+  backend:
+    build:
+      context: ./backend
+    restart: always
+    ports:
+      - "5001:5001"
+    volumes:
+      - backend-uploads:/app/uploads
+    environment:
+      - BASE_URL=${VITE_ASSET_URL}
+      - NODE_ENV=production
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - PORT=${PORT}
+      - OCR_QUEUE_NAME=${OCR_QUEUE_NAME}
+      - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - CORS_ORIGINS=${CORS_ORIGINS}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+    depends_on:
+      - postgres_db
+      - redis
+    logging: *default-logging
+    networks:
+      - common-net
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+        VITE_ASSET_URL: ${VITE_ASSET_URL}
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    logging: *default-logging
+    networks:
+      - common-net
+
+volumes:
+  db-data:
+    name: posta_cloud_prod_db_data
+  backend-uploads:
+    name: posta_cloud_prod_backend_uploads

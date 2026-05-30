@@ -30,7 +30,6 @@ export class AllHttpExceptionFilter implements ExceptionFilter {
       timestamp: new Date().toISOString(),
       path: httpAdapter.getRequestUrl(ctx.getRequest()),
     };
-    console.log('🚀 Exception Occurred:', exception);
 
     httpAdapter.reply(ctx.getResponse(), responseBody, httpStatus);
   }

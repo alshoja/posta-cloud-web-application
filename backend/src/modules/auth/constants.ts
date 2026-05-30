@@ -1,3 +1,1 @@
-export const jwtConstants = {
-  secret: 'secretKey@123##@@!!',
-};
+export const JWT_SECRET_ENV_KEY = 'JWT_SECRET';

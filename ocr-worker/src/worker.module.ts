@@ -13,7 +13,7 @@ import { RedisModule } from './redis.module';
       },
     }),
     BullModule.registerQueue({
-      name: process.env.QUEUE_NAME || 'ocr-queue',
+      name: process.env.OCR_QUEUE_NAME || 'ocr-queue',
     }),
   ],
   exports: [],

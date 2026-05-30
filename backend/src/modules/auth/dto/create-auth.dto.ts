@@ -9,8 +9,6 @@ import {
 export class CreateAuthDto {
   @IsString()
   @IsNotEmpty({ message: 'Username is required' })
-  @MinLength(4, { message: 'Username must be at least 4 characters long' })
-  @MaxLength(20, { message: 'Username must not exceed 20 characters' })
   username: string;
 
   @IsString()
