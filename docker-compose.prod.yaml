@@ -62,6 +62,23 @@ services:
     networks:
       - common-net
 
+  ocr-worker:
+    build:
+      context: ./ocr-worker
+    restart: always
+    volumes:
+      - backend-uploads:/app/uploads
+    environment:
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - OCR_QUEUE_NAME=${OCR_QUEUE_NAME}
+    depends_on:
+      - redis
+      - backend
+    logging: *default-logging
+    networks:
+      - common-net
+
   frontend:
     build:
       context: ./frontend

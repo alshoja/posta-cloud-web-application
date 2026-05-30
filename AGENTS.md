@@ -13,7 +13,7 @@ This repository is a Docker-first multi-service app:
 - `redis`: OCR queue backend
 - `pgadmin`: database admin UI
 
-Docker Compose is the normal control plane for development and production. Service-level npm scripts may exist, but they should be treated as commands run inside containers.
+Docker Compose is the normal control plane. Check `docker-compose.yaml` versus `docker-compose.prod.yaml` because development and production services can differ. Service-level npm scripts may exist, but they should be treated as commands run inside containers.
 
 ## Commands
 
@@ -37,6 +37,8 @@ docker compose -f docker-compose.prod.yaml logs -f <service>
 ```
 
 Do not promote local `npm run dev` or local `npm run build` as the primary workflow. Use service-level npm scripts only through containers when needed.
+
+Production compose should use service production Dockerfiles, avoid source bind mounts, use named volumes for runtime data, and never run dev commands such as `npm run start:dev`.
 
 ## NestJS Generation
 
@@ -98,7 +100,7 @@ docker compose exec backend npm run migration:revert
 docker compose exec backend npm run seed
 ```
 
-Generate migrations in development only. Production should run committed migrations only. Review generated migrations and commit them with the related entity changes.
+Generate migrations in development only. Inspect the generated migration file before running it locally. Production should run committed migrations only. Commit reviewed migrations with the related entity changes.
 
 ## Testing Policy
 
