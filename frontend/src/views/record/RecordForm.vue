@@ -510,12 +510,14 @@ const viewDocument = (index: number) => {
                                     before saving.
                                 </v-alert>
                             </v-col>
-                            <v-col cols="12" md="6">
+                            <v-col cols="12" md="9" lg="10">
                                 <v-file-input v-model="ocrScanFile" variant="outlined" label="Upload File For OCR Scan"
                                     accept=".pdf,image/png,image/jpeg" :disabled="ocrLoading" />
                             </v-col>
-                            <v-col cols="12" md="6" class="d-flex align-center mb-5">
-                                <v-btn variant="outlined" color="secondary" :loading="ocrLoading" :disabled="ocrLoading"
+                            <v-col cols="12" md="3" lg="2"
+                                class="d-flex align-center justify-start ps-md-6 mb-3 mb-md-0 mb-lg-5">
+                                <v-btn variant="outlined" color="secondary" size="large" class="w-100 w-md-auto"
+                                    :loading="ocrLoading" :disabled="ocrLoading"
                                     @click="runOcrAutofill">
                                     Scan & Auto Fill
                                 </v-btn>
