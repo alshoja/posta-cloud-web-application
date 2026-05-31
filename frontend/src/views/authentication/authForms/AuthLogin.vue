@@ -9,7 +9,7 @@ const valid = ref(false);
 const show1 = ref(false);
 //const logform = ref();
 const password = ref('');
-const username = ref('');
+const email = ref('');
 const passwordRules = ref([
   (v: string) => !!v || 'Password is required'
 ]);
@@ -18,7 +18,7 @@ const emailRules = ref([(v: string) => !!v || 'E-mail is required', (v: string) 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function validate(values: any, { setErrors }: any) {
   const authStore = useAuthStore();
-  return authStore.login(username.value, password.value).catch((error) => {
+  return authStore.login(email.value, password.value).catch((error) => {
     setErrors({
       apiError: error.response.data.message
     })
@@ -39,7 +39,7 @@ function validate(values: any, { setErrors }: any) {
   </v-row>
   <h5 class="text-h5 text-center my-4 mb-8">Sign in with Email address</h5>
   <Form @submit="validate" class="mt-7 loginForm" v-slot="{ errors, isSubmitting }">
-    <v-text-field v-model="username" :rules="emailRules" label="Email Address / Username" class="mt-4 mb-8" required
+    <v-text-field v-model="email" :rules="emailRules" label="Email Address" class="mt-4 mb-8" required
       density="comfortable" hide-details="auto" variant="outlined" color="primary"></v-text-field>
     <v-text-field v-model="password" :rules="passwordRules" label="Password" required density="comfortable"
       variant="outlined" color="primary" hide-details="auto" :append-icon="show1 ? '$eye' : '$eyeOff'"

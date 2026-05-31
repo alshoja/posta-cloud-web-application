@@ -2,12 +2,11 @@ import { Request } from 'express';
 
 export interface AuthJwtPayload {
   sub: number;
-  username: string;
+  email: string;
 }
 
 export interface AuthenticatedUser {
   id: number;
-  username: string;
   email: string;
   firstName?: string;
   lastName?: string;

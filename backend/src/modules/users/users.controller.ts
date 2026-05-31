@@ -1,28 +1,24 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Param,
-  Put,
-  Delete,
   ClassSerializerInterceptor,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
   UseInterceptors,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
 import { UsersService } from './users.service';
-import { Public } from '../auth/public.decorator';
-import { Throttle } from '@nestjs/throttler';
 
 @Controller('users')
 @UseInterceptors(ClassSerializerInterceptor)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Public()
-  @Throttle({ default: { ttl: 60_000, limit: 3 } })
   @Post()
   create(@Body() createUserDto: CreateUserDto): Promise<User> {
     return this.usersService.create(createUserDto);

@@ -9,8 +9,8 @@ export const useAuthStore = defineStore('auth', {
     returnUrl: null
   }),
   actions: {
-    async login(username: string, password: string) {
-      const response = await axiosInstance.post(`${baseUrl}/auth/login`, { username, password })
+    async login(email: string, password: string) {
+      const response = await axiosInstance.post(`${baseUrl}/auth/login`, { email, password })
       const { user, access_token } = response.data
 
       this.user = user
@@ -18,14 +18,19 @@ export const useAuthStore = defineStore('auth', {
       localStorage.setItem('token', access_token)
       router.push(this.returnUrl || '/dashboard/default')
     },
-    async register(username: string, password: string, firstName: string, lastName: string) {
-      await axiosInstance.post(`${baseUrl}/users`, {
-        username,
+    async register(email: string, password: string, firstName: string, lastName: string) {
+      const response = await axiosInstance.post(`${baseUrl}/auth/signup`, {
+        email,
         password,
         firstName,
         lastName
       })
-      router.push(this.returnUrl || '/auth/login')
+      const { user, access_token } = response.data
+
+      this.user = user
+      localStorage.setItem('user', JSON.stringify(user))
+      localStorage.setItem('token', access_token)
+      router.push(this.returnUrl || '/dashboard/default')
     },
     logout() {
       this.user = null

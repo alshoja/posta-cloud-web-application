@@ -19,7 +19,7 @@ const authStore = useAuthStore();
       <span v-else>Good Evening</span>,
       <span class="font-weight-regular">{{ authStore.user.firstName }} {{ authStore.user.lastName }}</span>
     </h4>
-    <span class="text-subtitle-2 text-medium-emphasis">{{ authStore.user.username }}</span>
+    <span class="text-subtitle-2 text-medium-emphasis">{{ authStore.user.email }}</span>
 
     <v-text-field persistent-placeholder placeholder="Search" class="my-3" color="primary" variant="outlined"
       hide-details>

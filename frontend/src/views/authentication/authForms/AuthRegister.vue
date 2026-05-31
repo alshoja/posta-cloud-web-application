@@ -26,7 +26,7 @@ function validate() {
 
   try {
     const register = authStore.register(email.value, password.value, firstname.value, lastname.value);
-    snackbar.showSnackbar('Sign up completed,Please login with the given username and password', 'success', []);
+    snackbar.showSnackbar('Sign up completed successfully', 'success', []);
     return register
   } catch (error) {
     console.log("🚀 ~ validate ~ error:", error)
@@ -59,7 +59,7 @@ function validate() {
           label="Lastname"></v-text-field>
       </v-col>
     </v-row>
-    <v-text-field v-model="email" :rules="emailRules" label="Email Address / Username" class="mt-4 mb-4" required
+    <v-text-field v-model="email" :rules="emailRules" label="Email Address" class="mt-4 mb-4" required
       density="comfortable" hide-details="auto" variant="outlined" color="primary"></v-text-field>
     <v-text-field v-model="password" :rules="passwordRules" label="Password" required density="comfortable"
       variant="outlined" color="primary" hide-details="auto" :append-icon="show1 ? '$eye' : '$eyeOff'"
