@@ -1,9 +1,3 @@
-import { config } from 'dotenv';
-import { resolve } from 'path';
-
-// Load environment variables from .env file (located in project root) BEFORE any other imports
-config({ path: resolve(__dirname, '../../.env') });
-
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SeederService } from './shared/seeder/seeder.service';
@@ -30,8 +24,10 @@ async function runSeed() {
     await seederService.seedRecords(numRecords);
     console.log('Seeding completed successfully!');
     process.exit(0);
-  } catch (error) {
-    console.error('Seeding failed:', error.message);
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : 'Unknown seeding error';
+    console.error('Seeding failed:', message);
     process.exit(1);
   } finally {
     await app.close();

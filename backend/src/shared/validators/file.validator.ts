@@ -4,7 +4,6 @@ import {
   ValidatorConstraintInterface,
   ValidationArguments,
 } from 'class-validator';
-import { Express } from 'express';
 
 @ValidatorConstraint({ name: 'ValidateFile', async: false })
 @Injectable()
@@ -18,7 +17,6 @@ export class ValidateFile implements ValidatorConstraintInterface {
   validate(value: any, args: ValidationArguments): boolean {
     const { constraints } = args;
     const [maxSize, allowedTypes] = constraints;
-    console.log('🚀 ~ VAlue in  ~ file:', value);
 
     // If the value is an array (multiple files), validate each file.
     if (Array.isArray(value)) {
@@ -43,7 +41,6 @@ export class ValidateFile implements ValidatorConstraintInterface {
     maxSize: number,
     allowedTypes: string[],
   ): boolean {
-    console.log('🚀 ~ ValidateFile ~ file:', file);
 
     if (!file) {
       throw new BadRequestException('No file provided.');
@@ -51,7 +48,6 @@ export class ValidateFile implements ValidatorConstraintInterface {
 
     // Check file size
     if (file.size > maxSize) {
-      console.log('🚀 ~ ValidateFile ~ maxSize:', maxSize);
       throw new BadRequestException(
         `File size exceeds the limit of ${maxSize} bytes.`,
       );
@@ -74,7 +70,6 @@ export class ValidateFile implements ValidatorConstraintInterface {
    */
   defaultMessage(args: ValidationArguments): string {
     const [maxSize, allowedTypes] = args.constraints;
-    console.log('🚀 ~ ValidateFile ~ defaultMessage ~ maxSize:', maxSize);
     return `File(s) must not exceed ${maxSize} bytes and must be of type: ${allowedTypes.join(', ')}.`;
   }
 }
