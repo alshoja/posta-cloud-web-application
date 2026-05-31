@@ -82,8 +82,24 @@ cd "$ROOT_DIR"
 docker compose down
 docker compose up -d --build
 
+echo "🔹 Seeding development data..."
+for attempt in {1..12}; do
+  if docker compose exec -T backend npm run seed -- 100; then
+    break
+  fi
+
+  if [ "$attempt" -eq 12 ]; then
+    echo "❌ Development seed failed after backend startup retries."
+    exit 1
+  fi
+
+  echo "⚠ Backend not ready for seeding yet. Retrying in 5 seconds..."
+  sleep 5
+done
+
 echo "✅ Setup complete!"
 echo "Backend: http://localhost:5001"
 echo "OCR Worker: http://localhost:6000"
 echo "Frontend: http://localhost:3000"
 echo "pgAdmin: http://localhost:8080 (Email: admin@example.com, Password: admin123)"
+echo "Seed users: admin1@example.com through admin10@example.com (Password: Admin@123456)"

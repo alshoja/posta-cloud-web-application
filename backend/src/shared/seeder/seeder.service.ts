@@ -1,15 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { faker } from '@faker-js/faker';
 import { Record } from '../../modules/records/entities/record.entity';
 import { User } from '../../modules/users/entities/user.entity';
 import { Gender } from '../../modules/records/enums/gender.enum';
-import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class SeederService {
+  private readonly seedPassword = 'Admin@123456';
+  private readonly seedUserCount = 10;
   private readonly logger = new Logger(SeederService.name);
 
   constructor(
@@ -21,7 +22,17 @@ export class SeederService {
   ) {}
 
   async seedRecords(numRecords: number): Promise<void> {
-    // Check if records already exist to avoid duplicates
+    const isDevelopment = this.configService.get<boolean>(
+      'config.isDevelopment',
+    );
+    if (!isDevelopment) {
+      this.logger.warn('Skipping seed: seeding is only allowed in development');
+      return;
+    }
+
+    const seedUsers = await this.getOrCreateSeedUsers();
+    this.logger.log(`Seed users available: ${seedUsers.length}`);
+
     const existingRecordCount = await this.recordRepository.count();
     if (existingRecordCount > 0) {
       this.logger.debug(
@@ -31,13 +42,10 @@ export class SeederService {
     }
 
     try {
-      // Get or create a default seed user
-      const seedUser = await this.getOrCreateSeedUser();
-      this.logger.log(`Using seed user ID: ${seedUser.id}`);
-
       const records: Record[] = [];
 
       for (let i = 0; i < numRecords; i++) {
+        const seedUser = seedUsers[i % seedUsers.length];
         const record = this.recordRepository.create({
           profileImage: `-User${i + 1}.jpg`,
           postBoxNumber: i + 1,
@@ -73,43 +81,54 @@ export class SeederService {
 
       await this.recordRepository.save(records);
       this.logger.log(`${numRecords} records inserted successfully!`);
-    } catch (error) {
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown seeding error';
+      const stack = error instanceof Error ? error.stack : undefined;
+
       this.logger.error(
-        `Failed to seed records: ${error.message}`,
-        error.stack,
+        `Failed to seed records: ${message}`,
+        stack,
       );
       throw error;
     }
   }
 
-  private async getOrCreateSeedUser(): Promise<User> {
-    const seedUsername = this.configService.get<string>('config.seedUserName');
-    const seedPassword = this.configService.get<string>(
-      'config.seedUserPassword',
+  private async getOrCreateSeedUsers(): Promise<User[]> {
+    const seedUsernames = Array.from(
+      { length: this.seedUserCount },
+      (_, index) => `admin${index + 1}@example.com`,
     );
-
-    let seedUser = await this.userRepository.findOne({
-      where: { username: seedUsername },
+    const existingUsers = await this.userRepository.find({
+      where: { username: In(seedUsernames) },
     });
+    const existingUsersByUsername = new Map(
+      existingUsers.map((user) => [user.username, user]),
+    );
+    const seedUsers: User[] = [];
 
-    if (!seedUser) {
-      const salt = await bcrypt.genSalt();
-      const hashedPassword = await bcrypt.hash(seedPassword, salt);
+    for (const username of seedUsernames) {
+      const existingUser = existingUsersByUsername.get(username);
 
-      seedUser = this.userRepository.create({
-        username: seedUsername,
-        password: hashedPassword,
-        firstName: 'Seed',
-        lastName: 'Admin',
+      if (existingUser) {
+        this.logger.log(`Using existing seed user: ${username}`);
+        seedUsers.push(existingUser);
+        continue;
+      }
+
+      const seedUser = this.userRepository.create({
+        username,
+        password: this.seedPassword,
+        firstName: faker.person.firstName(),
+        lastName: faker.person.lastName(),
         isActive: true,
       });
 
-      seedUser = await this.userRepository.save(seedUser);
-      this.logger.log(`Created new seed user: ${seedUsername}`);
-    } else {
-      this.logger.log(`Using existing seed user: ${seedUsername}`);
+      const savedSeedUser = await this.userRepository.save(seedUser);
+      this.logger.log(`Created new seed user: ${username}`);
+      seedUsers.push(savedSeedUser);
     }
 
-    return seedUser;
+    return seedUsers;
   }
 }
