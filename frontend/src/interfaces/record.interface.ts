@@ -66,6 +66,7 @@ export interface RecordDetail
   addresses?: Address[]
   policies?: Policy[]
   documents?: Document[]
+  status?: RecordStatus
   lastCompletedStep?: number
   createdAt?: Date
 }

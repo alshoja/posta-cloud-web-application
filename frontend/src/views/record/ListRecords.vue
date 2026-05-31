@@ -24,6 +24,8 @@ const headers = ref([
     { title: 'Gender', key: 'gender', },
     { title: 'Street Name', key: 'panchayat', },
     { title: 'Entry Date', key: 'createdAt', },
+    { title: 'Status', key: 'status' },
+    { title: 'Actions', sortable: false, key: 'actions' },
 ]);
 
 const dialog = ref(false);
@@ -97,6 +99,22 @@ const openDialog = (record: RecordDetail) => {
     }
 };
 
+const formatStatus = (status?: string) => {
+    if (!status) return '';
+    return status
+        .toLowerCase()
+        .split('_')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+};
+
+const statusColor = (status?: string) => {
+    if (status === 'DRAFT') return 'warning';
+    if (status === 'IN_PROGRESS') return 'info';
+    if (status === 'COMPLETED') return 'success';
+    return 'grey';
+};
+
 watch(
     () => dialogDelete.value, (val) => {
         if (!val) closeDelete();
@@ -140,6 +158,11 @@ watch(search, (newSearch) => {
                     <td>{{ item.gender }}</td>
                     <td>{{ item.panchayat }}</td>
                     <td>{{ item?.createdAt ? new Date(item.createdAt).toLocaleDateString('en-GB') : '' }}</td>
+                    <td>
+                        <v-chip size="small" variant="tonal" :color="statusColor(item.status)">
+                            {{ formatStatus(item.status) }}
+                        </v-chip>
+                    </td>
                     <td>
                         <v-btn @click="openDialog(item)" variant="outlined" size="small" color="secondary">
                             <ViewfinderIcon class="icon" />
