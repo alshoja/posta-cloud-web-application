@@ -1,5 +1,5 @@
 <template>
-    <v-file-input :variant="'outlined'" :label="'Upload Profile Image'" :accept=accept v-model="file" :rules="rules"
+    <v-file-input :variant="'outlined'" :label="label" :accept=accept v-model="file" :rules="rules"
         @change="handleFileChange" :dense="true" :hide-details="true" :outlined="true" />
     <v-progress-linear v-if="loading" indeterminate color="secondary" size="40" width="4"></v-progress-linear>
 </template>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
+import axiosInstance from '@/axiosInstance.interceptor';
 import DropdownButton from '@/components/shared/DropdownButton.vue';
 import UiParentCard from '@/components/shared/UiParentCard.vue';
 import { useForm } from '@/composables/useForm';
@@ -50,6 +51,8 @@ const stepSix = reactive({ ...stepSixInitialState });
 const isUnlocked = ref(false);
 const isModalVisible = ref(false);
 const currentDocumentUrl = ref<string>('');
+const ocrLoading = ref(false);
+const ocrScanFile = ref<File | File[] | null>(null);
 
 const MAX_FORM_STEP = 7;
 
@@ -381,6 +384,103 @@ function setUploadUrl(url: string) {
 function setUploadUrlForDoc(fileUrl: string, index: number) {
     stepSix.documents[index].file = fileUrl;
 }
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const formatOcrDob = (dob?: string | null): string => {
+    if (!dob) return '';
+    const parts = dob.split('/');
+    if (parts.length !== 3) return '';
+    const [dd, mm, yyyy] = parts;
+    if (!dd || !mm || !yyyy) return '';
+    return `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
+};
+
+const applyOcrResultToForm = (result: {
+    name?: string | null
+    dob?: string | null
+    gender?: string | null
+    aadhaar?: string | null
+    pin?: string | null
+}) => {
+    if (result.aadhaar) {
+        stepTwo.aadhaarNumber = result.aadhaar;
+    }
+    if (result.dob) {
+        const dob = formatOcrDob(result.dob);
+        if (dob) stepOne.dateOfBirth = dob;
+    }
+    if (result.gender) {
+        const normalizedGender = result.gender.toLowerCase();
+        if (['male', 'female', 'other'].includes(normalizedGender)) {
+            stepOne.gender = normalizedGender;
+        }
+    }
+    if (result.name) {
+        const parts = result.name.trim().split(/\s+/);
+        if (parts.length > 0 && !stepOne.firstName) {
+            stepOne.firstName = parts[0];
+        }
+        if (parts.length > 1 && !stepOne.lastName) {
+            stepOne.lastName = parts.slice(1).join(' ');
+        }
+    }
+    if (result.pin && !stepOne.postOffice) {
+        stepOne.postOffice = result.pin;
+    }
+};
+
+const runOcrAutofill = async () => {
+    const selectedFile = Array.isArray(ocrScanFile.value) ? ocrScanFile.value[0] : ocrScanFile.value;
+    if (!(selectedFile instanceof File)) {
+        snackbar.showSnackbar('Please choose a file for OCR scan.', 'warning', []);
+        return;
+    }
+    try {
+        ocrLoading.value = true;
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        const submitResponse = await axiosInstance.post(`${import.meta.env.VITE_API_URL}/extract/text`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+        const jobId = submitResponse.data?.jobId ? String(submitResponse.data.jobId) : null;
+        if (!jobId) {
+            snackbar.showSnackbar('Failed to submit OCR scan.', 'error', []);
+            return;
+        }
+
+        const maxAttempts = 20;
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            const resultResponse = await axiosInstance.get(`${import.meta.env.VITE_API_URL}/extract/text/${jobId}`);
+            const result = resultResponse.data?.result;
+            if (!result) {
+                await sleep(1500);
+                continue;
+            }
+            if (result.pending) {
+                await sleep(1500);
+                continue;
+            }
+            if (result.error) {
+                snackbar.showSnackbar(`OCR failed: ${result.error}`, 'error', []);
+                return;
+            }
+
+            applyOcrResultToForm(result);
+            snackbar.showSnackbar('OCR scan completed. Please verify values before saving.', 'success', []);
+            return;
+        }
+        snackbar.showSnackbar('OCR is taking longer than expected. Please try again.', 'warning', []);
+    } catch (error) {
+        console.log('OCR error:', error);
+        const message = error instanceof Error ? error.message : 'OCR scan failed. Please try again.';
+        snackbar.showSnackbar(message, 'error', []);
+    } finally {
+        ocrLoading.value = false;
+    }
+};
 const viewDocument = (index: number) => {
     currentDocumentUrl.value = stepSix.documents[index].file;
     isModalVisible.value = true;
@@ -401,6 +501,24 @@ const viewDocument = (index: number) => {
                             <v-col cols="12" md="12" class="border border-secondary rounded">
                                 <FileUpload :label="`Upload Profile Image`" :accept="'image/jpeg, image/png'"
                                     :rules="[]" @uploaded="setUploadUrl" />
+                            </v-col>
+                        </v-row>
+                        <v-row class="border border-secondary rounded pa-2 mb-3">
+                            <v-col cols="12">
+                                <v-alert type="warning" variant="tonal" density="comfortable">
+                                    OCR scan is assistive only. Use it with caution and verify all extracted values
+                                    before saving.
+                                </v-alert>
+                            </v-col>
+                            <v-col cols="12" md="6">
+                                <v-file-input v-model="ocrScanFile" variant="outlined" label="Upload File For OCR Scan"
+                                    accept=".pdf,image/png,image/jpeg" :disabled="ocrLoading" />
+                            </v-col>
+                            <v-col cols="12" md="6" class="d-flex align-center mb-5">
+                                <v-btn variant="outlined" color="secondary" :loading="ocrLoading" :disabled="ocrLoading"
+                                    @click="runOcrAutofill">
+                                    Scan & Auto Fill
+                                </v-btn>
                             </v-col>
                         </v-row>
 

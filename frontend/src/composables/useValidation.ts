@@ -6,7 +6,7 @@ export function useValidation() {
   const validationRules = reactive({
     onlyNumbers: (value: string) => isEmpty(value) || /^\d*$/.test(value) || 'Only numbers are allowed.',
     // General
-    required: (_value: string) => true,
+    required: (value: string) => !isEmpty(value) || 'This field is required.',
     minLength: (min: number) => (value: string) => {
       if (isEmpty(value)) return true
       return String(value).length >= min || `Minimum ${min} characters required.`
