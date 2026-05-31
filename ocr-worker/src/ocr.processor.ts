@@ -1,18 +1,31 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import * as tesseract from 'tesseract.js';
+import { promises as fs } from 'node:fs';
 import { RedisService } from './redis.service';
-@Processor(process.env.OCR_QUEUE_NAME)
+
+type OcrJobData = {
+  filePath?: string;
+  userId?: string;
+};
+
+@Processor(process.env.OCR_QUEUE_NAME, { concurrency: 1 })
 export class OcrProcessor extends WorkerHost {
   constructor(private redisService: RedisService) {
-    super()
+    super();
   }
 
-  async process(job: Job<any>): Promise<any> {
-    const { filePath, userId } = job.data;
+  async process(job: Job<OcrJobData>): Promise<any> {
+    const { filePath } = job.data || {};
     const redis = this.redisService.getClient();
 
     try {
+      if (!filePath) {
+        throw new Error('Missing file path in OCR job payload');
+      }
+
+      await fs.access(filePath);
+
       switch (job.name) {
         case 'extract-text': {
           console.log(`Processing OCR for file: ${filePath}`);
@@ -20,22 +33,44 @@ export class OcrProcessor extends WorkerHost {
             data: { text },
           } = await tesseract.recognize(filePath, 'eng');
 
-          console.log(`OCR result for job ${job.id}:`, text);
-          await redis.set(`ocr_result:${job.id}`, JSON.stringify(this.parseAadhaarOCR(text)), 'EX', 3600);
-          return text;
+          const parsed = this.parseAadhaarOCR(text);
+          await redis.set(
+            `ocr_result:${job.id}`,
+            JSON.stringify({
+              success: true,
+              data: parsed,
+            }),
+            'EX',
+            3600,
+          );
+
+          return parsed;
         }
         case 'someOtherJob': {
           console.info(`Unknown job name: ${job.name}`);
           break;
         }
+        default: {
+          throw new Error(`Unsupported OCR job name: ${job.name}`);
+        }
       }
     } catch (err) {
       console.error(`Error processing job ${job.id}:`, err);
-      throw err;
+      await redis.set(
+        `ocr_result:${job.id}`,
+        JSON.stringify({
+          success: false,
+          error:
+            err instanceof Error ? err.message : 'Unexpected OCR worker error',
+        }),
+        'EX',
+        3600,
+      );
+      return null;
     }
   }
 
-  parseAadhaarOCR(rawText) {
+  parseAadhaarOCR(rawText: string) {
     // 1. Normalize & clean
     let text = rawText
       .replace(/\r/g, "\n")
@@ -47,7 +82,10 @@ export class OcrProcessor extends WorkerHost {
       .replace(/\n+/g, "\n")
       .trim();
 
-    const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+    const lines = text
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
 
     // 2. Aadhaar Number
     const aadhaarMatch = text.match(/\b\d{4}\s?\d{4}\s?\d{4}\b/);
@@ -79,10 +117,11 @@ export class OcrProcessor extends WorkerHost {
 
     // fallback (uppercase names)
     if (!name) {
-      name = lines.find(l =>
-        /^[A-Z\s]{5,}$/.test(l) &&
-        !l.includes("GOVERNMENT") &&
-        !l.includes("INDIA")
+      name = lines.find(
+        (line) =>
+          /^[A-Z\s]{5,}$/.test(line) &&
+          !line.includes('GOVERNMENT') &&
+          !line.includes('INDIA'),
       );
     }
 
@@ -90,7 +129,7 @@ export class OcrProcessor extends WorkerHost {
     let pinMatch = text.match(/\b\d{6,7}\b/);
     let pin = null;
     if (pinMatch) {
-      pin = pinMatch[0].substring(0, 6); // trim to 6 digits
+      pin = pinMatch[0].substring(0, 6);
     }
 
     // 7. Address extraction (multi-line)

@@ -41,6 +41,16 @@ export class OcrService {
         return { error: "Invalid JSON in Redis" };
       }
 
+      if (result?.success === false) {
+        await redis.del(`ocr_result:${jobId}`);
+        return { error: result.error || 'OCR processing failed' };
+      }
+
+      if (result?.success === true) {
+        await redis.del(`ocr_result:${jobId}`);
+        return result.data ?? {};
+      }
+
       await redis.del(`ocr_result:${jobId}`);
       return { ... result };
     } catch (err: any) {

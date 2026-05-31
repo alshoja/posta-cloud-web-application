@@ -14,6 +14,7 @@ import { AppService } from './app.service';
 import { UploadInterceptor } from './shared/interceptors/file-upload.interceptor';
 import { OcrService } from './shared/services/ocr.service';
 import { Throttle } from '@nestjs/throttler';
+import { MimeTypeFileValidator } from './shared/validators/mime-type-file.validator';
 
 @Controller()
 export class AppController {
@@ -48,7 +49,19 @@ export class AppController {
   extractText(
     @UploadedFile(
       new ParseFilePipe({
-        validators: [new MaxFileSizeValidator({ maxSize: 2048576 })],
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 2048576 }),
+          new MimeTypeFileValidator({
+            allowedMimeTypes: [
+              'image/png',
+              'image/jpeg',
+              'image/jpg',
+              'image/pjpeg',
+              'application/msword',
+              'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            ],
+          }),
+        ],
         fileIsRequired: true,
       }),
     )
