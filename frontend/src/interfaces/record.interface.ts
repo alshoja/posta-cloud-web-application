@@ -9,6 +9,8 @@ export interface Address {
   locationType: string
 }
 
+export type RecordStatus = 'DRAFT' | 'IN_PROGRESS' | 'COMPLETED'
+
 export interface Person {
   firstName: string
   lastName: string
@@ -64,16 +66,19 @@ export interface RecordDetail
   addresses?: Address[]
   policies?: Policy[]
   documents?: Document[]
+  lastCompletedStep?: number
   createdAt?: Date
 }
 
 export interface StepOne extends RecordDetail {
   valid: boolean
+  status?: RecordStatus
 }
 
 export interface StepTwo extends IdentityDocuments {
   valid: boolean
   password?: string
+  status?: RecordStatus
 }
 
 export interface RedirectionAddress {
@@ -90,6 +95,7 @@ export interface RedirectionAddress {
 
 export interface StepThree extends RedirectionAddress {
   addresses: Address[]
+  status?: RecordStatus
 }
 
 export interface MarriageInfo {
@@ -100,15 +106,18 @@ export interface MarriageInfo {
 
 export interface StepFour extends MarriageInfo {
   valid: boolean
+  status?: RecordStatus
 }
 
 export interface StepFive {
   valid: boolean
+  status?: RecordStatus
   policies: Policy[]
 }
 
 export interface StepSix {
   valid: boolean
+  status?: RecordStatus
   documents: Document[]
 }
 

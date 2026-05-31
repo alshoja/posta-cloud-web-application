@@ -13,25 +13,25 @@ export class Address {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ nullable: true })
   houseName: string;
 
-  @Column()
+  @Column({ nullable: true })
   houseNumber: string;
 
-  @Column()
+  @Column({ nullable: true })
   streetName: string;
 
-  @Column()
+  @Column({ nullable: true })
   streetNumber: string;
 
-  @Column()
+  @Column({ nullable: true })
   village: string;
 
-  @Column()
+  @Column({ nullable: true })
   postOffice: string;
 
-  @Column()
+  @Column({ nullable: true })
   locationType: string;
 
   @ManyToOne(() => Record, (records) => records.addresses, {

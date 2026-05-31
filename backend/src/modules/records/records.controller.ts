@@ -4,17 +4,18 @@ import {
   Controller,
   Delete,
   Get,
+  ParseIntPipe,
   Param,
   Post,
   Query,
   UseInterceptors,
 } from '@nestjs/common';
-import { DocumentDto } from './dto/document.dto';
-import { UpdateFamilyDto } from './dto/family.dto';
-import { UpdateIdentityDto } from './dto/identity.dto';
-import { UpdateOccupationDto } from './dto/occupation.dto';
-import { UpdateProfileDto } from './dto/personal.dto';
-import { UpdatePolicyDto } from './dto/policy.dto';
+import { StepFiveDto } from './dto/step-five.dto';
+import { StepFourDto } from './dto/step-four.dto';
+import { StepOneDto } from './dto/step-one.dto';
+import { StepSixDto } from './dto/step-six.dto';
+import { StepThreeDto } from './dto/step-three.dto';
+import { StepTwoDto } from './dto/step-two.dto';
 import { RecordsService } from './records.service';
 
 @Controller('records')
@@ -23,50 +24,48 @@ export class RecordsController {
 
   @Post('step/one')
   @UseInterceptors(ClassSerializerInterceptor)
-  createStepOne(@Body() updateProfileDto: UpdateProfileDto) {
-    
-    return this.recordsService.createStepOne(updateProfileDto);
+  createStepOne(@Body() stepOneDto: StepOneDto) {
+    return this.recordsService.createStepOne(stepOneDto);
   }
 
   @Post('step/two/:recordsId')
   createStepTwo(
-    @Body() updateIdentityDto: UpdateIdentityDto,
-    @Param('recordsId') recordsId: number,
+    @Body() stepTwoDto: StepTwoDto,
+    @Param('recordsId', ParseIntPipe) recordsId: number,
   ) {
-    return this.recordsService.createStepTwo(updateIdentityDto, recordsId);
+    return this.recordsService.createStepTwo(stepTwoDto, recordsId);
   }
 
   @Post('step/three/:recordsId')
   createStepThree(
-    @Body() updateOccupationDto: UpdateOccupationDto,
-    @Param('recordsId') recordsId: number,
+    @Body() stepThreeDto: StepThreeDto,
+    @Param('recordsId', ParseIntPipe) recordsId: number,
   ) {
-    return this.recordsService.createStepThree(updateOccupationDto, recordsId);
+    return this.recordsService.createStepThree(stepThreeDto, recordsId);
   }
 
   @Post('step/four/:recordsId')
   createStepFour(
-    @Body() updateFamilyDto: UpdateFamilyDto,
-    @Param('recordsId') recordsId: number,
+    @Body() stepFourDto: StepFourDto,
+    @Param('recordsId', ParseIntPipe) recordsId: number,
   ) {
-    return this.recordsService.createStepFour(updateFamilyDto, recordsId);
+    return this.recordsService.createStepFour(stepFourDto, recordsId);
   }
 
   @Post('step/five/:recordsId')
   createStepFive(
-    @Body() updatePolicyDto: UpdatePolicyDto[],
-    @Param('recordsId') recordsId: number,
+    @Body() stepFiveDto: StepFiveDto,
+    @Param('recordsId', ParseIntPipe) recordsId: number,
   ) {
-    return this.recordsService.createStepFive(updatePolicyDto, recordsId);
+    return this.recordsService.createStepFive(stepFiveDto, recordsId);
   }
 
   @Post('step/six/:recordsId')
   createStepSix(
-    @Body()
-    updateDocumentDto: DocumentDto[],
-    @Param('recordsId') recordsId: number,
+    @Body() stepSixDto: StepSixDto,
+    @Param('recordsId', ParseIntPipe) recordsId: number,
   ) {
-    return this.recordsService.createStepSix(updateDocumentDto, recordsId);
+    return this.recordsService.createStepSix(stepSixDto, recordsId);
   }
 
   @Get()
@@ -89,12 +88,12 @@ export class RecordsController {
 
   @Get(':id')
   @UseInterceptors(ClassSerializerInterceptor)
-  findOne(@Param('id') id: string) {
-    return this.recordsService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.recordsService.findOne(id);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.recordsService.remove(+id);
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.recordsService.remove(id);
   }
 }

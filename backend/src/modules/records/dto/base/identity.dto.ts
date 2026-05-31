@@ -1,5 +1,6 @@
 import { PartialType } from '@nestjs/mapped-types';
 import {
+  IsEnum,
   IsNumber,
   IsOptional,
   IsString,
@@ -7,8 +8,15 @@ import {
   MinLength,
   ValidateIf,
 } from 'class-validator';
+import { RecordStatus } from '../../enums/record-status.enum';
 
 export class CreateIdentityDto {
+  @IsOptional()
+  @IsEnum(RecordStatus, {
+    message: 'Status must be DRAFT, IN_PROGRESS, or COMPLETED.',
+  })
+  status?: RecordStatus;
+
   @IsOptional()
   @ValidateIf((o) => o.aadhaarNumber != '')
   @Matches(/^\d{12}$/, {

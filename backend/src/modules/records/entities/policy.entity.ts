@@ -13,11 +13,11 @@ export class Policy {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
-  type: string;
+  @Column({ nullable: true })
+  type: string ;
 
-  @Column()
-  number: string;
+  @Column({ nullable: true })
+  number: string ;
 
   @ManyToOne(() => Record, (records) => records.policies, {
     onDelete: 'CASCADE',

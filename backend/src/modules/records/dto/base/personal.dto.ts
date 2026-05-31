@@ -7,7 +7,6 @@ import {
   IsNumber,
   IsOptional,
   IsString,
-  IsUrl,
   Matches,
   Max,
   Min,
@@ -15,7 +14,8 @@ import {
   ValidateIf,
 } from 'class-validator';
 import { ExistsRule } from 'src/shared/validators/exist-rule.validator';
-import { Gender } from '../enums/gender.enum';
+import { Gender } from '../../enums/gender.enum';
+import { RecordStatus } from '../../enums/record-status.enum';
 
 export class CreateProfileDto {
   @ValidateIf((o) => o.id != '')
@@ -23,73 +23,84 @@ export class CreateProfileDto {
   @IsNumber()
   id: number;
 
+  @ValidateIf((_, value) => value !== '' && value !== null && value !== undefined)
   @IsOptional()
-  @IsUrl({ require_tld: false })
+  @IsString({ message: 'Profile image must be a string.' })
   profileImage: string;
 
   @IsNotEmpty({ message: 'First name is required.' })
-  @IsString({ message: 'First name must be a string.' })
   firstName: string;
 
-  @IsNotEmpty({ message: 'Last name is required.' })
+  @ValidateIf((_, value) => value !== '' && value !== null && value !== undefined)
+  @IsOptional()
   @IsString({ message: 'Last name must be a string.' })
-  lastName: string;
+  lastName?: string;
 
+  @IsNotEmpty({ message: 'E-mail is required.' })
   @IsEmail({}, { message: 'E-mail must be valid.' })
-  @IsNotEmpty({ message: 'Email is required.' })
   @Validate(ExistsRule, ['records:email:id'])
   email: string;
 
-  @IsNotEmpty({ message: 'Gender is required.' })
+  @ValidateIf((_, value) => value !== '' && value !== null && value !== undefined)
+  @IsOptional()
   @IsEnum(Gender, {
     message: 'Gender must be Male, Female, or Other.',
   })
-  gender: Gender;
+  gender?: Gender;
 
-  @IsNotEmpty({ message: 'House name is required.' })
+  @ValidateIf((_, value) => value !== '' && value !== null && value !== undefined)
+  @IsOptional()
   @IsString({ message: 'House name must be a string.' })
-  houseName: string;
+  houseName?: string;
 
   @IsOptional()
   @IsString({ message: 'House number must be a string.' })
-  houseNumber: string;
+  houseNumber?: string;
 
-  @IsNotEmpty({ message: 'Street name is required.' })
+  @ValidateIf((_, value) => value !== '' && value !== null && value !== undefined)
+  @IsOptional()
   @IsString({ message: 'Street name must be a string.' })
-  streetName: string;
+  streetName?: string;
 
-  @IsNotEmpty({ message: 'Street number  is required.' })
+  @ValidateIf((_, value) => value !== '' && value !== null && value !== undefined)
+  @IsOptional()
   @IsString({ message: 'Street number must be a string.' })
-  streetNumber: string;
+  streetNumber?: string;
 
-  @IsNotEmpty({ message: 'Post office is required.' })
+  @ValidateIf((_, value) => value !== '' && value !== null && value !== undefined)
+  @IsOptional()
   @Min(100000, { message: 'PostOffice Number must be 6 digit ' })
   @Max(999999, { message: 'PostOffice Number must be 6 digit ' })
   @IsNumber()
-  postOffice: number;
+  postOffice?: number;
 
-  @IsNotEmpty({ message: 'Panchayath is required.' })
+  @ValidateIf((_, value) => value !== '' && value !== null && value !== undefined)
+  @IsOptional()
   @IsString({ message: 'Panchayath must be a string.' })
-  panchayat: string;
+  panchayat?: string;
 
-  @IsNotEmpty({ message: 'District is required.' })
+  @ValidateIf((_, value) => value !== '' && value !== null && value !== undefined)
+  @IsOptional()
   @IsString({ message: 'District must be a string.' })
-  district: string;
+  district?: string;
 
-  @IsNotEmpty({ message: 'Mobile number is required.' })
+  @ValidateIf((_, value) => value !== '' && value !== null && value !== undefined)
+  @IsOptional()
   @Validate(ExistsRule, ['records:mobileNumber:id'])
   @Matches(/^\d{10}$/, { message: 'Mobile number must be 10 digits.' })
-  mobileNumber: string;
+  mobileNumber?: string;
 
   @ValidateIf((o) => o.whatsappNumber != '')
   @IsOptional()
   whatsappNumber?: string;
 
+  @ValidateIf((_, value) => value !== '' && value !== null && value !== undefined)
   @IsOptional()
   @IsString({ message: 'Village must be a string.' })
   village?: string;
 
-  @IsNotEmpty({ message: 'Date of Birth is required.' })
+  @ValidateIf((_, value) => value !== '' && value !== null && value !== undefined)
+  @IsOptional()
   @IsDateString({}, { message: 'Date of birth must be a valid date.' })
   dateOfBirth?: string;
 
@@ -97,6 +108,12 @@ export class CreateProfileDto {
   @IsOptional()
   @IsNumber()
   userId?: number;
+
+  @IsOptional()
+  @IsEnum(RecordStatus, {
+    message: 'Status must be DRAFT, IN_PROGRESS, or COMPLETED.',
+  })
+  status?: RecordStatus;
 }
 
 export class UpdateProfileDto extends PartialType(CreateProfileDto) {}

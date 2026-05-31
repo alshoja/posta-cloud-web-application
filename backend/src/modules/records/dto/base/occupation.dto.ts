@@ -4,13 +4,21 @@ import {
   IsArray,
   IsBoolean,
   IsDateString,
+  IsEnum,
   IsOptional,
   IsString,
   ValidateIf,
   ValidateNested,
 } from 'class-validator';
+import { RecordStatus } from '../../enums/record-status.enum';
 
 export class CreateOccupationDto {
+  @IsOptional()
+  @IsEnum(RecordStatus, {
+    message: 'Status must be DRAFT, IN_PROGRESS, or COMPLETED.',
+  })
+  status?: RecordStatus;
+
   @IsOptional()
   @IsBoolean({ message: 'Redirection address must be a boolean.' })
   redirectionAddress: boolean;
@@ -53,30 +61,30 @@ export class AddressDto {
 
   @IsOptional()
   @IsString({ message: 'House name must be a string.' })
-  houseName: string;
+  houseName?: string;
 
   @IsOptional()
   @IsString({ message: 'House number must be a string.' })
-  houseNumber: string;
+  houseNumber?: string;
 
   @IsOptional()
   @IsString({ message: 'Street name must be a string.' })
-  streetName: string;
+  streetName?: string;
 
   @IsOptional()
   @IsString({ message: 'Street number must be a string.' })
-  streetNumber: string;
+  streetNumber?: string;
 
   @IsOptional()
   @IsString({ message: 'Village must be a string.' })
-  village: string;
+  village?: string;
 
   @IsOptional()
   @IsString({ message: 'Post office must be a string.' })
-  postOffice: string;
+  postOffice?: string;
 
   @IsOptional()
   @IsString({ message: 'Location type must be a string.' })
-  locationType: string;
+  locationType?: string;
 }
 export class UpdateOccupationDto extends PartialType(CreateOccupationDto) {}

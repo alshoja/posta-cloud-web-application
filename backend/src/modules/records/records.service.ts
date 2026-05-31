@@ -1,4 +1,6 @@
 import {
+  BadRequestException,
+  HttpException,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -9,31 +11,32 @@ import { REQUEST } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, ILike, Repository } from 'typeorm';
 import { AuthenticatedRequest } from '../auth/types/express';
-import { DocumentDto } from './dto/document.dto';
-import { UpdateFamilyDto } from './dto/family.dto';
-import { UpdateIdentityDto } from './dto/identity.dto';
-import { UpdateOccupationDto } from './dto/occupation.dto';
-import { UpdateProfileDto } from './dto/personal.dto';
-import { UpdatePolicyDto } from './dto/policy.dto';
+import { StepFiveDto } from './dto/step-five.dto';
+import { StepFourDto } from './dto/step-four.dto';
+import { StepOneDto } from './dto/step-one.dto';
+import { StepSixDto } from './dto/step-six.dto';
+import { StepThreeDto } from './dto/step-three.dto';
+import { StepTwoDto } from './dto/step-two.dto';
+import { RecordStatus } from './enums/record-status.enum';
 import { Address } from './entities/address.entity';
 import { Child } from './entities/child.entity';
 import { Document } from './entities/document.entity';
 import { Policy } from './entities/policy.entity';
-import { Record } from './entities/record.entity';
+import { Record as RecordEntity } from './entities/record.entity';
 
 @Injectable({ scope: Scope.REQUEST })
 export class RecordsService {
   constructor(
     @Inject(REQUEST)
     private request: AuthenticatedRequest,
-    @InjectRepository(Record)
-    private readonly recordRepository: Repository<Record>,
+    @InjectRepository(RecordEntity)
+    private readonly recordRepository: Repository<RecordEntity>,
     private dataSource: DataSource,
   ) {}
 
   async createStepOne(
-    updateProfileDto: UpdateProfileDto,
-  ): Promise<{ id: number }> {
+    stepOneDto: StepOneDto,
+  ): Promise<{ id: number; status: RecordStatus; lastCompletedStep: number }> {
     const queryRunner = this.dataSource.createQueryRunner();
 
     await queryRunner.connect();
@@ -41,26 +44,44 @@ export class RecordsService {
 
     try {
       let recordId: number;
-      const recordRepository = queryRunner.manager.getRepository(Record);
+      const userId = this.request.user.sub;
+      const recordRepository = queryRunner.manager.getRepository(RecordEntity);
+      const action = this.resolveAction(stepOneDto.status, 1);
+      const { status: _status, ...stepOnePayload } = stepOneDto;
+      const payload: StepOneDto = {
+        ...stepOnePayload,
+        userId,
+      };
 
-      const existingRecord = await recordRepository.findOne({
-        where: { id: updateProfileDto.id },
-      });
+      if (action === 'CONTINUE') {
+        this.ensureFieldsPresent(payload, ['firstName', 'email']);
+      }
+
+      const existingRecord = stepOneDto.id
+        ? await recordRepository.findOne({
+            where: { id: stepOneDto.id, userId },
+          })
+        : null;
 
       if (existingRecord) {
-        await recordRepository.update(
-          { id: updateProfileDto.id },
-          updateProfileDto,
-        );
+        await recordRepository.update({ id: stepOneDto.id, userId }, payload);
         recordId = existingRecord.id;
+      } else if (stepOneDto.id) {
+        throw new NotFoundException(
+          `Record with ID ${stepOneDto.id} not found`,
+        );
       } else {
-        updateProfileDto.userId = this.request.user.sub;
-        const newRecord = await recordRepository.insert(updateProfileDto);
+        const newRecord = await recordRepository.insert(payload);
         recordId = newRecord.identifiers[0].id;
       }
+
+      await this.applyStepAction(recordRepository, recordId, 1, action);
+      const record = await recordRepository.findOneOrFail({ where: { id: recordId } });
       await queryRunner.commitTransaction();
       return {
         id: recordId,
+        status: record.status,
+        lastCompletedStep: record.lastCompletedStep,
       };
     } catch (err) {
       console.log('Rolling Back ', err);
@@ -72,9 +93,9 @@ export class RecordsService {
   }
 
   async createStepTwo(
-    updateIdentityDto: UpdateIdentityDto,
+    stepTwoDto: StepTwoDto,
     recordsId: number,
-  ): Promise<{ id: number }> {
+  ): Promise<{ id: number; status: RecordStatus; lastCompletedStep: number }> {
     const queryRunner = this.dataSource.createQueryRunner();
 
     await queryRunner.connect();
@@ -82,12 +103,24 @@ export class RecordsService {
 
     try {
       await this.findOne(recordsId);
-      const recordRepository = queryRunner.manager.getRepository(Record);
-      const newRecord = this.recordRepository.create(updateIdentityDto);
-      await recordRepository.update({ id: recordsId }, newRecord);
+      const recordRepository = queryRunner.manager.getRepository(RecordEntity);
+      const action = this.resolveAction(stepTwoDto.status, 2);
+      const { status: _status, ...stepTwoPayload } = stepTwoDto;
+      const hasStepTwoValues = Object.values(stepTwoPayload).some(
+        (value) => value !== undefined && value !== null && value !== '',
+      );
+
+      if (hasStepTwoValues) {
+        const newRecord = recordRepository.create(stepTwoPayload);
+        await recordRepository.update({ id: recordsId }, newRecord);
+      }
+      await this.applyStepAction(recordRepository, recordsId, 2, action);
+      const record = await recordRepository.findOneOrFail({ where: { id: recordsId } });
       await queryRunner.commitTransaction();
       return {
         id: recordsId,
+        status: record.status,
+        lastCompletedStep: record.lastCompletedStep,
       };
     } catch (err) {
       console.log('Rolling Back ', err);
@@ -98,34 +131,48 @@ export class RecordsService {
     }
   }
   async createStepThree(
-    { addresses, ...updateOccupationDto }: UpdateOccupationDto,
+    { addresses, status, ...updateOccupationDto }: StepThreeDto,
     recordsId: number,
-  ): Promise<{ id: number }> {
+  ): Promise<{ id: number; status: RecordStatus; lastCompletedStep: number }> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
       await this.findOne(recordsId);
-      const _addresses = addresses.map((address) => ({
-        ...address,
+      const normalizedAddresses = addresses ?? [];
+      const _addresses = normalizedAddresses.map((address) => ({
+        houseName: this.normalizeNullableString(address.houseName),
+        houseNumber: this.normalizeNullableString(address.houseNumber),
+        streetName: this.normalizeNullableString(address.streetName),
+        streetNumber: this.normalizeNullableString(address.streetNumber),
+        village: this.normalizeNullableString(address.village),
+        postOffice: this.normalizeNullableString(address.postOffice),
+        locationType: this.normalizeNullableString(address.locationType),
         recordsId,
       }));
 
-      const recordRepository = queryRunner.manager.getRepository(Record);
+      const recordRepository = queryRunner.manager.getRepository(RecordEntity);
       const addressRepository = queryRunner.manager.getRepository(Address);
+      const stepAction = this.resolveAction(status, 3);
 
       const createdRecord = recordRepository.create({
         ...updateOccupationDto,
       });
 
       await addressRepository.delete({ recordsId });
-      await addressRepository.insert(_addresses);
+      if (_addresses.length > 0) {
+        await addressRepository.insert(_addresses);
+      }
       await recordRepository.update({ id: recordsId }, createdRecord);
+      await this.applyStepAction(recordRepository, recordsId, 3, stepAction);
+      const record = await recordRepository.findOneOrFail({ where: { id: recordsId } });
 
       await queryRunner.commitTransaction();
       return {
         id: recordsId,
+        status: record.status,
+        lastCompletedStep: record.lastCompletedStep,
       };
     } catch (err) {
       console.log('Rolling Back ', err);
@@ -137,32 +184,45 @@ export class RecordsService {
   }
 
   async createStepFour(
-    { children, ...updateFamilyDto }: UpdateFamilyDto,
+    { children, status, ...updateFamilyDto }: StepFourDto,
     recordsId: number,
-  ): Promise<{ id: number }> {
+  ): Promise<{ id: number; status: RecordStatus; lastCompletedStep: number }> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
       await this.findOne(recordsId);
-      const _children = children.map((child) => ({
+      const normalizedChildren = children ?? [];
+      const _children = normalizedChildren.map((child) => ({
         ...child,
         recordsId,
       }));
-      const recordRepository = queryRunner.manager.getRepository(Record);
+      const stepAction = this.resolveAction(status, 4);
+      const recordRepository = queryRunner.manager.getRepository(RecordEntity);
       const childRepository = queryRunner.manager.getRepository(Child);
 
       await childRepository.delete({ recordsId });
-      await childRepository.insert(_children);
-      const createdRecord = recordRepository.create({
-        ...updateFamilyDto,
-      });
+      if (_children.length > 0) {
+        await childRepository.insert(_children);
+      }
+      const hasStepFourValues = Object.values(updateFamilyDto).some(
+        (value) => value !== undefined && value !== null && value !== '',
+      );
 
-      await recordRepository.update({ id: recordsId }, createdRecord);
+      if (hasStepFourValues) {
+        const createdRecord = recordRepository.create({
+          ...updateFamilyDto,
+        });
+        await recordRepository.update({ id: recordsId }, createdRecord);
+      }
+      await this.applyStepAction(recordRepository, recordsId, 4, stepAction);
+      const record = await recordRepository.findOneOrFail({ where: { id: recordsId } });
       await queryRunner.commitTransaction();
       return {
         id: recordsId,
+        status: record.status,
+        lastCompletedStep: record.lastCompletedStep,
       };
     } catch (err) {
       console.log('Rolling Back ', err);
@@ -174,9 +234,9 @@ export class RecordsService {
   }
 
   async createStepFive(
-    updatePolicyDto: UpdatePolicyDto[],
+    stepFiveDto: StepFiveDto,
     recordsId: number,
-  ): Promise<{ id: number }> {
+  ): Promise<{ id: number; status: RecordStatus; lastCompletedStep: number }> {
     const queryRunner = this.dataSource.createQueryRunner();
 
     await queryRunner.connect();
@@ -184,18 +244,29 @@ export class RecordsService {
 
     try {
       await this.findOne(recordsId);
-      const policies = updatePolicyDto.map((policy) => ({
-        ...policy,
+      const action = this.resolveAction(stepFiveDto.status, 5);
+      const policies = stepFiveDto.policies.map((policy) => ({
+        type: policy.type?.trim() ? policy.type : null,
+        number: policy.number?.trim() ? policy.number : null,
         recordsId,
       }));
 
+      if (action === 'CONTINUE' && policies.length === 0) {
+        throw new BadRequestException('At least one policy is required to continue.');
+      }
+
       const policyRepository = queryRunner.manager.getRepository(Policy);
+      const recordRepository = queryRunner.manager.getRepository(RecordEntity);
       await policyRepository.delete({ recordsId });
       await policyRepository.insert(policies);
+      await this.applyStepAction(recordRepository, recordsId, 5, action);
+      const record = await recordRepository.findOneOrFail({ where: { id: recordsId } });
 
       await queryRunner.commitTransaction();
       return {
         id: recordsId,
+        status: record.status,
+        lastCompletedStep: record.lastCompletedStep,
       };
     } catch (err) {
       console.log('Rolling Back ', err);
@@ -207,9 +278,9 @@ export class RecordsService {
   }
 
   async createStepSix(
-    documentDto: DocumentDto[],
+    stepSixDto: StepSixDto,
     recordsId: number,
-  ): Promise<{ id: number }> {
+  ): Promise<{ id: number; status: RecordStatus; lastCompletedStep: number }> {
     const queryRunner = this.dataSource.createQueryRunner();
 
     await queryRunner.connect();
@@ -217,17 +288,35 @@ export class RecordsService {
 
     try {
       await this.findOne(recordsId);
-      const _document = documentDto.map((document) => ({
-        ...document,
+      const action = this.resolveAction(stepSixDto.status, 6);
+      const _document = stepSixDto.documents.map((document) => ({
+        name: document.name?.trim() ? document.name : null,
+        file: document.file?.trim() ? document.file : null,
         recordsId,
       }));
+      if (
+        action === 'CONTINUE' &&
+        stepSixDto.documents.length === 0
+      ) {
+        throw new BadRequestException(
+          'At least one document is required to continue.',
+        );
+      }
       const documentRepository = queryRunner.manager.getRepository(Document);
+      const recordRepository = queryRunner.manager.getRepository(RecordEntity);
       await documentRepository.delete({ recordsId });
       await documentRepository.insert(_document);
+      if (action === 'FINAL') {
+        await this.validateFinalSubmission(recordRepository, recordsId);
+      }
+      await this.applyStepAction(recordRepository, recordsId, 6, action);
+      const record = await recordRepository.findOneOrFail({ where: { id: recordsId } });
 
       await queryRunner.commitTransaction();
       return {
         id: recordsId,
+        status: record.status,
+        lastCompletedStep: record.lastCompletedStep,
       };
     } catch (err) {
       console.log('Rolling Back ', err);
@@ -244,7 +333,7 @@ export class RecordsService {
     limit: number,
     sortBy: string,
     sortOrder: 'ASC' | 'DESC',
-  ): Promise<{ data: Record[]; total: number }> {
+  ): Promise<{ data: RecordEntity[]; total: number }> {
     try {
       const userId = this.request.user.sub;
       const [data, total] = await this.recordRepository.findAndCount({
@@ -284,7 +373,7 @@ export class RecordsService {
     }
   }
 
-  async findOne(id: number): Promise<Record> {
+  async findOne(id: number): Promise<RecordEntity> {
     const userId = this.request.user.sub;
 
     const record = await this.recordRepository.findOne({
@@ -297,7 +386,7 @@ export class RecordsService {
     return record;
   }
 
-  async findOneByEmail(email: string): Promise<Record> {
+  async findOneByEmail(email: string): Promise<RecordEntity> {
     try {
       const record = await this.recordRepository.findOne({ where: { email } });
       if (!record) {
@@ -305,6 +394,9 @@ export class RecordsService {
       }
       return record;
     } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      }
       console.error('Error finding record by email:', err);
       throw new InternalServerErrorException('Error finding record by email');
     }
@@ -318,8 +410,134 @@ export class RecordsService {
         throw new NotFoundException(`Record with ID ${id} not found`);
       }
     } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      }
       console.error('Error removing record:', err);
       throw new InternalServerErrorException('Error removing record');
+    }
+  }
+
+  private resolveAction(
+    status: RecordStatus | undefined,
+    step: number,
+  ): 'DRAFT' | 'CONTINUE' | 'FINAL' {
+    if (!status) {
+      return 'CONTINUE';
+    }
+
+    if (status === RecordStatus.DRAFT) {
+      return 'DRAFT';
+    }
+    if (status === RecordStatus.IN_PROGRESS) {
+      return 'CONTINUE';
+    }
+    if (status === RecordStatus.COMPLETED) {
+      if (step !== 6) {
+        throw new BadRequestException(
+          'COMPLETED status is only valid on step six final submission.',
+        );
+      }
+      return 'FINAL';
+    }
+
+    throw new BadRequestException(
+      'Invalid status. Allowed values are DRAFT, IN_PROGRESS, COMPLETED.',
+    );
+  }
+
+  private normalizeNullableString(value: string | null | undefined): string | null {
+    if (typeof value !== 'string') {
+      return null;
+    }
+    const normalized = value.trim();
+    return normalized.length > 0 ? normalized : null;
+  }
+
+  private ensureFieldsPresent(
+    payload: object,
+    requiredFields: string[],
+  ) {
+    const source = payload as Record<string, unknown>;
+    const missingFields = requiredFields.filter((field) => {
+      const value = source[field];
+      return (
+        value === undefined ||
+        value === null ||
+        (typeof value === 'string' && value.trim().length === 0)
+      );
+    });
+
+    if (missingFields.length > 0) {
+      throw new BadRequestException({
+        message: 'Required fields are missing.',
+        missingFields,
+      });
+    }
+  }
+
+  private async applyStepAction(
+    recordRepository: Repository<RecordEntity>,
+    recordsId: number,
+    step: number,
+    action: 'DRAFT' | 'CONTINUE' | 'FINAL',
+  ) {
+    const record = await recordRepository.findOne({ where: { id: recordsId } });
+    if (!record) {
+      throw new NotFoundException(`Record with ID ${recordsId} not found`);
+    }
+
+    if (action === 'DRAFT') {
+      if (record.status !== RecordStatus.COMPLETED) {
+        record.status = RecordStatus.DRAFT;
+      }
+      await recordRepository.save(record);
+      return;
+    }
+
+    if (action === 'FINAL') {
+      record.status = RecordStatus.COMPLETED;
+      record.lastCompletedStep = Math.max(record.lastCompletedStep, step);
+      record.completedAt = new Date();
+      await recordRepository.save(record);
+      return;
+    }
+
+    record.status = RecordStatus.IN_PROGRESS;
+    record.lastCompletedStep = Math.max(record.lastCompletedStep, step);
+    record.completedAt = null;
+    await recordRepository.save(record);
+  }
+
+  private async validateFinalSubmission(
+    recordRepository: Repository<RecordEntity>,
+    recordsId: number,
+  ) {
+    const record = await recordRepository.findOne({
+      where: { id: recordsId },
+      relations: ['documents', 'policies'],
+    });
+
+    if (!record) {
+      throw new NotFoundException(`Record with ID ${recordsId} not found`);
+    }
+
+    const missingFields: string[] = [];
+    if (!record.firstName) missingFields.push('firstName');
+    if (!record.lastName) missingFields.push('lastName');
+    if (!record.email) missingFields.push('email');
+    if (!record.documents || record.documents.length === 0) {
+      missingFields.push('documents');
+    }
+    if (!record.policies || record.policies.length === 0) {
+      missingFields.push('policies');
+    }
+
+    if (missingFields.length > 0) {
+      throw new BadRequestException({
+        message: 'Final submission is incomplete.',
+        missingFields,
+      });
     }
   }
 }

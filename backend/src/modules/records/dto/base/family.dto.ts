@@ -4,15 +4,21 @@ import {
   IsArray,
   IsDateString,
   IsEnum,
-  IsNotEmpty,
   IsOptional,
   IsString,
   ValidateIf,
   ValidateNested,
 } from 'class-validator';
-import { Gender } from '../enums/gender.enum';
+import { Gender } from '../../enums/gender.enum';
+import { RecordStatus } from '../../enums/record-status.enum';
 
 export class CreateFamilyDto {
+  @IsOptional()
+  @IsEnum(RecordStatus, {
+    message: 'Status must be DRAFT, IN_PROGRESS, or COMPLETED.',
+  })
+  status?: RecordStatus;
+
   @ValidateIf((o) => o.marriageDate != '')
   @IsOptional()
   @IsDateString({}, { message: 'Marriage date must be a valid date.' })
@@ -30,19 +36,19 @@ export class CreateFamilyDto {
 }
 
 export class ChildDto {
-  @IsNotEmpty({ message: 'Child name is required.' })
+  @IsOptional()
   @IsString({ message: 'Child name must be a string.' })
-  name: string;
+  name?: string;
 
-  @IsNotEmpty({ message: 'Date of birth is required.' })
+  @IsOptional()
   @IsDateString({}, { message: 'Date of birth must be a valid date.' })
-  dateOfBirth: string;
+  dateOfBirth?: string;
 
-  @IsNotEmpty({ message: 'Gender is required.' })
+  @IsOptional()
   @IsEnum(Gender, {
     message: 'Gender must be Male, Female, or Other.',
   })
-  gender: Gender;
+  gender?: Gender;
 }
 
 export class UpdateFamilyDto extends PartialType(CreateFamilyDto) {}

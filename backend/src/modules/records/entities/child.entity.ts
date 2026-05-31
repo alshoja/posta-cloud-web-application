@@ -14,16 +14,17 @@ export class Child {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ nullable: true })
   name: string;
 
-  @Column()
+  @Column({ nullable: true })
   dateOfBirth: string;
 
   @Column({
     type: 'enum',
     enum: Gender,
     default: Gender.OTHER,
+    nullable: true,
   })
   gender: Gender;
 

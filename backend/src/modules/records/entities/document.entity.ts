@@ -13,11 +13,11 @@ export class Document {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
-  name: string;
+  @Column({ nullable: true })
+  name: string ;
 
-  @Column()
-  file: string;
+  @Column({ nullable: true })
+  file: string ;
 
   @ManyToOne(() => Record, (records) => records.documents, {
     onDelete: 'CASCADE',

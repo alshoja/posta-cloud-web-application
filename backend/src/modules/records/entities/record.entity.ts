@@ -12,6 +12,7 @@ import {
 } from 'typeorm';
 
 import { Gender } from '../enums/gender.enum';
+import { RecordStatus } from '../enums/record-status.enum';
 import { Address } from './address.entity';
 import { Child } from './child.entity';
 import { Document } from './document.entity';
@@ -36,10 +37,10 @@ export class Record {
   @Column()
   firstName: string;
 
-  @Column()
+  @Column({ nullable: true })
   lastName: string;
 
-  @Column()
+  @Column({ nullable: true })
   mobileNumber: string;
 
   @Column({ nullable: true })
@@ -130,8 +131,21 @@ export class Record {
   @Column({ default: false })
   isRedirected: boolean;
 
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   postOffice: number;
+
+  @Column({
+    type: 'enum',
+    enum: RecordStatus,
+    default: RecordStatus.DRAFT,
+  })
+  status: RecordStatus;
+
+  @Column({ type: 'int', default: 0 })
+  lastCompletedStep: number;
+
+  @Column({ type: 'timestamp', nullable: true })
+  completedAt: Date | null;
 
   @OneToMany(() => Address, (address) => address.records, {
     cascade: true,

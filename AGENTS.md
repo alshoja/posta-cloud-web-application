@@ -64,6 +64,7 @@ Follow SOLID principles in backend code.
 - Keep controllers thin and focused on routing, guards, request parsing, and response handoff.
 - Put business logic in services.
 - Use DTOs with `class-validator` and `class-transformer` for request validation.
+- For nullable request/entity fields, keep TypeScript property types as optional (for example `field?: string`) and express database nullability in decorators (for example `@Column({ nullable: true })`). Avoid `| null` unions in DTO/entity property declarations unless explicitly required by the user.
 - Define interfaces/types for meaningful data structures; avoid loose `any`.
 - Inject services through constructors only.
 - Prefer module-level singleton providers.

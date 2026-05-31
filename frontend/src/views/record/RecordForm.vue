@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
+import DropdownButton from '@/components/shared/DropdownButton.vue';
 import UiParentCard from '@/components/shared/UiParentCard.vue';
 import { useForm } from '@/composables/useForm';
 import { useValidation } from '@/composables/useValidation';
-import type { RecordDetail } from '@/interfaces/record.interface';
+import type { RecordDetail, RecordStatus } from '@/interfaces/record.interface';
 import { useRecordStore } from '@/stores/record';
 import { useSnackbarStore } from '@/stores/snackbar.store';
 import FileUpload from '@/views/record/components/FileUpload.vue';
@@ -49,6 +50,53 @@ const stepSix = reactive({ ...stepSixInitialState });
 const isUnlocked = ref(false);
 const isModalVisible = ref(false);
 const currentDocumentUrl = ref<string>('');
+
+const MAX_FORM_STEP = 7;
+
+const normalizeStep = (value: unknown): number => {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return 1;
+    const floored = Math.floor(parsed);
+    return Math.min(Math.max(floored, 1), MAX_FORM_STEP);
+};
+
+const resolveInitialStep = (record: RecordDetail, recordId: string): number => {
+    const queryStep = route.query.step;
+    if (queryStep !== undefined) {
+        const raw = Array.isArray(queryStep) ? queryStep[0] : queryStep;
+        return normalizeStep(raw);
+    }
+
+    const rememberedStep = recordStore.getCurrentStep(recordId);
+    if (rememberedStep) {
+        return normalizeStep(rememberedStep);
+    }
+
+    const lastCompletedStep = Number(record.lastCompletedStep ?? 0);
+    if (Number.isFinite(lastCompletedStep) && lastCompletedStep > 0) {
+        return normalizeStep(lastCompletedStep + 1);
+    }
+
+    return 1;
+};
+
+const syncStepState = async () => {
+    const recordIdParam = route.params.recordId;
+    const recordId = Array.isArray(recordIdParam) ? recordIdParam[0] : recordIdParam;
+    if (!recordId) return;
+
+    recordStore.setCurrentStep(recordId, stepper.step);
+
+    const currentQueryStep = Array.isArray(route.query.step) ? route.query.step[0] : route.query.step;
+    if (String(currentQueryStep ?? '') !== String(stepper.step)) {
+        await router.replace({
+            query: {
+                ...route.query,
+                step: String(stepper.step),
+            },
+        });
+    }
+};
 
 
 const addAddress = () => {
@@ -120,6 +168,8 @@ watch(
                     record = recordStore.record;
                 }
                 setFormFields(record);
+                stepper.step = resolveInitialStep(record, id);
+                await syncStepState();
             } catch (error) {
                 if ((error as { status: number }).status === 404) {
                     router.push({ name: "NotFound" });
@@ -129,9 +179,17 @@ watch(
             }
         } else {
             resetForm(stepOne, stepOneInitialState);
+            stepper.step = 1;
         }
     },
     { immediate: true }
+);
+
+watch(
+    () => stepper.step,
+    async () => {
+        await syncStepState();
+    }
 );
 
 
@@ -177,8 +235,7 @@ const isCurrentStepValid = computed(() => {
 // const allStepsValid = computed(() => stepOne.valid && stepTwo.valid && stepThree.valid && stepFour.valid && stepFive.valid && stepSix.valid);
 
 const submitStepper = () => {
-    router.push({ name: "Family Details Collection" });
-    snackbar.showSnackbar("Data submitted successfully!", 'success', []);
+    submitFinalData();
 };
 
 const continueNextStep = () => {
@@ -191,7 +248,7 @@ const previousStep = () => {
 
 // const gotToStep = (step: number) => (stepper.step = step);
 
-const submitStepData = async () => {
+const submitStepData = async (status: RecordStatus = 'IN_PROGRESS', shouldContinue = true) => {
     const recordId = route.params.recordId as string || '';
     type StepHandler = {
         method: () => Promise<unknown>;
@@ -203,36 +260,39 @@ const submitStepData = async () => {
         1: {
             method: async () => {
                 stepOne.id = recordId;
-                return await recordStore.createPersonalData(stepOne);
+                return await recordStore.createPersonalData(stepOne, status);
             },
             successMessage: 'Personal Data updated successfully',
             onSuccess: (res: { id: string }) => {
+                if (!shouldContinue) {
+                    return;
+                }
                 if (stepper.edit) {
                     continueNextStep();
                 } else {
-                    router.push({ name: 'Edit Record', params: { recordId: res.id } });
+                    router.push({ name: 'Edit Record', params: { recordId: res.id }, query: { step: '2' } });
                     continueNextStep();
                 }
             }
         },
         2: {
-            method: () => recordStore.createIdentificationData(stepTwo, recordId),
+            method: () => recordStore.createIdentificationData(stepTwo, recordId, status),
             successMessage: 'Identification Data submitted successfully',
         },
         3: {
-            method: () => recordStore.createOccupationData(stepThree, recordId),
+            method: () => recordStore.createOccupationData(stepThree, recordId, status),
             successMessage: 'Occupation Data submitted successfully',
         },
         4: {
-            method: () => recordStore.createFamilyData(stepFour, recordId),
+            method: () => recordStore.createFamilyData(stepFour, recordId, status),
             successMessage: 'Family Data submitted successfully',
         },
         5: {
-            method: () => recordStore.createPolicyData(stepFive, recordId),
+            method: () => recordStore.createPolicyData(stepFive, recordId, status),
             successMessage: 'Policy Data submitted successfully',
         },
         6: {
-            method: () => recordStore.createDocumentsData(stepSix, recordId),
+            method: () => recordStore.createDocumentsData(stepSix, recordId, status),
             successMessage: 'Document Data submitted successfully',
         },
     };
@@ -244,14 +304,60 @@ const submitStepData = async () => {
         return;
     }
 
+    if (stepper.step > 1 && !recordId) {
+        snackbar.showSnackbar('Please save step one first to create the record.', 'warning', []);
+        return;
+    }
+
     try {
         loading.value = true;
         const result = await stepHandler.method();
         snackbar.showSnackbar(stepHandler.successMessage, 'success', []);
         stepHandler.onSuccess?.(result as { id: string });
-        continueNextStep();
+        if (shouldContinue && stepper.step !== 1) {
+            continueNextStep();
+        }
     } catch (error) {
         console.log("🚀 error:", error)
+    } finally {
+        loading.value = false;
+    }
+};
+
+const saveDraft = async () => {
+    if (stepper.step === stepper.items.length) {
+        const recordId = route.params.recordId as string || '';
+        if (!recordId) {
+            snackbar.showSnackbar('Please save step one first to create a draft.', 'warning', []);
+            return;
+        }
+        try {
+            loading.value = true;
+            await recordStore.createDocumentsData(stepSix, recordId, 'DRAFT');
+            snackbar.showSnackbar('Draft saved successfully', 'success', []);
+        } catch (error) {
+            console.log('🚀 error:', error);
+        } finally {
+            loading.value = false;
+        }
+        return;
+    }
+    await submitStepData('DRAFT', false);
+};
+
+const submitFinalData = async () => {
+    const recordId = route.params.recordId as string || '';
+    if (!recordId) {
+        snackbar.showSnackbar('Please save step one first before final submit.', 'warning', []);
+        return;
+    }
+    try {
+        loading.value = true;
+        await recordStore.createDocumentsData(stepSix, recordId, 'COMPLETED');
+        snackbar.showSnackbar('Data submitted successfully!', 'success', []);
+        router.push({ name: "Family Details Collection" });
+    } catch (error) {
+        console.log('🚀 error:', error);
     } finally {
         loading.value = false;
     }
@@ -294,7 +400,7 @@ const viewDocument = (index: number) => {
                             <ProfileImage :url="stepOne.profileImage" />
                             <v-col cols="12" md="12" class="border border-secondary rounded">
                                 <FileUpload :label="`Upload Profile Image`" :accept="'image/jpeg, image/png'"
-                                    :rules="[validationRules.required]" @uploaded="setUploadUrl" />
+                                    :rules="[]" @uploaded="setUploadUrl" />
                             </v-col>
                         </v-row>
 
@@ -304,62 +410,52 @@ const viewDocument = (index: number) => {
                                     required :rules="[validationRules.required]" />
                             </v-col>
                             <v-col cols="12" md="4">
-                                <v-text-field variant="outlined" v-model="stepOne.lastName" label="Last Name*" required
-                                    :rules="[validationRules.required]" />
+                                <v-text-field variant="outlined" v-model="stepOne.lastName" label="Last Name" />
                             </v-col>
                             <v-col cols="12" md="4">
                                 <v-text-field variant="outlined" v-model="stepOne.email" label="Email*"
                                     :rules="[validationRules.required, validationRules.email]" />
                             </v-col>
                             <v-col cols="12" md="4">
-                                <v-text-field variant="outlined" v-model="stepOne.houseName" label="House Name*"
-                                    :rules="[validationRules.required]" />
+                                <v-text-field variant="outlined" v-model="stepOne.houseName" label="House Name" />
                             </v-col>
                             <v-col cols="12" md="4">
                                 <v-text-field variant="outlined" v-model="stepOne.houseNumber" label="House Number" />
                             </v-col>
                             <v-col cols="12" md="4">
-                                <v-text-field variant="outlined" v-model="stepOne.streetName" label="Street Name*"
-                                    :rules="[validationRules.required]" />
+                                <v-text-field variant="outlined" v-model="stepOne.streetName" label="Street Name" />
                             </v-col>
                             <v-col cols="12" md="4">
                                 <v-text-field variant="outlined" v-model="stepOne.streetNumber" label="Street Number" />
                             </v-col>
                             <v-col cols="12" md="4">
                                 <v-text-field type="number" variant="outlined" v-model="stepOne.postOffice"
-                                    label="Post Office*"
-                                    :rules="[validationRules.required, validationRules.maxLength(6), validationRules.minLength(6)]" />
+                                    label="Post Office" />
                             </v-col>
                             <v-col cols="12" md="4">
-                                <v-text-field variant="outlined" v-model="stepOne.village" label="Village*"
-                                    :rules="[validationRules.required]" />
+                                <v-text-field variant="outlined" v-model="stepOne.village" label="Village" />
                             </v-col>
                             <v-col cols="12" md="4">
-                                <v-text-field variant="outlined" v-model="stepOne.panchayat" label="Panchayat*"
-                                    :rules="[validationRules.required]" />
+                                <v-text-field variant="outlined" v-model="stepOne.panchayat" label="Panchayat" />
                             </v-col>
                             <v-col cols="12" md="4">
-                                <v-text-field variant="outlined" v-model="stepOne.district" label="District*"
-                                    :rules="[validationRules.required]" />
+                                <v-text-field variant="outlined" v-model="stepOne.district" label="District" />
                             </v-col>
                             <v-col cols="12" md="4">
                                 <v-text-field variant="outlined" v-model="stepOne.mobileNumber"
-                                    label="Mobile Number(+91)" required
-                                    :rules="[validationRules.required, validationRules.mobileNumber]" />
+                                    label="Mobile Number(+91)" />
                             </v-col>
                             <v-col cols="12" md="4">
                                 <v-text-field variant="outlined" v-model="stepOne.whatsappNumber"
                                     label="WhatsApp Number(+91)" />
                             </v-col>
                             <v-col cols="12" md="4">
-                                <v-text-field variant="outlined" v-model="stepOne.dateOfBirth" label="Date of Birth*"
-                                    type="date" required
-                                    :rules="[validationRules.required, validationRules.dateOfBirth]" />
+                                <v-text-field variant="outlined" v-model="stepOne.dateOfBirth" label="Date of Birth"
+                                    type="date" />
                             </v-col>
                             <v-col cols="12" md="4">
                                 <v-select variant="outlined" v-model="stepOne.gender"
-                                    :items="['male', 'female', 'other']" label="Gender*" required
-                                    :rules="[validationRules.required, validationRules.gender]" />
+                                    :items="['male', 'female', 'other']" label="Gender" />
                             </v-col>
                         </v-row>
                     </UiParentCard>
@@ -615,20 +711,20 @@ const viewDocument = (index: number) => {
             <!-- Custom Next and Prev buttons -->
             <template v-slot:actions="{}">
                 <v-row class="d-flex align-center justify-space-between ma-5">
-                    <v-btn :disabled="stepper.step === 1" outlined color="secondary" @click="previousStep">
+                    <v-btn :disabled="stepper.step === 1" outlined color="secondary" size="default" density="default"
+                        @click="previousStep">
                         Back
                     </v-btn>
 
                     <v-spacer></v-spacer>
 
-                    <v-btn :loading="loading" v-if="stepper.step < stepper.items.length" color="secondary"
-                        :disabled="!isCurrentStepValid" @click="submitStepData">
-                        Save & Continue
-                    </v-btn>
+                    <DropdownButton v-if="stepper.step < stepper.items.length" :loading="loading"
+                        :disabled="!isCurrentStepValid" primary-label="Save & Continue" secondary-label="Save Draft"
+                        :compact="true"
+                        @primary-click="submitStepData('IN_PROGRESS', true)" @secondary-click="saveDraft" />
 
-                    <v-btn v-if="stepper.step === stepper.items.length" color="secondary" @click="submitStepper">
-                        Finish & Submit
-                    </v-btn>
+                    <DropdownButton v-else :loading="loading" :compact="true" primary-label="Finish & Submit"
+                        secondary-label="Save Draft" @primary-click="submitStepper" @secondary-click="saveDraft" />
                 </v-row>
             </template>
         </v-stepper>

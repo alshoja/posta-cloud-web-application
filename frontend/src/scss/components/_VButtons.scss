@@ -4,6 +4,7 @@
 
 .v-btn {
   &.bg-lightsecondary {
+
     &:hover,
     &:active,
     &:focus {
@@ -17,7 +18,12 @@
   text-transform: capitalize;
   letter-spacing: $btn-letter-spacing;
 }
+
 .v-btn--icon.v-btn--density-default {
   width: calc(var(--v-btn-height) + 6px);
   height: calc(var(--v-btn-height) + 6px);
+}
+
+.v-btn-group--density-default.v-btn-group {
+ height: 36px
 }
