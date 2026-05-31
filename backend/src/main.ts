@@ -17,7 +17,7 @@ async function bootstrap() {
 
   const isDevelopment = appConfig?.isDevelopment ?? true;
   const corsOrigins = appConfig?.corsOrigins ?? [];
-
+  
   app.enableCors(
     isDevelopment
       ? true
@@ -28,10 +28,7 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
-      forbidNonWhitelisted: false,
-      skipNullProperties: true,
-      skipMissingProperties: true,
-      skipUndefinedProperties: true,
+      forbidNonWhitelisted: true,
       whitelist: true,
       transformOptions: {
         enableImplicitConversion: true,

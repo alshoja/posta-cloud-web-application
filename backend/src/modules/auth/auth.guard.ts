@@ -9,6 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { JWT_SECRET_ENV_KEY } from './constants';
 import { IS_PUBLIC_KEY } from './public.decorator';
+import type { AuthenticatedRequest } from './types/express';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -27,24 +28,28 @@ export class AuthGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const token = this.extractTokenFromHeader(request);
     if (!token) {
       throw new UnauthorizedException();
     }
     try {
-      const payload = await this.jwtService.verifyAsync(token, {
+      const payload = await this.jwtService.verifyAsync<
+        AuthenticatedRequest['user']
+      >(token, {
         secret: this.configService.getOrThrow<string>(JWT_SECRET_ENV_KEY),
       });
 
-      request['user'] = payload;
+      request.user = payload;
     } catch {
       throw new UnauthorizedException();
     }
     return true;
   }
 
-  private extractTokenFromHeader(request: any): string | undefined {
+  private extractTokenFromHeader(
+    request: AuthenticatedRequest,
+  ): string | undefined {
     const [type, token] = request.headers.authorization?.split(' ') ?? [];
     return type === 'Bearer' ? token : undefined;
   }

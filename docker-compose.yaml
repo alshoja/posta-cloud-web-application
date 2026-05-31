@@ -81,7 +81,6 @@ services:
     environment:
       - VITE_API_URL=${VITE_API_URL}
       - VITE_ASSET_URL=${VITE_ASSET_URL}
-    command: sh -c "npm install && npm run dev"
     depends_on:
       - backend
     networks:
@@ -110,7 +109,6 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - CORS_ORIGINS=${CORS_ORIGINS}
-    command: sh -c "npm install && npm run start:dev"
     depends_on:
       - postgres_db
       - redis
