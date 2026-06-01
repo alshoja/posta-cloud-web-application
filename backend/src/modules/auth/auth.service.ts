@@ -52,7 +52,11 @@ export class AuthService {
   }
 
   private async buildAuthResponse(user: User): Promise<AuthResponse> {
-    const payload: AuthJwtPayload = { sub: user.id, email: user.username };
+    const payload: AuthJwtPayload = {
+      sub: user.id,
+      email: user.username,
+      role: user.role,
+    };
     return {
       access_token: await this.jwtService.signAsync(payload),
       user: {
@@ -60,6 +64,7 @@ export class AuthService {
         email: user.username,
         firstName: user.firstName,
         lastName: user.lastName,
+        role: user.role,
       },
     };
   }

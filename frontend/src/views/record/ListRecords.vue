@@ -2,13 +2,14 @@
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import UiParentCard from '@/components/shared/UiParentCard.vue';
 import type { RecordDetail } from '@/interfaces/record.interface';
+import { useAuthStore } from '@/stores/auth';
 import { useRecordStore } from '@/stores/record';
 import { useSnackbarStore } from '@/stores/snackbar.store';
 import ViewComponent from '@/views/record/components/ViewComponent.vue';
 import _ from "lodash";
 import { ref, shallowRef, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { EditIcon, SearchIcon, TrashIcon, ViewfinderIcon } from 'vue-tabler-icons';
+import { EditIcon, RefreshIcon, SearchIcon, TrashIcon, ViewfinderIcon } from 'vue-tabler-icons';
 
 const page = ref({ title: 'Records Overview' });
 const breadcrumbs = shallowRef([
@@ -22,7 +23,6 @@ const headers = ref([
     { title: 'Email', key: 'email' },
     { title: 'Mobile', key: 'mobileNumber', },
     { title: 'Gender', key: 'gender', },
-    { title: 'Street Name', key: 'panchayat', },
     { title: 'Entry Date', key: 'createdAt', },
     { title: 'Status', key: 'status' },
     { title: 'Actions', sortable: false, key: 'actions' },
@@ -40,7 +40,9 @@ const itemsPerPage = ref(10);
 const router = useRouter();
 
 const recordStore = useRecordStore();
+const authStore = useAuthStore();
 const snackbar = useSnackbarStore()
+const isAdminUser = authStore.user?.role === 'ADMIN';
 
 const closeDelete = () => {
     dialogDelete.value = false;
@@ -75,6 +77,26 @@ const deleteItemConfirm = async () => {
 
 const editItem = (item: RecordDetail) => {
     router.push({ name: 'Edit Record', params: { recordId: item.id } });
+};
+
+const canEditRecord = (item: RecordDetail) => item.status !== 'COMPLETED';
+const canReopenRecord = (item: RecordDetail) => isAdminUser && item.status === 'COMPLETED';
+
+const reopenItem = async (item: RecordDetail) => {
+    if (!item.id) return;
+
+    try {
+        await recordStore.reopen(item.id);
+        await loadRecords({
+            page: 1,
+            itemsPerPage: itemsPerPage.value,
+            sortBy: [],
+            searchQuery: search.value || '',
+        });
+        snackbar.showSnackbar('Record reopened successfully.', 'success', []);
+    } catch (error) {
+        console.error('Failed to reopen record:', error);
+    }
 };
 
 const loadRecords = async ({ page, itemsPerPage, sortBy, searchQuery }: { page: number, itemsPerPage: number, sortBy: { key: string, order: string }[], searchQuery: string }) => {
@@ -154,27 +176,32 @@ watch(search, (newSearch) => {
                         <td>{{ item.email }}</td>
                         <td>{{ item.mobileNumber }}</td>
                         <td>{{ item.gender }}</td>
-                        <td>{{ item.panchayat }}</td>
                         <td>{{ item?.createdAt ? new Date(item.createdAt).toLocaleDateString('en-GB') : '' }}</td>
                         <td>
                             <v-chip size="small" variant="tonal" :color="statusColor(item.status)">
                                 {{ formatStatus(item.status) }}
                             </v-chip>
                         </td>
-                        <td>
-                            <v-btn @click="openDialog(item)" variant="outlined" size="small" color="secondary">
-                                <ViewfinderIcon class="icon" />
-                            </v-btn>
-                            &nbsp;
+                        <td class="actions-cell">
+                            <div class="actions-group">
+                                <v-btn @click="openDialog(item)" variant="outlined" size="small" color="secondary">
+                                    <ViewfinderIcon class="icon" />
+                                </v-btn>
 
-                            <v-btn variant="outlined" size="small" color="secondary" @click="editItem(item)">
-                                <EditIcon class="icon" />
-                            </v-btn>
-                            &nbsp;
-                            <v-btn variant="outlined" size="small" color="error" @click="deleteItem(item)">
-                                <TrashIcon class="icon" />
-                            </v-btn>
+                                <v-btn variant="outlined" size="small" color="secondary" @click="editItem(item)"
+                                    :disabled="!canEditRecord(item)">
+                                    <EditIcon class="icon" />
+                                </v-btn>
 
+                                <v-btn v-if="isAdminUser" variant="outlined" size="small" color="primary" @click="reopenItem(item)"
+                                    :disabled="!canReopenRecord(item)">
+                                    <RefreshIcon class="icon" />
+                                </v-btn>
+
+                                <v-btn variant="outlined" size="small" color="error" @click="deleteItem(item)">
+                                    <TrashIcon class="icon" />
+                                </v-btn>
+                            </div>
                         </td>
                     </tr>
                 </template>
@@ -212,5 +239,18 @@ watch(search, (newSearch) => {
 <style scoped>
 .records-table-wrapper {
     position: relative;
+}
+
+.actions-cell {
+    min-width: 220px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.actions-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: nowrap;
 }
 </style>

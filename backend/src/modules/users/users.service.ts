@@ -1,16 +1,23 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
+import { UserRole } from './enums/user-role.enum';
 
 @Injectable()
-export class UsersService {
+export class UsersService implements OnModuleInit {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    private readonly configService: ConfigService,
   ) {}
+
+  async onModuleInit() {
+    await this.ensureDefaultAdminUser();
+  }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     const user = this.userRepository.create(createUserDto);
@@ -38,5 +45,35 @@ export class UsersService {
 
   async remove(id: number): Promise<void> {
     await this.userRepository.delete(id);
+  }
+
+  private async ensureDefaultAdminUser(): Promise<void> {
+    const adminEmail =
+      this.configService.get<string>('DEFAULT_ADMIN_EMAIL') ?? 'admin@example.com';
+    const adminPassword =
+      this.configService.get<string>('DEFAULT_ADMIN_PASSWORD') ?? 'Admin@123456';
+
+    const existingAdmin = await this.userRepository.findOne({
+      where: { username: adminEmail },
+    });
+
+    if (!existingAdmin) {
+      const adminUser = this.userRepository.create({
+        username: adminEmail,
+        password: adminPassword,
+        firstName: 'System',
+        lastName: 'Admin',
+        isActive: true,
+        role: UserRole.ADMIN,
+      });
+      await this.userRepository.save(adminUser);
+      return;
+    }
+
+    if (existingAdmin.role !== UserRole.ADMIN || !existingAdmin.isActive) {
+      existingAdmin.role = UserRole.ADMIN;
+      existingAdmin.isActive = true;
+      await this.userRepository.save(existingAdmin);
+    }
   }
 }

@@ -1,8 +1,10 @@
 import { Request } from 'express';
+import { UserRole } from 'src/modules/users/enums/user-role.enum';
 
 export interface AuthJwtPayload {
   sub: number;
   email: string;
+  role: UserRole;
 }
 
 export interface AuthenticatedUser {
@@ -10,6 +12,7 @@ export interface AuthenticatedUser {
   email: string;
   firstName?: string;
   lastName?: string;
+  role: UserRole;
 }
 
 export interface AuthResponse {

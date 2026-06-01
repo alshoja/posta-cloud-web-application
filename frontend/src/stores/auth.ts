@@ -3,10 +3,21 @@ import { router } from '@/router'
 import axiosInstance from '@/axiosInstance.interceptor'
 
 const baseUrl = `${import.meta.env.VITE_API_URL}`
+
+type UserRole = 'ADMIN' | 'USER'
+
+interface AuthUser {
+  id: number
+  email: string
+  firstName?: string
+  lastName?: string
+  role: UserRole
+}
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    user: JSON.parse(localStorage.getItem('user') || 'null'),
-    returnUrl: null
+    user: JSON.parse(localStorage.getItem('user') || 'null') as AuthUser | null,
+    returnUrl: null as string | null
   }),
   actions: {
     async login(email: string, password: string) {

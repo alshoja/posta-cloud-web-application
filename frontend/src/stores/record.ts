@@ -214,6 +214,17 @@ export const useRecordStore = defineStore('Record', {
         throw err
       }
     },
+    async reopen(id: string) {
+      try {
+        const response = await axios.post(`${baseUrl}/reopen/${id}`, null, {
+          headers: { 'Content-Type': 'application/json' }
+        })
+        return response.data
+      } catch (err) {
+        console.error('Error reopening record:', err)
+        throw err
+      }
+    },
     addRecord(newRecord: StepOne) {
       this.records.data = [...this.records.data, newRecord] // ✅ Replacing state reactively
     }

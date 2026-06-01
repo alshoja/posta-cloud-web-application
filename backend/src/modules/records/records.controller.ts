@@ -17,6 +17,8 @@ import { StepSixDto } from './dto/step-six.dto';
 import { StepThreeDto } from './dto/step-three.dto';
 import { StepTwoDto } from './dto/step-two.dto';
 import { RecordsService } from './records.service';
+import { Roles } from '../auth/roles.decorator';
+import { UserRole } from '../users/enums/user-role.enum';
 
 @Controller('records')
 export class RecordsController {
@@ -66,6 +68,12 @@ export class RecordsController {
     @Param('recordsId', ParseIntPipe) recordsId: number,
   ) {
     return this.recordsService.createStepSix(stepSixDto, recordsId);
+  }
+
+  @Post('reopen/:id')
+  @Roles(UserRole.ADMIN)
+  reopen(@Param('id', ParseIntPipe) id: number) {
+    return this.recordsService.reopen(id);
   }
 
   @Get()

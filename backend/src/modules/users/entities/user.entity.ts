@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Exclude } from 'class-transformer';
+import { UserRole } from '../enums/user-role.enum';
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn()
@@ -29,6 +30,13 @@ export class User {
 
   @Column({ default: false })
   isActive: boolean;
+
+  @Column({
+    type: 'enum',
+    enum: UserRole,
+    default: UserRole.USER,
+  })
+  role: UserRole;
 
   @OneToMany(() => Record, (record) => record.user)
   records: Record[];

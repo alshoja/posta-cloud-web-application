@@ -7,6 +7,7 @@ import { AuthGuard } from './auth.guard';
 import { UsersModule } from '../users/users.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JWT_SECRET_ENV_KEY } from './constants';
+import { RolesGuard } from './roles.guard';
 
 @Module({
   imports: [
@@ -27,6 +28,10 @@ import { JWT_SECRET_ENV_KEY } from './constants';
     {
       provide: APP_GUARD,
       useClass: AuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
     },
   ],
   exports: [AuthService],

@@ -408,6 +408,31 @@ export class RecordsService {
     }
   }
 
+  async reopen(
+    id: number,
+  ): Promise<{ id: number; status: RecordStatus; lastCompletedStep: number }> {
+    const userId = this.request.user.sub;
+
+    const record = await this.recordRepository.findOne({
+      where: { id, userId },
+    });
+
+    if (!record) {
+      throw new NotFoundException(`Record with ID ${id} not found`);
+    }
+
+    record.status = RecordStatus.DRAFT;
+    record.completedAt = null;
+
+    await this.recordRepository.save(record);
+
+    return {
+      id: record.id,
+      status: record.status,
+      lastCompletedStep: record.lastCompletedStep,
+    };
+  }
+
   private resolveAction(
     status: RecordStatus | undefined,
     step: number,

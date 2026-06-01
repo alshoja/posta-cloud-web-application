@@ -6,6 +6,7 @@ import { faker } from '@faker-js/faker';
 import { Record } from '../../modules/records/entities/record.entity';
 import { User } from '../../modules/users/entities/user.entity';
 import { Gender } from '../../modules/records/enums/gender.enum';
+import { UserRole } from '../../modules/users/enums/user-role.enum';
 
 @Injectable()
 export class SeederService {
@@ -111,6 +112,10 @@ export class SeederService {
       const existingUser = existingUsersByUsername.get(username);
 
       if (existingUser) {
+        if (existingUser.role !== UserRole.ADMIN) {
+          existingUser.role = UserRole.ADMIN;
+          await this.userRepository.save(existingUser);
+        }
         this.logger.log(`Using existing seed user: ${username}`);
         seedUsers.push(existingUser);
         continue;
@@ -122,6 +127,7 @@ export class SeederService {
         firstName: faker.person.firstName(),
         lastName: faker.person.lastName(),
         isActive: true,
+        role: UserRole.ADMIN,
       });
 
       const savedSeedUser = await this.userRepository.save(seedUser);
