@@ -6,7 +6,7 @@ import { DocumentDto } from './base/document.dto';
 export class StepSixDto {
   @IsOptional()
   @IsEnum(RecordStatus, {
-    message: 'Status must be DRAFT, IN_PROGRESS, or COMPLETED.',
+    message: 'Status must be DRAFT or COMPLETED.',
   })
   status?: RecordStatus;
 

@@ -9,7 +9,7 @@ export interface Address {
   locationType: string
 }
 
-export type RecordStatus = 'DRAFT' | 'IN_PROGRESS' | 'COMPLETED'
+export type RecordStatus = 'DRAFT' | 'COMPLETED'
 
 export interface Person {
   firstName: string

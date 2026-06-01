@@ -53,10 +53,6 @@ export class RecordsService {
         userId,
       };
 
-      if (action === 'CONTINUE') {
-        this.ensureFieldsPresent(payload, ['firstName', 'email']);
-      }
-
       const existingRecord = stepOneDto.id
         ? await recordRepository.findOne({
             where: { id: stepOneDto.id, userId },
@@ -64,6 +60,7 @@ export class RecordsService {
         : null;
 
       if (existingRecord) {
+        this.ensureRecordEditable(existingRecord);
         await recordRepository.update({ id: stepOneDto.id, userId }, payload);
         recordId = existingRecord.id;
       } else if (stepOneDto.id) {
@@ -102,7 +99,8 @@ export class RecordsService {
     await queryRunner.startTransaction();
 
     try {
-      await this.findOne(recordsId);
+      const existingRecord = await this.findOne(recordsId);
+      this.ensureRecordEditable(existingRecord);
       const recordRepository = queryRunner.manager.getRepository(RecordEntity);
       const action = this.resolveAction(stepTwoDto.status, 2);
       const { status: _status, ...stepTwoPayload } = stepTwoDto;
@@ -139,7 +137,8 @@ export class RecordsService {
     await queryRunner.startTransaction();
 
     try {
-      await this.findOne(recordsId);
+      const existingRecord = await this.findOne(recordsId);
+      this.ensureRecordEditable(existingRecord);
       const normalizedAddresses = addresses ?? [];
       const _addresses = normalizedAddresses.map((address) => ({
         houseName: this.normalizeNullableString(address.houseName),
@@ -192,7 +191,8 @@ export class RecordsService {
     await queryRunner.startTransaction();
 
     try {
-      await this.findOne(recordsId);
+      const existingRecord = await this.findOne(recordsId);
+      this.ensureRecordEditable(existingRecord);
       const normalizedChildren = children ?? [];
       const _children = normalizedChildren.map((child) => ({
         ...child,
@@ -243,17 +243,14 @@ export class RecordsService {
     await queryRunner.startTransaction();
 
     try {
-      await this.findOne(recordsId);
+      const existingRecord = await this.findOne(recordsId);
+      this.ensureRecordEditable(existingRecord);
       const action = this.resolveAction(stepFiveDto.status, 5);
       const policies = stepFiveDto.policies.map((policy) => ({
         type: policy.type?.trim() ? policy.type : null,
         number: policy.number?.trim() ? policy.number : null,
         recordsId,
       }));
-
-      if (action === 'CONTINUE' && policies.length === 0) {
-        throw new BadRequestException('At least one policy is required to continue.');
-      }
 
       const policyRepository = queryRunner.manager.getRepository(Policy);
       const recordRepository = queryRunner.manager.getRepository(RecordEntity);
@@ -287,21 +284,14 @@ export class RecordsService {
     await queryRunner.startTransaction();
 
     try {
-      await this.findOne(recordsId);
+      const existingRecord = await this.findOne(recordsId);
+      this.ensureRecordEditable(existingRecord);
       const action = this.resolveAction(stepSixDto.status, 6);
       const _document = stepSixDto.documents.map((document) => ({
         name: document.name?.trim() ? document.name : null,
         file: document.file?.trim() ? document.file : null,
         recordsId,
       }));
-      if (
-        action === 'CONTINUE' &&
-        stepSixDto.documents.length === 0
-      ) {
-        throw new BadRequestException(
-          'At least one document is required to continue.',
-        );
-      }
       const documentRepository = queryRunner.manager.getRepository(Document);
       const recordRepository = queryRunner.manager.getRepository(RecordEntity);
       await documentRepository.delete({ recordsId });
@@ -429,9 +419,6 @@ export class RecordsService {
     if (status === RecordStatus.DRAFT) {
       return 'DRAFT';
     }
-    if (status === RecordStatus.IN_PROGRESS) {
-      return 'CONTINUE';
-    }
     if (status === RecordStatus.COMPLETED) {
       if (step !== 6) {
         throw new BadRequestException(
@@ -442,8 +429,16 @@ export class RecordsService {
     }
 
     throw new BadRequestException(
-      'Invalid status. Allowed values are DRAFT, IN_PROGRESS, COMPLETED.',
+      'Invalid status. Allowed values are DRAFT or COMPLETED.',
     );
+  }
+
+  private ensureRecordEditable(record: RecordEntity) {
+    if (record.status === RecordStatus.COMPLETED) {
+      throw new BadRequestException(
+        'Completed records are locked and cannot be edited.',
+      );
+    }
   }
 
   private normalizeNullableString(value: string | null | undefined): string | null {
@@ -452,28 +447,6 @@ export class RecordsService {
     }
     const normalized = value.trim();
     return normalized.length > 0 ? normalized : null;
-  }
-
-  private ensureFieldsPresent(
-    payload: object,
-    requiredFields: string[],
-  ) {
-    const source = payload as Record<string, unknown>;
-    const missingFields = requiredFields.filter((field) => {
-      const value = source[field];
-      return (
-        value === undefined ||
-        value === null ||
-        (typeof value === 'string' && value.trim().length === 0)
-      );
-    });
-
-    if (missingFields.length > 0) {
-      throw new BadRequestException({
-        message: 'Required fields are missing.',
-        missingFields,
-      });
-    }
   }
 
   private async applyStepAction(
@@ -503,7 +476,7 @@ export class RecordsService {
       return;
     }
 
-    record.status = RecordStatus.IN_PROGRESS;
+    record.status = RecordStatus.DRAFT;
     record.lastCompletedStep = Math.max(record.lastCompletedStep, step);
     record.completedAt = null;
     await recordRepository.save(record);
@@ -524,14 +497,7 @@ export class RecordsService {
 
     const missingFields: string[] = [];
     if (!record.firstName) missingFields.push('firstName');
-    if (!record.lastName) missingFields.push('lastName');
     if (!record.email) missingFields.push('email');
-    if (!record.documents || record.documents.length === 0) {
-      missingFields.push('documents');
-    }
-    if (!record.policies || record.policies.length === 0) {
-      missingFields.push('policies');
-    }
 
     if (missingFields.length > 0) {
       throw new BadRequestException({

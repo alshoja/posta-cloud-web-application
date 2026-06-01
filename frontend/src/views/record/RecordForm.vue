@@ -251,7 +251,7 @@ const previousStep = () => {
 
 // const gotToStep = (step: number) => (stepper.step = step);
 
-const submitStepData = async (status: RecordStatus = 'IN_PROGRESS', shouldContinue = true) => {
+const submitStepData = async (status: RecordStatus = 'DRAFT', shouldContinue = true) => {
     const recordId = route.params.recordId as string || '';
     type StepHandler = {
         method: () => Promise<unknown>;
@@ -841,7 +841,7 @@ const viewDocument = (index: number) => {
                     <DropdownButton v-if="stepper.step < stepper.items.length" :loading="loading"
                         :disabled="!isCurrentStepValid" primary-label="Save & Continue" secondary-label="Save Draft"
                         :compact="true"
-                        @primary-click="submitStepData('IN_PROGRESS', true)" @secondary-click="saveDraft" />
+                        @primary-click="submitStepData('DRAFT', true)" @secondary-click="saveDraft" />
 
                     <DropdownButton v-else :loading="loading" :compact="true" primary-label="Finish & Submit"
                         secondary-label="Save Draft" @primary-click="submitStepper" @secondary-click="saveDraft" />

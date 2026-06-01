@@ -18,13 +18,11 @@ const customizer = useCustomizerStore();
       <Customizer />
       <VerticalSidebarVue />
       <VerticalHeaderVue />
+      <GlobalLoader />
 
       <v-main>
 
         <v-container fluid class="page-wrapper">
-          <!-- <div style="color: red;">loading</div> -->
-          <GlobalLoader />
-
           <div>
             <RouterView />
             <v-btn class="customizer-btn" size="large" icon variant="flat" color="secondary"

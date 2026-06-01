@@ -7,7 +7,7 @@ import { UpdatePolicyDto } from './base/policy.dto';
 export class StepFiveDto {
   @IsOptional()
   @IsEnum(RecordStatus, {
-    message: 'Status must be DRAFT, IN_PROGRESS, or COMPLETED.',
+    message: 'Status must be DRAFT or COMPLETED.',
   })
   status?: RecordStatus;
 

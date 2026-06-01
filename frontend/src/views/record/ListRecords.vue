@@ -31,7 +31,6 @@ const headers = ref([
 const dialog = ref(false);
 const dialogDelete = ref(false);
 const editedIndex = ref<number>(-1);
-const loading = ref(true);
 const search = ref<string | undefined>(undefined);
 const serverItem = ref<RecordDetail>();
 const serverItems = ref<RecordDetail[]>();
@@ -79,7 +78,6 @@ const editItem = (item: RecordDetail) => {
 };
 
 const loadRecords = async ({ page, itemsPerPage, sortBy, searchQuery }: { page: number, itemsPerPage: number, sortBy: { key: string, order: string }[], searchQuery: string }) => {
-    loading.value = true;
     await recordStore.fetchAllRecords({
         page: page,
         limit: itemsPerPage,
@@ -88,7 +86,6 @@ const loadRecords = async ({ page, itemsPerPage, sortBy, searchQuery }: { page: 
         search: searchQuery
     });
     serverItems.value = recordStore.records.data;
-    loading.value = false;
     totalItems.value = recordStore.records.total;
 };
 
@@ -110,7 +107,6 @@ const formatStatus = (status?: string) => {
 
 const statusColor = (status?: string) => {
     if (status === 'DRAFT') return 'warning';
-    if (status === 'IN_PROGRESS') return 'info';
     if (status === 'COMPLETED') return 'success';
     return 'grey';
 };
@@ -134,7 +130,7 @@ watch(search, (newSearch) => {
 
 <template>
     <BaseBreadcrumb :title="page.title" :breadcrumbs="breadcrumbs" />
-
+    
     <UiParentCard title="All Records">
         <v-row>
             <v-col cols="12" md="3">
@@ -145,42 +141,46 @@ watch(search, (newSearch) => {
                 </v-text-field>
             </v-col>
         </v-row>
-        <v-data-table-server v-if="headers.length" v-model:items-per-page="itemsPerPage" :headers="headers"
-            :items="serverItems" :items-length="totalItems" :loading="loading" @update:options="loadRecords">
-            <template v-slot:item="{ item }">
-                <tr>
-                    <td @click="openDialog(item)" style="cursor: pointer; ">
-                        <span color="secondary"> {{ item.firstName }}</span>
-                    </td>
-                    <td>{{ item.lastName }}</td>
-                    <td>{{ item.email }}</td>
-                    <td>{{ item.mobileNumber }}</td>
-                    <td>{{ item.gender }}</td>
-                    <td>{{ item.panchayat }}</td>
-                    <td>{{ item?.createdAt ? new Date(item.createdAt).toLocaleDateString('en-GB') : '' }}</td>
-                    <td>
-                        <v-chip size="small" variant="tonal" :color="statusColor(item.status)">
-                            {{ formatStatus(item.status) }}
-                        </v-chip>
-                    </td>
-                    <td>
-                        <v-btn @click="openDialog(item)" variant="outlined" size="small" color="secondary">
-                            <ViewfinderIcon class="icon" />
-                        </v-btn>
-                        &nbsp;
+        <div class="records-table-wrapper">
+           
+            <v-data-table-server v-if="headers.length" v-model:items-per-page="itemsPerPage" :headers="headers"
+                :items="serverItems" :items-length="totalItems" :loading="false" @update:options="loadRecords">
+                <template v-slot:item="{ item }">
+                    <tr>
+                        <td @click="openDialog(item)" style="cursor: pointer; ">
+                            <span color="secondary"> {{ item.firstName }}</span>
+                        </td>
+                        <td>{{ item.lastName }}</td>
+                        <td>{{ item.email }}</td>
+                        <td>{{ item.mobileNumber }}</td>
+                        <td>{{ item.gender }}</td>
+                        <td>{{ item.panchayat }}</td>
+                        <td>{{ item?.createdAt ? new Date(item.createdAt).toLocaleDateString('en-GB') : '' }}</td>
+                        <td>
+                            <v-chip size="small" variant="tonal" :color="statusColor(item.status)">
+                                {{ formatStatus(item.status) }}
+                            </v-chip>
+                        </td>
+                        <td>
+                            <v-btn @click="openDialog(item)" variant="outlined" size="small" color="secondary">
+                                <ViewfinderIcon class="icon" />
+                            </v-btn>
+                            &nbsp;
 
-                        <v-btn variant="outlined" size="small" color="secondary" @click="editItem(item)">
-                            <EditIcon class="icon" />
-                        </v-btn>
-                        &nbsp;
-                        <v-btn variant="outlined" size="small" color="error" @click="deleteItem(item)">
-                            <TrashIcon class="icon" />
-                        </v-btn>
+                            <v-btn variant="outlined" size="small" color="secondary" @click="editItem(item)">
+                                <EditIcon class="icon" />
+                            </v-btn>
+                            &nbsp;
+                            <v-btn variant="outlined" size="small" color="error" @click="deleteItem(item)">
+                                <TrashIcon class="icon" />
+                            </v-btn>
 
-                    </td>
-                </tr>
-            </template>
-        </v-data-table-server>
+                        </td>
+                    </tr>
+                </template>
+            </v-data-table-server>
+         
+        </div>
     </UiParentCard>
 
     <div class="text-center pa-4">
@@ -208,3 +208,9 @@ watch(search, (newSearch) => {
         </v-dialog>
     </div>
 </template>
+
+<style scoped>
+.records-table-wrapper {
+    position: relative;
+}
+</style>
