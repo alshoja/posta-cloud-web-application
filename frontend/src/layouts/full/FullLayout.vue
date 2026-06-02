@@ -6,6 +6,7 @@ import Customizer from './customizer/CustomizerPanel.vue';
 import FooterPanel from './footer/FooterPanel.vue';
 import { useCustomizerStore } from '../../stores/customizer';
 import GlobalLoader from '@/components/shared/GlobalLoader.vue';
+import AiChatWidget from '@/components/ai/AiChatWidget.vue';
 const customizer = useCustomizerStore();
 </script>
 
@@ -19,6 +20,7 @@ const customizer = useCustomizerStore();
       <VerticalSidebarVue />
       <VerticalHeaderVue />
       <GlobalLoader />
+      <AiChatWidget />
 
       <v-main>
 

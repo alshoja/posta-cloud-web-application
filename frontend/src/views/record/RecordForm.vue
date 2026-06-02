@@ -50,7 +50,7 @@ const stepThree = reactive({ ...stepThreeInitialState });
 const stepFour = reactive({ ...stepFourInitialState });
 const stepFive = reactive({ ...stepFiveInitialState });
 const stepSix = reactive({ ...stepSixInitialState });
-const isUnlocked = ref(false);
+const showSensitiveData = ref(false);
 const isModalVisible = ref(false);
 const currentDocumentUrl = ref<string>('');
 const ocrLoading = ref(false);
@@ -401,13 +401,10 @@ const submitFinalData = async () => {
 };
 
 
-const checkPassword = () => {
-    const correctPassword = 'alshoja';
-    if (stepTwo.password === correctPassword) {
-        isUnlocked.value = true;
-    } else {
-        isUnlocked.value = false;
-    }
+const sensitiveFieldType = computed(() => (showSensitiveData.value ? 'text' : 'password'));
+const sensitiveFieldIcon = computed(() => (showSensitiveData.value ? '$eye' : '$eyeOff'));
+const toggleSensitiveDataVisibility = () => {
+    showSensitiveData.value = !showSensitiveData.value;
 };
 
 function setUploadUrl(url: string) {
@@ -741,35 +738,48 @@ const viewDocument = (index: number) => {
                 <v-form v-model="stepTwo.valid">
                     <UiParentCard title="Identity Documents">
                         <v-row class="border border-secondary rounded pa-2 mb-3">
-                            <!-- Password Input to Unlock Data -->
-                            <v-col cols="12" md="12">
-                                <v-text-field variant="outlined" v-if="!isUnlocked"
-                                    label="Enter password to unlock sensitive data" v-model="stepTwo.password"
-                                    type="password" @input="checkPassword" />
+                            <v-col cols="12">
+                                <v-alert type="info" color="secondary" variant="tonal" density="comfortable">
+                                    Sensitive details are hidden on screen by default. Use the eye icon to show or hide them.
+                                </v-alert>
                             </v-col>
 
-                            <!-- Sensitive Data Inputs (Initially hidden) -->
-                            <v-col v-if="isUnlocked" cols="12" md="4">
-                                <v-text-field variant="outlined" v-model="stepTwo.aadhaarNumber" label="Aadhaar Number"
+                            <v-col cols="12" md="4">
+                                <v-text-field class="sensitive-visibility-field" variant="outlined" v-model="stepTwo.aadhaarNumber" label="Aadhaar Number"
+                                    :type="sensitiveFieldType"
+                                    :append-inner-icon="sensitiveFieldIcon"
+                                    @click:append-inner="toggleSensitiveDataVisibility"
                                     :rules="[validationRules.maxLength(12), validationRules.minLength(12)]" />
                             </v-col>
-                            <v-col v-if="isUnlocked" cols="12" md="4">
-                                <v-text-field variant="outlined" v-model="stepTwo.drivingLicense"
+                            <v-col cols="12" md="4">
+                                <v-text-field class="sensitive-visibility-field" variant="outlined" v-model="stepTwo.drivingLicense"
                                     label="Driving License"
+                                    :type="sensitiveFieldType"
+                                    :append-inner-icon="sensitiveFieldIcon"
+                                    @click:append-inner="toggleSensitiveDataVisibility"
                                     :rules="[validationRules.maxLength(15), validationRules.minLength(15)]" />
                             </v-col>
-                            <v-col v-if="isUnlocked" cols="12" md="4">
-                                <v-text-field variant="outlined" v-model="stepTwo.electionID" label="Election ID"
+                            <v-col cols="12" md="4">
+                                <v-text-field class="sensitive-visibility-field" variant="outlined" v-model="stepTwo.electionID" label="Election ID"
+                                    :type="sensitiveFieldType"
+                                    :append-inner-icon="sensitiveFieldIcon"
+                                    @click:append-inner="toggleSensitiveDataVisibility"
                                     :rules="[validationRules.maxLength(10), validationRules.minLength(10)]" />
                             </v-col>
-                            <v-col v-if="isUnlocked" cols="12" md="4">
-                                <v-text-field variant="outlined" v-model="stepTwo.passportNumber"
+                            <v-col cols="12" md="4">
+                                <v-text-field class="sensitive-visibility-field" variant="outlined" v-model="stepTwo.passportNumber"
                                     label="Passport Number"
+                                    :type="sensitiveFieldType"
+                                    :append-inner-icon="sensitiveFieldIcon"
+                                    @click:append-inner="toggleSensitiveDataVisibility"
                                     :rules="[validationRules.maxLength(8), validationRules.minLength(8)]" />
                             </v-col>
-                            <v-col v-if="isUnlocked" cols="12" md="4">
-                                <v-text-field variant="outlined" v-model="stepTwo.postBoxNumber"
-                                    label="Post Box Number" />
+                            <v-col cols="12" md="4">
+                                <v-text-field class="sensitive-visibility-field" variant="outlined" v-model="stepTwo.postBoxNumber"
+                                    label="Post Box Number"
+                                    :type="sensitiveFieldType"
+                                    :append-inner-icon="sensitiveFieldIcon"
+                                    @click:append-inner="toggleSensitiveDataVisibility" />
                             </v-col>
                         </v-row>
                     </UiParentCard>
@@ -1006,4 +1016,13 @@ const viewDocument = (index: number) => {
 
 </template>
 
-<style scoped></style>
+<style scoped>
+:deep(.sensitive-visibility-field .v-field__append-inner .v-icon) {
+    color: rgb(var(--v-theme-secondary));
+    opacity: 1;
+}
+
+:deep(.sensitive-visibility-field .v-field__append-inner) {
+    opacity: 1;
+}
+</style>

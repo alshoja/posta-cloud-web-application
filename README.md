@@ -1,8 +1,8 @@
 # Posta Cloud
 
-Posta Cloud is a full-stack, Docker-managed record collection platform built with Vue 3, Vuetify, NestJS, PostgreSQL, Redis, and an OCR worker.
+Posta Cloud is a full-stack, Docker-managed record collection platform built with Vue 3, Vuetify, NestJS, PostgreSQL, Redis, OCR processing, and a local Ollama-powered AI assistant.
 
-I built this as a practical sample project for field-data workflows: users can store structured records for people in a local area, manage address and personal details, upload documents, and use OCR support to reduce manual typing.
+I built this as a practical sample project for field-data workflows: users can store structured records for people in a local area, manage address and personal details, upload documents, use OCR support to reduce manual typing, and ask a local AI assistant to find records using natural language.
 
 ## Highlights
 
@@ -11,6 +11,8 @@ I built this as a practical sample project for field-data workflows: users can s
 - PostgreSQL persistence with TypeORM entities and migration workflow.
 - Redis-backed background processing for OCR tasks.
 - Document upload support with a dedicated worker reading from shared uploads.
+- Posta Mitra, a floating AI chat assistant for natural-language record search.
+- Local Ollama integration where the LLM extracts safe filters and the backend performs authorized database queries.
 - Environment-driven configuration for local and production deployments.
 - Security-focused documentation for secrets, personal data, and production setup.
 
@@ -22,7 +24,17 @@ I built this as a practical sample project for field-data workflows: users can s
 | Backend | NestJS, TypeORM, class-validator |
 | Database | PostgreSQL |
 | Queue / Worker | Redis, OCR worker service |
+| AI | Ollama, local chat model |
 | Infrastructure | Docker, Docker Compose, pgAdmin |
+
+## What The App Includes
+
+- **Record workflow**: multi-step record creation for personal, identity, occupation, family, policy, and document details.
+- **Document support**: upload files in the records flow and serve uploaded assets from the backend.
+- **OCR auto-fill**: send supported identity documents to the OCR worker and use extracted details to reduce manual entry.
+- **Posta Mitra AI assistant**: ask questions such as “Show completed records”, “Find people living abroad”, or “Who has policies?”.
+- **Role-aware access**: regular users see their own records; admins follow the backend’s broader record visibility rules.
+- **Docker-first operation**: frontend, backend, PostgreSQL, Redis, OCR worker, Ollama, and pgAdmin run through Compose.
 
 ## Architecture
 
@@ -31,6 +43,11 @@ frontend -> backend API -> PostgreSQL
                    |
                    v
                  Redis -> OCR worker -> uploaded documents
+
+frontend chat -> backend AI endpoint -> Ollama
+                         |
+                         v
+                    PostgreSQL records
 ```
 
 Services:
@@ -40,6 +57,7 @@ Services:
 - `ocr-worker`: background OCR processor
 - `postgres_db`: PostgreSQL database
 - `redis`: queue backend
+- `ollama`: local AI model server on `http://localhost:11434`
 - `pgadmin`: database admin UI on `http://localhost:8080`
 
 ## Screenshots
@@ -67,11 +85,31 @@ docker compose logs -f backend
 docker compose down
 ```
 
+For the AI assistant, pull the local model once after Compose starts:
+
+```sh
+docker compose exec ollama ollama pull llama3.2:3b
+```
+
 Open:
 
 - Frontend: `http://localhost:3000`
 - Backend API: `http://localhost:5001`
+- Ollama: `http://localhost:11434`
 - pgAdmin: `http://localhost:8080`
+
+## AI Assistant
+
+Posta Mitra is the app’s first AI feature. It is a floating chat widget in the authenticated frontend layout.
+
+Current behavior:
+
+- The user asks a record-search question in plain language.
+- The backend sends the message to local Ollama.
+- Ollama returns a safe JSON intent and filters.
+- The backend validates those filters, applies auth rules, queries PostgreSQL, and returns compact record cards.
+
+The LLM does not query the database directly and does not generate SQL. See [AI Chat Module](backend/src/modules/ai-chat/README.md) for implementation details and future extension ideas.
 
 ## Database
 

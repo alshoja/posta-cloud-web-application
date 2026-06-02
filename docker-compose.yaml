@@ -54,6 +54,16 @@ services:
     networks:
       - common-net
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    networks:
+      - common-net
+
   ocr-worker:
     build: ./ocr-worker
     container_name: ocr_worker
@@ -111,9 +121,13 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - CORS_ORIGINS=${CORS_ORIGINS}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2:3b}
+      - AI_CHAT_ENABLED=${AI_CHAT_ENABLED:-true}
     depends_on:
       - postgres_db
       - redis
+      - ollama
     networks:
       - common-net
 
@@ -121,3 +135,4 @@ volumes:
   db-data:
     name: posta_cloud_db_data
   pgadmin-data:
+  ollama-data:

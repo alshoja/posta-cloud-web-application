@@ -10,6 +10,7 @@ import { SeederModule } from './shared/seeder/seeder.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { RecordsModule } from './modules/records/records.module';
 import { UsersModule } from './modules/users/users.module';
+import { AiChatModule } from './modules/ai-chat/ai-chat.module';
 import { BullModule } from '@nestjs/bullmq/dist/bull.module';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -58,6 +59,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
     SeederModule,
     AuthModule,
     UsersModule,
+    AiChatModule,
   ],
   controllers: [AppController],
   providers: [
