@@ -1,6 +1,7 @@
 import {
   ClassSerializerInterceptor,
   Controller,
+  Body,
   Get,
   MaxFileSizeValidator,
   Param,
@@ -11,6 +12,7 @@ import {
 } from '@nestjs/common';
 
 import { AppService } from './app.service';
+import { Public } from './modules/auth/public.decorator';
 import { UploadInterceptor } from './shared/interceptors/file-upload.interceptor';
 import { OcrService } from './shared/services/ocr.service';
 import { Throttle } from '@nestjs/throttler';
@@ -47,6 +49,7 @@ export class AppController {
   @Throttle({ default: { ttl: 60_000, limit: 10 } })
   @UseInterceptors(UploadInterceptor('file'), ClassSerializerInterceptor)
   extractText(
+    @Body('documentType') documentType: string | undefined,
     @UploadedFile(
       new ParseFilePipe({
         validators: [
@@ -67,7 +70,13 @@ export class AppController {
     )
     file: Express.Multer.File,
   ) {
-    return this.ocrService.uploadAndQueue(file);
+    return this.ocrService.uploadAndQueue(file, documentType);
+  }
+
+  @Public()
+  @Get('extract/text/status')
+  getOcrStatus() {
+    return this.ocrService.getServiceStatus();
   }
 
   @Get('extract/text/:jobId')

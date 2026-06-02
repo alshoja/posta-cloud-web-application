@@ -32,7 +32,7 @@ const MainRoutes = {
       component: () => import('@/views/record/RecordForm.vue')
     },
     {
-      name: 'Family Details Collection',
+      name: 'Records List',
       path: '/list/record',
       component: () => import('@/views/record/ListRecords.vue')
     },

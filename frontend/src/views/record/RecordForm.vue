@@ -12,7 +12,7 @@ import FileUpload from '@/views/record/components/FileUpload.vue';
 import FileViewer from '@/views/record/components/FileViewer.vue';
 import ProfileImage from '@/views/record/components/ProfileImage.vue';
 import ViewComponent from '@/views/record/components/ViewComponent.vue';
-import { computed, onMounted, reactive, ref, shallowRef, watch } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 const route = useRoute()
@@ -30,11 +30,13 @@ const {
     stepSixInitialState
 } = useForm();
 
-const page = ref({ title: 'Record Collection' });
-const breadcrumbs = shallowRef([
+const page = computed(() => ({
+    title: stepper.edit ? 'Edit Record' : 'Create Record'
+}));
+const breadcrumbs = computed(() => ([
     { title: 'Records', disabled: false, href: '#' },
-    { title: route.name ? String(route.name) : "", disabled: true, href: '#' }
-]);
+    { title: page.value.title, disabled: true, href: '#' }
+]));
 const stepper = reactive({
     step: 1,
     edit: false,
@@ -52,7 +54,20 @@ const isUnlocked = ref(false);
 const isModalVisible = ref(false);
 const currentDocumentUrl = ref<string>('');
 const ocrLoading = ref(false);
+const ocrServiceLoading = ref(false);
+const ocrServiceAvailable = ref(false);
+const ocrServiceMessage = ref('Checking document auto-fill...');
+const ocrScanMessage = ref('');
+const ocrFilledFields = ref<string[]>([]);
 const ocrScanFile = ref<File | File[] | null>(null);
+const ocrDocumentType = ref('auto');
+
+const ocrDocumentTypes = [
+    { title: 'Choose automatically', value: 'auto' },
+    { title: 'Aadhaar card', value: 'aadhaar' },
+    { title: 'Voter ID card', value: 'voter_id' },
+    { title: 'Driving licence', value: 'driving_license' },
+];
 
 const MAX_FORM_STEP = 7;
 
@@ -197,11 +212,21 @@ watch(
 
 
 const setFormFields = (record: RecordDetail) => {
+    const scannedIdentityFields = {
+        aadhaarNumber: stepTwo.aadhaarNumber,
+        drivingLicense: stepTwo.drivingLicense,
+        electionID: stepTwo.electionID,
+    };
     const steps = [stepOne, stepTwo, stepThree, stepFour, stepFive, stepSix];
     steps.forEach(step => Object.assign(step, record));
+
+    stepTwo.aadhaarNumber = record.aadhaarNumber || scannedIdentityFields.aadhaarNumber || '';
+    stepTwo.drivingLicense = record.drivingLicense || scannedIdentityFields.drivingLicense || '';
+    stepTwo.electionID = record.electionID || scannedIdentityFields.electionID || '';
 };
 
 onMounted(() => {
+    void checkOcrServiceStatus();
     // const One = {
     //     "id": "",
     //     "valid": true,
@@ -233,6 +258,15 @@ const isCurrentStepValid = computed(() => {
     if (stepper.step === 5) return stepFive.valid;
     if (stepper.step === 6) return stepSix.valid;
     return false;
+});
+
+const canUseOcrAutofill = computed(() => !stepper.edit && ocrServiceAvailable.value);
+const documentAutofillMessage = computed(() => {
+    if (ocrLoading.value && ocrScanMessage.value) {
+        return ocrScanMessage.value;
+    }
+
+    return ocrServiceMessage.value;
 });
 
 // const allStepsValid = computed(() => stepOne.valid && stepTwo.valid && stepThree.valid && stepFour.valid && stepFive.valid && stepSix.valid);
@@ -358,7 +392,7 @@ const submitFinalData = async () => {
         loading.value = true;
         await recordStore.createDocumentsData(stepSix, recordId, 'COMPLETED');
         snackbar.showSnackbar('Data submitted successfully!', 'success', []);
-        router.push({ name: "Family Details Collection" });
+        router.push({ name: "Records List" });
     } catch (error) {
         console.log('🚀 error:', error);
     } finally {
@@ -387,59 +421,149 @@ function setUploadUrlForDoc(fileUrl: string, index: number) {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const formatOcrDob = (dob?: string | null): string => {
-    if (!dob) return '';
-    const parts = dob.split('/');
+const checkOcrServiceStatus = async () => {
+    if (stepper.edit) {
+        ocrServiceAvailable.value = false;
+        ocrServiceMessage.value = 'Document auto-fill is available only when creating a new record.';
+        return;
+    }
+
+    try {
+        ocrServiceLoading.value = true;
+        const response = await axiosInstance.get(`${import.meta.env.VITE_API_URL}/extract/text/status`);
+        const enabled = Boolean(response.data?.enabled);
+        ocrServiceAvailable.value = enabled;
+        ocrServiceMessage.value = enabled
+            ? 'Upload an ID document to fill matching fields automatically.'
+            : 'Document auto-fill is not available right now.';
+    } catch (error) {
+        console.log('Document auto-fill status error:', error);
+        ocrServiceAvailable.value = false;
+        ocrServiceMessage.value = 'Document auto-fill is not available right now.';
+    } finally {
+        ocrServiceLoading.value = false;
+    }
+};
+
+watch(
+    () => stepper.edit,
+    () => {
+        void checkOcrServiceStatus();
+    }
+);
+
+type IdentityDocumentFields = {
+    name?: string | null
+    dateOfBirth?: string | null
+    gender?: string | null
+    aadhaarNumber?: string | null
+    drivingLicense?: string | null
+    electionID?: string | null
+    pin?: string | null
+}
+
+type IdentityDocumentParseResult = {
+    documentType?: 'aadhaar' | 'voter_id' | 'driving_license' | 'unknown'
+    confidence?: number
+    fields?: IdentityDocumentFields
+}
+
+const formatOcrDate = (date?: string | null): string => {
+    if (!date) return '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
+    const parts = date.split(/[/. -]/).filter(Boolean);
     if (parts.length !== 3) return '';
-    const [dd, mm, yyyy] = parts;
-    if (!dd || !mm || !yyyy) return '';
+    const [dd, mm, year] = parts;
+    if (!dd || !mm || !year) return '';
+    const yyyy = year.length === 2 ? `20${year}` : year;
     return `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
 };
 
-const applyOcrResultToForm = (result: {
-    name?: string | null
-    dob?: string | null
-    gender?: string | null
-    aadhaar?: string | null
-    pin?: string | null
-}) => {
-    if (result.aadhaar) {
-        stepTwo.aadhaarNumber = result.aadhaar;
+const applyOcrResultToForm = (result: IdentityDocumentParseResult): boolean => {
+    const fields = result.fields;
+    let filledAnyField = false;
+    const filledFields: string[] = [];
+
+    ocrFilledFields.value = [];
+
+    if (!fields) {
+        return false;
     }
-    if (result.dob) {
-        const dob = formatOcrDob(result.dob);
-        if (dob) stepOne.dateOfBirth = dob;
+
+    if (fields.aadhaarNumber) {
+        stepTwo.aadhaarNumber = fields.aadhaarNumber;
+        filledAnyField = true;
+        filledFields.push('Aadhaar number');
     }
-    if (result.gender) {
-        const normalizedGender = result.gender.toLowerCase();
-        if (['male', 'female', 'other'].includes(normalizedGender)) {
-            stepOne.gender = normalizedGender;
+    if (fields.drivingLicense) {
+        stepTwo.drivingLicense = fields.drivingLicense;
+        filledAnyField = true;
+        filledFields.push('Driving licence');
+    }
+    if (fields.electionID) {
+        stepTwo.electionID = fields.electionID;
+        filledAnyField = true;
+        filledFields.push('Election ID');
+    }
+    if (fields.dateOfBirth) {
+        const dob = formatOcrDate(fields.dateOfBirth);
+        if (dob) {
+            stepOne.dateOfBirth = dob;
+            filledAnyField = true;
+            filledFields.push('Date of birth');
         }
     }
-    if (result.name) {
-        const parts = result.name.trim().split(/\s+/);
+    if (fields.gender) {
+        const normalizedGender = fields.gender.toLowerCase();
+        if (['male', 'female', 'other'].includes(normalizedGender)) {
+            stepOne.gender = normalizedGender;
+            filledAnyField = true;
+            filledFields.push('Gender');
+        }
+    }
+    if (fields.name) {
+        const parts = fields.name.trim().split(/\s+/);
         if (parts.length > 0 && !stepOne.firstName) {
             stepOne.firstName = parts[0];
+            filledAnyField = true;
+            filledFields.push('First name');
         }
         if (parts.length > 1 && !stepOne.lastName) {
             stepOne.lastName = parts.slice(1).join(' ');
+            filledAnyField = true;
+            filledFields.push('Last name');
         }
     }
-    if (result.pin && !stepOne.postOffice) {
-        stepOne.postOffice = result.pin;
+    if (fields.pin && !stepOne.postOffice) {
+        stepOne.postOffice = fields.pin;
+        filledAnyField = true;
+        filledFields.push('Post office / PIN');
     }
+
+    ocrFilledFields.value = filledFields;
+
+    return filledAnyField;
 };
 
 const runOcrAutofill = async () => {
+    if (!canUseOcrAutofill.value) {
+        snackbar.showSnackbar(ocrServiceMessage.value, 'warning', []);
+        return;
+    }
+
     const selectedFile = Array.isArray(ocrScanFile.value) ? ocrScanFile.value[0] : ocrScanFile.value;
     if (!(selectedFile instanceof File)) {
-        snackbar.showSnackbar('Please choose a file for OCR scan.', 'warning', []);
+        snackbar.showSnackbar('Please choose a document first.', 'warning', []);
         return;
     }
     try {
         ocrLoading.value = true;
+        ocrScanMessage.value = 'Reading your document...';
         const formData = new FormData();
         formData.append('file', selectedFile);
+        if (ocrDocumentType.value !== 'auto') {
+            formData.append('documentType', ocrDocumentType.value);
+        }
         const submitResponse = await axiosInstance.post(`${import.meta.env.VITE_API_URL}/extract/text`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data'
@@ -447,12 +571,15 @@ const runOcrAutofill = async () => {
         });
         const jobId = submitResponse.data?.jobId ? String(submitResponse.data.jobId) : null;
         if (!jobId) {
-            snackbar.showSnackbar('Failed to submit OCR scan.', 'error', []);
+            snackbar.showSnackbar('Could not start document scan. Please try again.', 'error', []);
             return;
         }
 
         const maxAttempts = 20;
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            ocrScanMessage.value = attempt < 3
+                ? 'Reading your document...'
+                : 'Still reading. This can take a moment for larger files.';
             const resultResponse = await axiosInstance.get(`${import.meta.env.VITE_API_URL}/extract/text/${jobId}`);
             const result = resultResponse.data?.result;
             if (!result) {
@@ -464,21 +591,29 @@ const runOcrAutofill = async () => {
                 continue;
             }
             if (result.error) {
-                snackbar.showSnackbar(`OCR failed: ${result.error}`, 'error', []);
+                snackbar.showSnackbar(`Document scan failed: ${result.error}`, 'error', []);
                 return;
             }
 
-            applyOcrResultToForm(result);
-            snackbar.showSnackbar('OCR scan completed. Please verify values before saving.', 'success', []);
+            const filledAnyField = applyOcrResultToForm(result);
+            ocrScanFile.value = null;
+            snackbar.showSnackbar(
+                filledAnyField
+                    ? 'Details filled from document. Please check them before saving.'
+                    : 'Document was read, but no matching form details were found.',
+                filledAnyField ? 'success' : 'warning',
+                [],
+            );
             return;
         }
-        snackbar.showSnackbar('OCR is taking longer than expected. Please try again.', 'warning', []);
+        snackbar.showSnackbar('Document scan is taking longer than expected. Please try again.', 'warning', []);
     } catch (error) {
-        console.log('OCR error:', error);
-        const message = error instanceof Error ? error.message : 'OCR scan failed. Please try again.';
+        console.log('Document scan error:', error);
+        const message = error instanceof Error ? error.message : 'Document scan failed. Please try again.';
         snackbar.showSnackbar(message, 'error', []);
     } finally {
         ocrLoading.value = false;
+        ocrScanMessage.value = '';
     }
 };
 const viewDocument = (index: number) => {
@@ -503,23 +638,42 @@ const viewDocument = (index: number) => {
                                     :rules="[]" @uploaded="setUploadUrl" />
                             </v-col>
                         </v-row>
-                        <v-row class="border border-secondary rounded pa-2 mb-3">
+                        <v-row v-if="!stepper.edit" class="border border-secondary rounded pa-2 mb-3">
                             <v-col cols="12">
-                                <v-alert type="warning" variant="tonal" density="comfortable">
-                                    OCR scan is assistive only. Use it with caution and verify all extracted values
-                                    before saving.
+                                <v-alert :type="ocrServiceAvailable ? 'info' : 'warning'" variant="tonal"
+                                    density="comfortable">
+                                    {{ documentAutofillMessage }}
+                                    <span v-if="ocrServiceAvailable && !ocrLoading">
+                                        Please check filled details before saving.
+                                    </span>
                                 </v-alert>
                             </v-col>
-                            <v-col cols="12" md="9" lg="10">
-                                <v-file-input v-model="ocrScanFile" variant="outlined" label="Upload File For OCR Scan"
-                                    accept=".pdf,image/png,image/jpeg" :disabled="ocrLoading" />
+                            <v-col v-if="ocrFilledFields.length > 0" cols="12">
+                                <v-chip-group>
+                                    <v-chip v-for="field in ocrFilledFields" :key="field" color="success"
+                                        variant="tonal" size="small">
+                                        Filled {{ field }}
+                                    </v-chip>
+                                </v-chip-group>
+                            </v-col>
+                            <v-col cols="12" md="3">
+                                <v-select v-model="ocrDocumentType" :items="ocrDocumentTypes" variant="outlined"
+                                    label="Document"
+                                    :disabled="ocrLoading || ocrServiceLoading || !canUseOcrAutofill" />
+                            </v-col>
+                            <v-col cols="12" md="6" lg="7">
+                                <v-file-input v-model="ocrScanFile" variant="outlined"
+                                    label="Upload Aadhaar, voter ID, or driving licence"
+                                    accept=".pdf,.doc,.docx,image/png,image/jpeg"
+                                    :disabled="ocrLoading || ocrServiceLoading || !canUseOcrAutofill" />
                             </v-col>
                             <v-col cols="12" md="3" lg="2"
                                 class="d-flex align-center justify-start ps-md-6 mb-3 mb-md-0 mb-lg-5">
                                 <v-btn variant="outlined" color="secondary" size="large" class="w-100 w-md-auto"
-                                    :loading="ocrLoading" :disabled="ocrLoading"
+                                    :loading="ocrLoading || ocrServiceLoading"
+                                    :disabled="ocrLoading || ocrServiceLoading || !canUseOcrAutofill"
                                     @click="runOcrAutofill">
-                                    Scan & Auto Fill
+                                    Fill From Document
                                 </v-btn>
                             </v-col>
                         </v-row>

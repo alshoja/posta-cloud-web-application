@@ -33,6 +33,7 @@ const recordStore = useRecordStore();
 const authStore = useAuthStore();
 const snackbar = useSnackbarStore()
 const isAdminUser = authStore.user?.role === 'ADMIN';
+const currentUserId = authStore.user?.id;
 const headers = computed(() => [
     { title: 'First Name', sortable: false, key: 'firstName' },
     { title: 'Email', key: 'email' },
@@ -80,7 +81,20 @@ const editItem = (item: RecordDetail) => {
 };
 
 const canEditRecord = (item: RecordDetail) => item.status !== 'COMPLETED';
+const canDeleteRecord = (item: RecordDetail) => item.user?.id === currentUserId;
 const canReopenRecord = (item: RecordDetail) => isAdminUser && item.status === 'COMPLETED';
+const getEditHint = (item: RecordDetail) =>
+    item.status === 'COMPLETED'
+        ? 'Completed records are locked. Only admins can reopen them.'
+        : 'Open this draft to continue editing.';
+const getDeleteHint = (item: RecordDetail) =>
+    canDeleteRecord(item)
+        ? 'Delete your own record.'
+        : 'You can only delete records you created.';
+const getReopenHint = (item: RecordDetail) =>
+    canReopenRecord(item)
+        ? 'Reopen this completed record as a draft.'
+        : 'Only admins can reopen completed records.';
 
 const reopenItem = async (item: RecordDetail) => {
     if (!item.id) return;
@@ -96,6 +110,8 @@ const reopenItem = async (item: RecordDetail) => {
         snackbar.showSnackbar('Record reopened successfully.', 'success', []);
     } catch (error) {
         console.error('Failed to reopen record:', error);
+        const errorMessage = (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Unable to reopen record.';
+        snackbar.showSnackbar(errorMessage, 'error', []);
     }
 };
 
@@ -161,15 +177,17 @@ watch(search, (newSearch) => {
     <BaseBreadcrumb :title="page.title" :breadcrumbs="breadcrumbs" />
     
     <UiParentCard title="All Records">
-        <v-row>
-            <v-col cols="12" md="3">
-                <v-text-field menu-icon="" label="Search Record" v-model="search" variant="outlined">
+        <v-row class="align-center ">
+            <v-col cols="12" md="4" lg="3">
+                <v-text-field menu-icon="" label="Search records" placeholder="Name, email, or mobile" v-model="search" variant="outlined">
                     <template v-slot:prepend-inner>
                         <SearchIcon stroke-width="1.5" size="20" class="text-lightText SearchIcon" />
                     </template>
                 </v-text-field>
             </v-col>
+            
         </v-row>
+     
         <div class="records-table-wrapper">
            
             <v-data-table-server v-if="headers.length" v-model:items-per-page="itemsPerPage" :headers="headers"
@@ -191,23 +209,45 @@ watch(search, (newSearch) => {
                         </td>
                         <td class="actions-cell">
                             <div class="actions-group">
-                                <v-btn @click="openDialog(item)" variant="outlined" size="small" color="secondary">
-                                    <ViewfinderIcon class="icon" />
-                                </v-btn>
+                                <v-tooltip text="View record details">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn v-bind="props" @click="openDialog(item)" variant="outlined" size="small" color="secondary">
+                                            <ViewfinderIcon class="icon" />
+                                        </v-btn>
+                                    </template>
+                                </v-tooltip>
 
-                                <v-btn variant="outlined" size="small" color="secondary" @click="editItem(item)"
-                                    :disabled="!canEditRecord(item)">
-                                    <EditIcon class="icon" />
-                                </v-btn>
+                                <v-tooltip :text="getEditHint(item)">
+                                    <template v-slot:activator="{ props }">
+                                        <span v-bind="props" class="d-inline-block">
+                                            <v-btn variant="outlined" size="small" color="secondary" @click="editItem(item)"
+                                                :disabled="!canEditRecord(item)">
+                                                <EditIcon class="icon" />
+                                            </v-btn>
+                                        </span>
+                                    </template>
+                                </v-tooltip>
 
-                                <v-btn v-if="isAdminUser" variant="outlined" size="small" color="primary" @click="reopenItem(item)"
-                                    :disabled="!canReopenRecord(item)">
-                                    <RefreshIcon class="icon" />
-                                </v-btn>
+                                <v-tooltip v-if="isAdminUser" :text="getReopenHint(item)">
+                                    <template v-slot:activator="{ props }">
+                                        <span v-bind="props" class="d-inline-block">
+                                            <v-btn variant="outlined" size="small" color="primary" @click="reopenItem(item)"
+                                                :disabled="!canReopenRecord(item)">
+                                                <RefreshIcon class="icon" />
+                                            </v-btn>
+                                        </span>
+                                    </template>
+                                </v-tooltip>
 
-                                <v-btn variant="outlined" size="small" color="error" @click="deleteItem(item)">
-                                    <TrashIcon class="icon" />
-                                </v-btn>
+                                <v-tooltip :text="getDeleteHint(item)">
+                                    <template v-slot:activator="{ props }">
+                                        <span v-bind="props" class="d-inline-block">
+                                            <v-btn variant="outlined" size="small" color="error" @click="deleteItem(item)" :disabled="!canDeleteRecord(item)">
+                                                <TrashIcon class="icon" />
+                                            </v-btn>
+                                        </span>
+                                    </template>
+                                </v-tooltip>
                             </div>
                         </td>
                     </tr>
@@ -244,6 +284,14 @@ watch(search, (newSearch) => {
 </template>
 
 <style scoped>
+.records-toolbar-row {
+    row-gap: 0;
+}
+
+.records-info-alert {
+    margin-top: 0;
+}
+
 .records-table-wrapper {
     position: relative;
 }

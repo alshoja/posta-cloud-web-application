@@ -4,6 +4,8 @@ import { Queue } from 'bullmq';
 import { RedisService } from './redis.service';
 import { OCR_QUEUE_NAME } from '../constants/queue.constants';
 
+const OCR_WORKER_HEARTBEAT_KEY = 'ocr_worker:heartbeat';
+
 @Injectable()
 export class OcrService {
   constructor(
@@ -11,12 +13,33 @@ export class OcrService {
     private redisService: RedisService
   ) { }
 
-  async uploadAndQueue(file: Express.Multer.File) {
+  async uploadAndQueue(file: Express.Multer.File, documentType?: string) {
     const job = await this.ocrQueue.add('extract-text', {
       filePath: `/app/uploads/${file.filename}`,
+      documentType,
     });
 
     return { jobId: job.id };
+  }
+
+  async getServiceStatus() {
+    try {
+      const redis = this.redisService.getClient();
+      const lastHeartbeat = await redis.get(OCR_WORKER_HEARTBEAT_KEY);
+      const workers = await this.ocrQueue.getWorkers();
+      const hasActiveWorker = workers.length > 0;
+
+      return {
+        enabled: Boolean(lastHeartbeat) || hasActiveWorker,
+        lastHeartbeat,
+        workers: workers.length,
+      };
+    } catch (err: any) {
+      return {
+        enabled: false,
+        error: err.message || 'Unable to check OCR service status',
+      };
+    }
   }
 
   async getJobResult(jobId: string) {

@@ -478,9 +478,10 @@ export class RecordsService {
     id: number,
   ): Promise<{ id: number; status: RecordStatus; lastCompletedStep: number }> {
     const userId = this.request.user.sub;
+    const isAdmin = this.request.user.role === UserRole.ADMIN;
 
     const record = await this.recordRepository.findOne({
-      where: { id, userId },
+      where: isAdmin ? { id } : { id, userId },
     });
 
     if (!record) {
@@ -489,6 +490,7 @@ export class RecordsService {
 
     record.status = RecordStatus.DRAFT;
     record.completedAt = null;
+    record.updatedBy = userId;
 
     await this.recordRepository.save(record);
 
