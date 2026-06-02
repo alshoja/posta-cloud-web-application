@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, ILike, Repository } from 'typeorm';
+import { Brackets, DataSource, Repository } from 'typeorm';
 import { AuthenticatedRequest } from '../auth/types/express';
 import { StepFiveDto } from './dto/step-five.dto';
 import { StepFourDto } from './dto/step-four.dto';
@@ -23,6 +23,7 @@ import { Child } from './entities/child.entity';
 import { Document } from './entities/document.entity';
 import { Policy } from './entities/policy.entity';
 import { Record as RecordEntity } from './entities/record.entity';
+import { UserRole } from '../users/enums/user-role.enum';
 
 @Injectable({ scope: Scope.REQUEST })
 export class RecordsService {
@@ -48,9 +49,11 @@ export class RecordsService {
       const recordRepository = queryRunner.manager.getRepository(RecordEntity);
       const action = this.resolveAction(stepOneDto.status, 1);
       const { status: _status, ...stepOnePayload } = stepOneDto;
-      const payload: StepOneDto = {
+      const createPayload = {
         ...stepOnePayload,
         userId,
+        createdBy: userId,
+        updatedBy: userId,
       };
 
       const existingRecord = stepOneDto.id
@@ -61,18 +64,21 @@ export class RecordsService {
 
       if (existingRecord) {
         this.ensureRecordEditable(existingRecord);
-        await recordRepository.update({ id: stepOneDto.id, userId }, payload);
+        await recordRepository.update(
+          { id: stepOneDto.id, userId },
+          { ...stepOnePayload, updatedBy: userId },
+        );
         recordId = existingRecord.id;
       } else if (stepOneDto.id) {
         throw new NotFoundException(
           `Record with ID ${stepOneDto.id} not found`,
         );
       } else {
-        const newRecord = await recordRepository.insert(payload);
+        const newRecord = await recordRepository.insert(createPayload);
         recordId = newRecord.identifiers[0].id;
       }
 
-      await this.applyStepAction(recordRepository, recordId, 1, action);
+      await this.applyStepAction(recordRepository, recordId, 1, action, userId);
       const record = await recordRepository.findOneOrFail({ where: { id: recordId } });
       await queryRunner.commitTransaction();
       return {
@@ -101,6 +107,7 @@ export class RecordsService {
     try {
       const existingRecord = await this.findOne(recordsId);
       this.ensureRecordEditable(existingRecord);
+      const userId = this.request.user.sub;
       const recordRepository = queryRunner.manager.getRepository(RecordEntity);
       const action = this.resolveAction(stepTwoDto.status, 2);
       const { status: _status, ...stepTwoPayload } = stepTwoDto;
@@ -110,9 +117,12 @@ export class RecordsService {
 
       if (hasStepTwoValues) {
         const newRecord = recordRepository.create(stepTwoPayload);
-        await recordRepository.update({ id: recordsId }, newRecord);
+        await recordRepository.update(
+          { id: recordsId },
+          { ...newRecord, updatedBy: userId },
+        );
       }
-      await this.applyStepAction(recordRepository, recordsId, 2, action);
+      await this.applyStepAction(recordRepository, recordsId, 2, action, userId);
       const record = await recordRepository.findOneOrFail({ where: { id: recordsId } });
       await queryRunner.commitTransaction();
       return {
@@ -139,6 +149,7 @@ export class RecordsService {
     try {
       const existingRecord = await this.findOne(recordsId);
       this.ensureRecordEditable(existingRecord);
+      const userId = this.request.user.sub;
       const normalizedAddresses = addresses ?? [];
       const _addresses = normalizedAddresses.map((address) => ({
         houseName: this.normalizeNullableString(address.houseName),
@@ -163,8 +174,17 @@ export class RecordsService {
       if (_addresses.length > 0) {
         await addressRepository.insert(_addresses);
       }
-      await recordRepository.update({ id: recordsId }, createdRecord);
-      await this.applyStepAction(recordRepository, recordsId, 3, stepAction);
+      await recordRepository.update(
+        { id: recordsId },
+        { ...createdRecord, updatedBy: userId },
+      );
+      await this.applyStepAction(
+        recordRepository,
+        recordsId,
+        3,
+        stepAction,
+        userId,
+      );
       const record = await recordRepository.findOneOrFail({ where: { id: recordsId } });
 
       await queryRunner.commitTransaction();
@@ -193,6 +213,7 @@ export class RecordsService {
     try {
       const existingRecord = await this.findOne(recordsId);
       this.ensureRecordEditable(existingRecord);
+      const userId = this.request.user.sub;
       const normalizedChildren = children ?? [];
       const _children = normalizedChildren.map((child) => ({
         ...child,
@@ -214,9 +235,18 @@ export class RecordsService {
         const createdRecord = recordRepository.create({
           ...updateFamilyDto,
         });
-        await recordRepository.update({ id: recordsId }, createdRecord);
+        await recordRepository.update(
+          { id: recordsId },
+          { ...createdRecord, updatedBy: userId },
+        );
       }
-      await this.applyStepAction(recordRepository, recordsId, 4, stepAction);
+      await this.applyStepAction(
+        recordRepository,
+        recordsId,
+        4,
+        stepAction,
+        userId,
+      );
       const record = await recordRepository.findOneOrFail({ where: { id: recordsId } });
       await queryRunner.commitTransaction();
       return {
@@ -245,6 +275,7 @@ export class RecordsService {
     try {
       const existingRecord = await this.findOne(recordsId);
       this.ensureRecordEditable(existingRecord);
+      const userId = this.request.user.sub;
       const action = this.resolveAction(stepFiveDto.status, 5);
       const policies = stepFiveDto.policies.map((policy) => ({
         type: policy.type?.trim() ? policy.type : null,
@@ -256,7 +287,7 @@ export class RecordsService {
       const recordRepository = queryRunner.manager.getRepository(RecordEntity);
       await policyRepository.delete({ recordsId });
       await policyRepository.insert(policies);
-      await this.applyStepAction(recordRepository, recordsId, 5, action);
+      await this.applyStepAction(recordRepository, recordsId, 5, action, userId);
       const record = await recordRepository.findOneOrFail({ where: { id: recordsId } });
 
       await queryRunner.commitTransaction();
@@ -286,6 +317,7 @@ export class RecordsService {
     try {
       const existingRecord = await this.findOne(recordsId);
       this.ensureRecordEditable(existingRecord);
+      const userId = this.request.user.sub;
       const action = this.resolveAction(stepSixDto.status, 6);
       const _document = stepSixDto.documents.map((document) => ({
         name: document.name?.trim() ? document.name : null,
@@ -299,7 +331,7 @@ export class RecordsService {
       if (action === 'FINAL') {
         await this.validateFinalSubmission(recordRepository, recordsId);
       }
-      await this.applyStepAction(recordRepository, recordsId, 6, action);
+      await this.applyStepAction(recordRepository, recordsId, 6, action, userId);
       const record = await recordRepository.findOneOrFail({ where: { id: recordsId } });
 
       await queryRunner.commitTransaction();
@@ -326,35 +358,65 @@ export class RecordsService {
   ): Promise<{ data: RecordEntity[]; total: number }> {
     try {
       const userId = this.request.user.sub;
-      const [data, total] = await this.recordRepository.findAndCount({
-        relations: ['addresses', 'children', 'policies', 'documents'],
-        where: search
-          ? [
-              {
-                userId,
-                firstName: ILike(`%${search}%`),
-              },
-              {
-                userId,
-                lastName: ILike(`%${search}%`),
-              },
-              {
-                userId,
-                email: ILike(`%${search}%`),
-              },
-              {
-                userId,
-                mobileNumber: ILike(`%${search}%`),
-              },
-            ]
-          : {
-              userId,
-            },
+      const isAdmin = this.request.user.role === UserRole.ADMIN;
+      const normalizedSortOrder = sortOrder.toUpperCase() as 'ASC' | 'DESC';
+      const recordSortColumnMap: Record<string, string> = {
+        id: 'record.id',
+        firstName: 'record.firstName',
+        lastName: 'record.lastName',
+        email: 'record.email',
+        mobileNumber: 'record.mobileNumber',
+        gender: 'record.gender',
+        createdAt: 'record.createdAt',
+        status: 'record.status',
+      };
+      const mappedRecordSortColumn =
+        recordSortColumnMap[sortBy] ?? 'record.createdAt';
+      const query = this.recordRepository
+        .createQueryBuilder('record')
+        .leftJoinAndSelect('record.addresses', 'addresses')
+        .leftJoinAndSelect('record.children', 'children')
+        .leftJoinAndSelect('record.policies', 'policies')
+        .leftJoinAndSelect('record.documents', 'documents')
+        .leftJoinAndSelect('record.user', 'user')
+        .skip((page - 1) * limit)
+        .take(limit);
 
-        order: { [sortBy]: sortOrder.toUpperCase() as 'ASC' | 'DESC' },
-        skip: (page - 1) * limit,
-        take: limit,
-      });
+      if (sortBy === 'addedBy') {
+        query
+          .orderBy('user.firstName', normalizedSortOrder)
+          .addOrderBy('user.lastName', normalizedSortOrder)
+          .addOrderBy('record.createdAt', 'DESC');
+      } else {
+        query.orderBy(mappedRecordSortColumn, normalizedSortOrder);
+      }
+
+      if (isAdmin) {
+        query.andWhere(
+          new Brackets((qb) => {
+            qb.where('record.status != :draftStatus', {
+              draftStatus: RecordStatus.DRAFT,
+            }).orWhere('record.userId = :userId', { userId });
+          }),
+        );
+      } else {
+        query.andWhere('record.userId = :userId', { userId });
+      }
+
+      if (search) {
+        query.andWhere(
+          new Brackets((qb) => {
+            qb.where('record.firstName ILIKE :search', { search: `%${search}%` })
+              .orWhere('record.lastName ILIKE :search', { search: `%${search}%` })
+              .orWhere('record.email ILIKE :search', { search: `%${search}%` })
+              .orWhere('record.mobileNumber ILIKE :search', {
+                search: `%${search}%`,
+              });
+          }),
+        );
+      }
+
+      const [data, total] = await query.getManyAndCount();
 
       return { data, total };
     } catch (err) {
@@ -365,12 +427,16 @@ export class RecordsService {
 
   async findOne(id: number): Promise<RecordEntity> {
     const userId = this.request.user.sub;
+    const isAdmin = this.request.user.role === UserRole.ADMIN;
 
     const record = await this.recordRepository.findOne({
-      relations: ['addresses', 'children', 'policies', 'documents'],
-      where: { id, userId },
+      relations: ['addresses', 'children', 'policies', 'documents', 'user'],
+      where: isAdmin ? { id } : { id, userId },
     });
     if (!record) {
+      throw new NotFoundException(`Record with ID ${id} not found`);
+    }
+    if (record.status === RecordStatus.DRAFT && record.userId !== userId) {
       throw new NotFoundException(`Record with ID ${id} not found`);
     }
     return record;
@@ -479,6 +545,7 @@ export class RecordsService {
     recordsId: number,
     step: number,
     action: 'DRAFT' | 'CONTINUE' | 'FINAL',
+    actorUserId: number,
   ) {
     const record = await recordRepository.findOne({ where: { id: recordsId } });
     if (!record) {
@@ -489,6 +556,7 @@ export class RecordsService {
       if (record.status !== RecordStatus.COMPLETED) {
         record.status = RecordStatus.DRAFT;
       }
+      record.updatedBy = actorUserId;
       await recordRepository.save(record);
       return;
     }
@@ -497,6 +565,7 @@ export class RecordsService {
       record.status = RecordStatus.COMPLETED;
       record.lastCompletedStep = Math.max(record.lastCompletedStep, step);
       record.completedAt = new Date();
+      record.updatedBy = actorUserId;
       await recordRepository.save(record);
       return;
     }
@@ -504,6 +573,7 @@ export class RecordsService {
     record.status = RecordStatus.DRAFT;
     record.lastCompletedStep = Math.max(record.lastCompletedStep, step);
     record.completedAt = null;
+    record.updatedBy = actorUserId;
     await recordRepository.save(record);
   }
 

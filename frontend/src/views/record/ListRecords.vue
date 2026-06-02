@@ -7,7 +7,7 @@ import { useRecordStore } from '@/stores/record';
 import { useSnackbarStore } from '@/stores/snackbar.store';
 import ViewComponent from '@/views/record/components/ViewComponent.vue';
 import _ from "lodash";
-import { ref, shallowRef, watch } from 'vue';
+import { computed, ref, shallowRef, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { EditIcon, RefreshIcon, SearchIcon, TrashIcon, ViewfinderIcon } from 'vue-tabler-icons';
 
@@ -17,16 +17,6 @@ const breadcrumbs = shallowRef([
     { title: 'All Records', disabled: true, href: '#' }
 ]);
 
-const headers = ref([
-    { title: 'First Name', sortable: false, key: 'firstName' },
-    { title: 'Last Name', key: 'lastName', },
-    { title: 'Email', key: 'email' },
-    { title: 'Mobile', key: 'mobileNumber', },
-    { title: 'Gender', key: 'gender', },
-    { title: 'Entry Date', key: 'createdAt', },
-    { title: 'Status', key: 'status' },
-    { title: 'Actions', sortable: false, key: 'actions' },
-]);
 
 const dialog = ref(false);
 const dialogDelete = ref(false);
@@ -43,6 +33,16 @@ const recordStore = useRecordStore();
 const authStore = useAuthStore();
 const snackbar = useSnackbarStore()
 const isAdminUser = authStore.user?.role === 'ADMIN';
+const headers = computed(() => [
+    { title: 'First Name', sortable: false, key: 'firstName' },
+    { title: 'Email', key: 'email' },
+    { title: 'Mobile', key: 'mobileNumber', },
+    { title: 'Gender', key: 'gender', },
+    ...(isAdminUser ? [{ title: 'Added By', key: 'addedBy' }] : []),
+    { title: 'Entry Date', key: 'createdAt', },
+    { title: 'Status', key: 'status' },
+    { title: 'Actions', sortable: false, key: 'actions' },
+]);
 
 const closeDelete = () => {
     dialogDelete.value = false;
@@ -133,6 +133,13 @@ const statusColor = (status?: string) => {
     return 'grey';
 };
 
+const getAddedBy = (item: RecordDetail) => {
+    const firstName = item.user?.firstName?.trim() || '';
+    const lastName = item.user?.lastName?.trim() || '';
+    const fullName = `${firstName} ${lastName}`.trim();
+    return fullName || item.user?.email || '-';
+};
+
 watch(
     () => dialogDelete.value, (val) => {
         if (!val) closeDelete();
@@ -172,10 +179,10 @@ watch(search, (newSearch) => {
                         <td @click="openDialog(item)" style="cursor: pointer; ">
                             <span color="secondary"> {{ item.firstName }}</span>
                         </td>
-                        <td>{{ item.lastName }}</td>
                         <td>{{ item.email }}</td>
                         <td>{{ item.mobileNumber }}</td>
                         <td>{{ item.gender }}</td>
+                        <td v-if="isAdminUser">{{ getAddedBy(item) }}</td>
                         <td>{{ item?.createdAt ? new Date(item.createdAt).toLocaleDateString('en-GB') : '' }}</td>
                         <td>
                             <v-chip size="small" variant="tonal" :color="statusColor(item.status)">

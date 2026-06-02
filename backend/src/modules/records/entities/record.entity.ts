@@ -187,6 +187,12 @@ export class Record {
   @Column({ nullable: false })
   userId: number;
 
+  @Column({ type: 'int', nullable: false })
+  createdBy: number;
+
+  @Column({ type: 'int', nullable: false })
+  updatedBy: number;
+
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
