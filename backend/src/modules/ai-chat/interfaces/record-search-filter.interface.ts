@@ -1,5 +1,12 @@
 import { RecordStatus } from '../../records/enums/record-status.enum';
 
+export type AiChatIntent =
+  | 'record_search'
+  | 'record_next_page'
+  | 'record_previous_page'
+  | 'record_summary'
+  | 'unsupported';
+
 export interface RecordSearchFilters {
   status?: RecordStatus;
   search?: string;
@@ -14,11 +21,13 @@ export interface RecordSearchFilters {
   isAbroad?: boolean;
   hasDocuments?: boolean;
   hasPolicies?: boolean;
+  limit?: number;
 }
 
 export interface AiRecordSearchIntent {
-  intent: 'record_search' | 'unsupported';
+  intent: AiChatIntent;
   filters?: RecordSearchFilters;
+  recordId?: number;
 }
 
 export interface AiChatRecordResult {
@@ -34,8 +43,16 @@ export interface AiChatRecordResult {
 }
 
 export interface AiChatResponse {
-  intent: 'record_search' | 'unsupported';
+  role: 'assistant';
+  intent: AiChatIntent;
   answer: string;
   records: AiChatRecordResult[];
+  total: number;
+}
+
+export interface LastRecordSearchContext {
+  filters: RecordSearchFilters;
+  limit: number;
+  offset: number;
   total: number;
 }

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MarkdownIt from 'markdown-it'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { MessageCircleIcon, RobotIcon, SendIcon, XIcon } from 'vue-tabler-icons'
@@ -16,8 +17,12 @@ const starterPrompts = [
   'Show records with redirected address'
 ]
 
-const visibleRecordLimit = 5
 const assistantName = 'Posta Mitra'
+const markdownRenderer = new MarkdownIt({
+  html: false,
+  linkify: true,
+  breaks: true
+})
 
 const canSend = computed(() => draftMessage.value.trim().length > 0 && !aiChatStore.isLoading)
 
@@ -53,6 +58,8 @@ const getRecordName = (record: AiChatRecordResult) => {
 
 const getRecordLocation = (record: AiChatRecordResult) =>
   [record.village, record.panchayat, record.district].filter(Boolean).join(', ')
+
+const renderAssistantMarkdown = (content: string) => markdownRenderer.render(content)
 
 const openRecord = (recordId?: string) => {
   if (!recordId) {
@@ -96,13 +103,18 @@ const openRecord = (recordId?: string) => {
               <RobotIcon size="13" />
               <span>{{ assistantName }} · AI</span>
             </div>
-            <div class="ai-chat-bubble">
+            <div
+              v-if="message.role === 'assistant'"
+              class="ai-chat-bubble ai-chat-markdown"
+              v-html="renderAssistantMarkdown(message.content)"
+            />
+            <div v-else class="ai-chat-bubble">
               {{ message.content }}
             </div>
 
             <div v-if="message.records?.length" class="ai-chat-records">
               <v-card
-                v-for="record in message.records.slice(0, visibleRecordLimit)"
+                v-for="record in message.records"
                 :key="record.id"
                 class="ai-chat-record-card"
                 variant="outlined"
@@ -133,9 +145,6 @@ const openRecord = (recordId?: string) => {
                 </v-btn>
               </v-card>
 
-              <div v-if="message.records.length > visibleRecordLimit" class="text-caption text-medium-emphasis mt-2">
-                Showing first {{ visibleRecordLimit }} of {{ message.records.length }} results.
-              </div>
             </div>
           </div>
 
@@ -266,6 +275,28 @@ const openRecord = (recordId?: string) => {
 .ai-chat-message-assistant .ai-chat-bubble {
   background: white;
   border-bottom-left-radius: 4px;
+}
+
+.ai-chat-markdown {
+  white-space: normal;
+}
+
+.ai-chat-markdown :deep(p) {
+  margin: 0 0 8px;
+}
+
+.ai-chat-markdown :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+.ai-chat-markdown :deep(ul),
+.ai-chat-markdown :deep(ol) {
+  margin: 0 0 8px 18px;
+  padding: 0;
+}
+
+.ai-chat-markdown :deep(strong) {
+  font-weight: 700;
 }
 
 .ai-chat-prompts {

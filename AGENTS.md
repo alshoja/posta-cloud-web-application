@@ -63,10 +63,12 @@ Follow SOLID principles in backend code.
 - Use feature-based modules: one module per feature.
 - Keep controllers thin and focused on routing, guards, request parsing, and response handoff.
 - Put business logic in services.
+- Follow DRY: extract repeated request handling,functions, validation, parsing, mapping, or query-building into clear shared helpers/providers instead of duplicating logic.
 - Use DTOs with `class-validator` and `class-transformer` for request validation.
 - Keep validation in DTOs by default. Add service-level validation only when it is strictly necessary for business rules, cross-entity/state checks, or invariants that DTO validation cannot reliably enforce.
 - For nullable request/entity fields, keep TypeScript property types as optional (for example `field?: string`) and express database nullability in decorators (for example `@Column({ nullable: true })`). Avoid `| null` unions in DTO/entity property declarations unless explicitly required by the user.
 - Define interfaces/types for meaningful data structures; avoid loose `any`.
+- Use clear, behavior-specific function names. Avoid vague names such as `resolve...` when the function actually validates, normalizes, clamps, extracts, builds, searches, or applies something; name the function for the exact action it performs.
 - Inject services through constructors only.
 - Prefer module-level singleton providers.
 - Avoid injecting framework internals such as `ModuleRef` unless there is a clear need.

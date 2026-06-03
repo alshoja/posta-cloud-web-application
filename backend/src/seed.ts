@@ -4,6 +4,7 @@ import { SeederService } from './shared/seeder/seeder.service';
 
 async function runSeed() {
   const app = await NestFactory.create(AppModule);
+  await app.init();
   const seederService = app.get(SeederService);
 
   // Parse command line argument for record count

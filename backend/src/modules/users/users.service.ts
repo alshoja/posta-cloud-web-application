@@ -6,6 +6,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
 import { UserRole } from './enums/user-role.enum';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService implements OnModuleInit {
@@ -49,9 +50,10 @@ export class UsersService implements OnModuleInit {
 
   private async ensureDefaultAdminUser(): Promise<void> {
     const adminEmail =
-      this.configService.get<string>('DEFAULT_ADMIN_EMAIL') ?? 'admin@example.com';
+      this.configService.get<string>('DEFAULT_ADMIN_EMAIL') ??
+      'admin@gmail.com';
     const adminPassword =
-      this.configService.get<string>('DEFAULT_ADMIN_PASSWORD') ?? 'Admin@123456';
+      this.configService.get<string>('DEFAULT_ADMIN_PASSWORD') ?? 'test@12345';
 
     const existingAdmin = await this.userRepository.findOne({
       where: { username: adminEmail },
@@ -70,10 +72,23 @@ export class UsersService implements OnModuleInit {
       return;
     }
 
-    if (existingAdmin.role !== UserRole.ADMIN || !existingAdmin.isActive) {
-      existingAdmin.role = UserRole.ADMIN;
-      existingAdmin.isActive = true;
-      await this.userRepository.save(existingAdmin);
+    const passwordMatches = await bcrypt.compare(
+      adminPassword,
+      existingAdmin.password,
+    );
+
+    if (
+      existingAdmin.role !== UserRole.ADMIN ||
+      !existingAdmin.isActive ||
+      !passwordMatches
+    ) {
+      await this.userRepository.update(existingAdmin.id, {
+        role: UserRole.ADMIN,
+        isActive: true,
+        password: passwordMatches
+          ? existingAdmin.password
+          : await bcrypt.hash(adminPassword, 10),
+      });
     }
   }
 }

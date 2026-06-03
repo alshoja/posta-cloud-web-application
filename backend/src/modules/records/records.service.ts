@@ -47,7 +47,7 @@ export class RecordsService {
       let recordId: number;
       const userId = this.request.user.sub;
       const recordRepository = queryRunner.manager.getRepository(RecordEntity);
-      const action = this.resolveAction(stepOneDto.status, 1);
+      const action = this.determineStepSubmissionAction(stepOneDto.status, 1);
       const { status: _status, ...stepOnePayload } = stepOneDto;
       const createPayload = {
         ...stepOnePayload,
@@ -109,7 +109,7 @@ export class RecordsService {
       this.ensureRecordEditable(existingRecord);
       const userId = this.request.user.sub;
       const recordRepository = queryRunner.manager.getRepository(RecordEntity);
-      const action = this.resolveAction(stepTwoDto.status, 2);
+      const action = this.determineStepSubmissionAction(stepTwoDto.status, 2);
       const { status: _status, ...stepTwoPayload } = stepTwoDto;
       const hasStepTwoValues = Object.values(stepTwoPayload).some(
         (value) => value !== undefined && value !== null && value !== '',
@@ -164,7 +164,7 @@ export class RecordsService {
 
       const recordRepository = queryRunner.manager.getRepository(RecordEntity);
       const addressRepository = queryRunner.manager.getRepository(Address);
-      const stepAction = this.resolveAction(status, 3);
+      const stepAction = this.determineStepSubmissionAction(status, 3);
 
       const createdRecord = recordRepository.create({
         ...updateOccupationDto,
@@ -219,7 +219,7 @@ export class RecordsService {
         ...child,
         recordsId,
       }));
-      const stepAction = this.resolveAction(status, 4);
+      const stepAction = this.determineStepSubmissionAction(status, 4);
       const recordRepository = queryRunner.manager.getRepository(RecordEntity);
       const childRepository = queryRunner.manager.getRepository(Child);
 
@@ -276,7 +276,7 @@ export class RecordsService {
       const existingRecord = await this.findOne(recordsId);
       this.ensureRecordEditable(existingRecord);
       const userId = this.request.user.sub;
-      const action = this.resolveAction(stepFiveDto.status, 5);
+      const action = this.determineStepSubmissionAction(stepFiveDto.status, 5);
       const policies = stepFiveDto.policies.map((policy) => ({
         type: policy.type?.trim() ? policy.type : null,
         number: policy.number?.trim() ? policy.number : null,
@@ -318,7 +318,7 @@ export class RecordsService {
       const existingRecord = await this.findOne(recordsId);
       this.ensureRecordEditable(existingRecord);
       const userId = this.request.user.sub;
-      const action = this.resolveAction(stepSixDto.status, 6);
+      const action = this.determineStepSubmissionAction(stepSixDto.status, 6);
       const _document = stepSixDto.documents.map((document) => ({
         name: document.name?.trim() ? document.name : null,
         file: document.file?.trim() ? document.file : null,
@@ -501,7 +501,7 @@ export class RecordsService {
     };
   }
 
-  private resolveAction(
+  private determineStepSubmissionAction(
     status: RecordStatus | undefined,
     step: number,
   ): 'DRAFT' | 'CONTINUE' | 'FINAL' {

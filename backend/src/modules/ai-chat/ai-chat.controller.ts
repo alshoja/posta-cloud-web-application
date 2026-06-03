@@ -7,7 +7,7 @@ export class AiChatController {
   constructor(private readonly aiChatService: AiChatService) {}
 
   @Post('message')
-  handleMessage(@Body() aiChatMessageDto: AiChatMessageDto) {
-    return this.aiChatService.handleMessage(aiChatMessageDto.message);
+  answerUserMessage(@Body() aiChatMessageDto: AiChatMessageDto) {
+    return this.aiChatService.answerUserMessage(aiChatMessageDto.message);
   }
 }

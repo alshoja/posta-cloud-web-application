@@ -26,6 +26,7 @@ export interface AiChatMessage {
 }
 
 interface AiChatResponse {
+  role?: AiChatMessageRole
   answer?: string
   records?: AiChatRecordResult[]
 }
@@ -89,7 +90,7 @@ export const useAiChatStore = defineStore('aiChat', {
 
         this.messages.push({
           id: createMessageId(),
-          role: 'assistant',
+          role: response.data.role || 'assistant',
           content: response.data.answer || 'I found a response, but it did not include an answer.',
           records
         })

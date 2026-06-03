@@ -1,0 +1,18 @@
+import { RecordStatus } from '../../records/enums/record-status.enum';
+
+export interface RecordSummaryContext {
+  id: number;
+  name: string;
+  status: RecordStatus;
+  contact: string;
+  location: string;
+  documentsCount: number;
+  documentNames: string[];
+  policiesCount: number;
+  policyTypes: string[];
+  addressesCount: number;
+  childrenCount: number;
+  mailRedirectionEnabled: boolean;
+  abroad: boolean;
+  lastCompletedStep: number;
+}
