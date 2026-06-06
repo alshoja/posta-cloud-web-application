@@ -14,6 +14,7 @@ import ProfileImage from '@/views/record/components/ProfileImage.vue';
 import ViewComponent from '@/views/record/components/ViewComponent.vue';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { BriefcaseIcon, CameraIcon, HeartIcon, HomeIcon, MapPinIcon, PhoneIcon, PlusIcon, ScanIcon, ShieldCheckIcon, TrashIcon, UserIcon, UsersIcon } from 'vue-tabler-icons';
 
 const route = useRoute()
 const loading = ref(false);
@@ -626,17 +627,43 @@ const viewDocument = (index: number) => {
         <v-stepper rounded="lg" :editable="stepper.edit" v-model="stepper.step" :items="stepper.items">
             <!-- Step 1: Personal Details -->
             <template v-slot:item.1>
-                <v-form v-model="stepOne.valid">
-                    <UiParentCard title="Personal Information">
-                        <v-row class="mb-4">
-                            <ProfileImage :url="stepOne.profileImage" />
-                            <v-col cols="12" md="12" class="border border-secondary rounded">
-                                <FileUpload :label="`Upload Profile Image`" :accept="'image/jpeg, image/png'"
-                                    :rules="[]" @uploaded="setUploadUrl" />
-                            </v-col>
-                        </v-row>
-                        <v-row v-if="!stepper.edit" class="border border-secondary rounded pa-2 mb-3">
-                            <v-col cols="12">
+                <v-form v-model="stepOne.valid" class="step-one-form">
+                    <v-card variant="outlined" class="step-one-card">
+                        <v-card-title class="record-step-card-header">
+                            <v-avatar color="lightsecondary" size="36">
+                                <CameraIcon class="text-secondary" size="20" />
+                            </v-avatar>
+                            <div>
+                                <div class="text-h5">Profile Photo</div>
+                                <div class="text-caption text-lightText">JPG or PNG, maximum 1 MB</div>
+                            </div>
+                        </v-card-title>
+                        <v-card-text>
+                            <v-row no-gutters class="step-one-profile-row align-center">
+                                <v-col cols="12" sm="auto" class="step-one-profile-image">
+                                    <ProfileImage :url="stepOne.profileImage" />
+                                </v-col>
+                                <v-col cols="12" sm class="step-one-profile-upload">
+                                    <FileUpload :label="`Upload Profile Image`" :accept="'image/jpeg, image/png'"
+                                        :rules="[]" @uploaded="setUploadUrl" />
+                                </v-col>
+                            </v-row>
+                        </v-card-text>
+                    </v-card>
+
+                    <v-card v-if="!stepper.edit" variant="outlined" class="step-one-card">
+                        <v-card-title class="record-step-card-header">
+                            <v-avatar color="lightsecondary" size="36">
+                                <ScanIcon class="text-secondary" size="20" />
+                            </v-avatar>
+                            <div>
+                                <div class="text-h5">Document Auto-fill</div>
+                                <div class="text-caption text-lightText">Fill matching details from an identity document</div>
+                            </div>
+                        </v-card-title>
+                        <v-card-text>
+                            <v-row>
+                                <v-col cols="12">
                                 <v-alert :type="ocrServiceAvailable ? 'info' : 'warning'" variant="tonal"
                                     density="comfortable">
                                     {{ documentAutofillMessage }}
@@ -644,92 +671,137 @@ const viewDocument = (index: number) => {
                                         Please check filled details before saving.
                                     </span>
                                 </v-alert>
-                            </v-col>
-                            <v-col v-if="ocrFilledFields.length > 0" cols="12">
+                                </v-col>
+                                <v-col v-if="ocrFilledFields.length > 0" cols="12">
                                 <v-chip-group>
                                     <v-chip v-for="field in ocrFilledFields" :key="field" color="success"
                                         variant="tonal" size="small">
                                         Filled {{ field }}
                                     </v-chip>
                                 </v-chip-group>
-                            </v-col>
-                            <v-col cols="12" md="3">
+                                </v-col>
+                                <v-col cols="12" md="3">
                                 <v-select v-model="ocrDocumentType" :items="ocrDocumentTypes" variant="outlined"
                                     label="Document"
                                     :disabled="ocrLoading || ocrServiceLoading || !canUseOcrAutofill" />
-                            </v-col>
-                            <v-col cols="12" md="6" lg="7">
+                                </v-col>
+                                <v-col cols="12" md="6" lg="7">
                                 <v-file-input v-model="ocrScanFile" variant="outlined"
                                     label="Upload Aadhaar, voter ID, or driving licence"
                                     accept=".pdf,.doc,.docx,image/png,image/jpeg"
                                     :disabled="ocrLoading || ocrServiceLoading || !canUseOcrAutofill" />
-                            </v-col>
-                            <v-col cols="12" md="3" lg="2"
-                                class="d-flex align-center justify-start ps-md-6 mb-3 mb-md-0 mb-lg-5">
+                                </v-col>
+                                <v-col cols="12" md="3" lg="2" class="d-flex align-center">
                                 <v-btn variant="outlined" color="secondary" size="large" class="w-100 w-md-auto"
                                     :loading="ocrLoading || ocrServiceLoading"
                                     :disabled="ocrLoading || ocrServiceLoading || !canUseOcrAutofill"
                                     @click="runOcrAutofill">
                                     Fill From Document
                                 </v-btn>
-                            </v-col>
-                        </v-row>
+                                </v-col>
+                            </v-row>
+                        </v-card-text>
+                    </v-card>
 
-                        <v-row class="border border-secondary rounded pa-2 mb-3">
-                            <v-col cols="12" md="4">
+                    <v-card variant="outlined" class="step-one-card">
+                        <v-card-title class="record-step-card-header">
+                            <v-avatar color="lightsecondary" size="36">
+                                <UserIcon class="text-secondary" size="20" />
+                            </v-avatar>
+                            <div>
+                                <div class="text-h5">Basic Information</div>
+                                <div class="text-caption text-lightText">Name, email, birth date, and gender</div>
+                            </div>
+                        </v-card-title>
+                        <v-card-text>
+                            <v-row>
+                            <v-col cols="12" sm="6">
                                 <v-text-field variant="outlined" v-model="stepOne.firstName" label="First Name*"
                                     required :rules="[validationRules.required]" />
                             </v-col>
-                            <v-col cols="12" md="4">
+                            <v-col cols="12" sm="6">
                                 <v-text-field variant="outlined" v-model="stepOne.lastName" label="Last Name" />
                             </v-col>
-                            <v-col cols="12" md="4">
+                            <v-col cols="12">
                                 <v-text-field variant="outlined" v-model="stepOne.email" label="Email*"
                                     :rules="[validationRules.required, validationRules.email]" />
                             </v-col>
-                            <v-col cols="12" md="4">
-                                <v-text-field variant="outlined" v-model="stepOne.houseName" label="House Name" />
-                            </v-col>
-                            <v-col cols="12" md="4">
-                                <v-text-field variant="outlined" v-model="stepOne.houseNumber" label="House Number" />
-                            </v-col>
-                            <v-col cols="12" md="4">
-                                <v-text-field variant="outlined" v-model="stepOne.streetName" label="Street Name" />
-                            </v-col>
-                            <v-col cols="12" md="4">
-                                <v-text-field variant="outlined" v-model="stepOne.streetNumber" label="Street Number" />
-                            </v-col>
-                            <v-col cols="12" md="4">
-                                <v-text-field type="number" variant="outlined" v-model="stepOne.postOffice"
-                                    label="Post Office" />
-                            </v-col>
-                            <v-col cols="12" md="4">
-                                <v-text-field variant="outlined" v-model="stepOne.village" label="Village" />
-                            </v-col>
-                            <v-col cols="12" md="4">
-                                <v-text-field variant="outlined" v-model="stepOne.panchayat" label="Panchayat" />
-                            </v-col>
-                            <v-col cols="12" md="4">
-                                <v-text-field variant="outlined" v-model="stepOne.district" label="District" />
-                            </v-col>
-                            <v-col cols="12" md="4">
-                                <v-text-field variant="outlined" v-model="stepOne.mobileNumber"
-                                    label="Mobile Number(+91)" />
-                            </v-col>
-                            <v-col cols="12" md="4">
-                                <v-text-field variant="outlined" v-model="stepOne.whatsappNumber"
-                                    label="WhatsApp Number(+91)" />
-                            </v-col>
-                            <v-col cols="12" md="4">
+                            <v-col cols="12" sm="6">
                                 <v-text-field variant="outlined" v-model="stepOne.dateOfBirth" label="Date of Birth"
                                     type="date" />
                             </v-col>
-                            <v-col cols="12" md="4">
+                            <v-col cols="12" sm="6">
                                 <v-select variant="outlined" v-model="stepOne.gender"
                                     :items="['male', 'female', 'other']" label="Gender" />
                             </v-col>
-                        </v-row>
-                    </UiParentCard>
+                            </v-row>
+                        </v-card-text>
+                    </v-card>
+
+                    <v-card variant="outlined" class="step-one-card">
+                        <v-card-title class="record-step-card-header">
+                            <v-avatar color="lightsecondary" size="36">
+                                <PhoneIcon class="text-secondary" size="20" />
+                            </v-avatar>
+                            <div>
+                                <div class="text-h5">Contact Details</div>
+                                <div class="text-caption text-lightText">Primary mobile and WhatsApp numbers</div>
+                            </div>
+                        </v-card-title>
+                        <v-card-text>
+                            <v-row>
+                            <v-col cols="12" md="6">
+                                <v-text-field variant="outlined" v-model="stepOne.mobileNumber"
+                                    label="Mobile Number(+91)" />
+                            </v-col>
+                            <v-col cols="12" md="6">
+                                <v-text-field variant="outlined" v-model="stepOne.whatsappNumber"
+                                    label="WhatsApp Number(+91)" />
+                            </v-col>
+                            </v-row>
+                        </v-card-text>
+                    </v-card>
+
+                    <v-card variant="outlined" class="step-one-card">
+                        <v-card-title class="record-step-card-header">
+                            <v-avatar color="lightsecondary" size="36">
+                                <HomeIcon class="text-secondary" size="20" />
+                            </v-avatar>
+                            <div>
+                                <div class="text-h5">Home Address</div>
+                                <div class="text-caption text-lightText">Primary residential address</div>
+                            </div>
+                        </v-card-title>
+                        <v-card-text>
+                            <v-row>
+                            <v-col cols="12" sm="6">
+                                <v-text-field variant="outlined" v-model="stepOne.houseName" label="House Name" />
+                            </v-col>
+                            <v-col cols="12" sm="6">
+                                <v-text-field variant="outlined" v-model="stepOne.houseNumber" label="House Number" />
+                            </v-col>
+                            <v-col cols="12" sm="6">
+                                <v-text-field variant="outlined" v-model="stepOne.streetName" label="Street Name" />
+                            </v-col>
+                            <v-col cols="12" sm="6">
+                                <v-text-field variant="outlined" v-model="stepOne.streetNumber" label="Street Number" />
+                            </v-col>
+                            <v-col cols="12" md="6">
+                                <v-text-field variant="outlined" v-model="stepOne.village" label="Village" />
+                            </v-col>
+                            <v-col cols="12" md="6">
+                                <v-text-field type="number" variant="outlined" v-model="stepOne.postOffice"
+                                    label="Post Office" />
+                            </v-col>
+                            <v-col cols="12" md="6">
+                                <v-text-field variant="outlined" v-model="stepOne.panchayat" label="Panchayat" />
+                            </v-col>
+                            <v-col cols="12" md="6">
+                                <v-text-field variant="outlined" v-model="stepOne.district" label="District" />
+                            </v-col>
+                            </v-row>
+                        </v-card-text>
+                    </v-card>
                 </v-form>
             </template>
 
@@ -788,164 +860,278 @@ const viewDocument = (index: number) => {
 
             <!-- Step 3: Occupation & Address -->
             <template v-slot:item.3>
-                <v-form v-model="stepThree.valid">
-                    <UiParentCard title="Occupation">
-                        <v-row class="border border-secondary rounded pa-2 mb-3">
-                            <!-- Occupation -->
-                            <v-col cols="12" md="4">
-                                <v-text-field variant="outlined" v-model="stepThree.job" label="Occupation (ജോലി)"
-                                    required />
-                            </v-col>
-                            <!-- Retirement Date -->
-                            <v-col cols="12" md="3">
-                                <v-text-field variant="outlined" v-model="stepThree.retirementDate"
-                                    label="Retirement Date (വിരമിക്കുന്ന തീയതി)" type="date" />
-                            </v-col>
-                            <v-col cols="12" md="3">
-                                <v-checkbox v-model="stepThree.isRedirected" label="Redirection Address (Retd Add.)" />
-                            </v-col>
-                            <v-col cols="12" md="6" v-if="stepThree.isRedirected">
-                                <v-text-field variant="outlined" v-model="stepThree.redirectedHouseName"
-                                    label="Redirected House Name" />
-                            </v-col>
-                            <v-col cols="12" md="6" v-if="stepThree.isRedirected">
-                                <v-text-field variant="outlined" v-model="stepThree.redirectedHouseNumber"
-                                    label="Redirected House Number" />
-                            </v-col>
-                        </v-row>
-                    </UiParentCard>
+                <v-form v-model="stepThree.valid" class="step-three-form">
+                    <v-card variant="outlined" class="step-three-card">
+                        <v-card-title class="step-three-card-header">
+                            <v-avatar color="lightsecondary" size="36">
+                                <BriefcaseIcon class="text-secondary" size="20" />
+                            </v-avatar>
+                            <div>
+                                <div class="text-h5">Occupation</div>
+                                <div class="text-caption text-lightText">Employment and retirement information</div>
+                            </div>
+                        </v-card-title>
+                        <v-card-text>
+                            <v-row>
+                                <v-col cols="12" md="6">
+                                    <v-text-field variant="outlined" v-model="stepThree.job" label="Occupation (ജോലി)"
+                                        required />
+                                </v-col>
+                                <v-col cols="12" md="6">
+                                    <v-text-field variant="outlined" v-model="stepThree.retirementDate"
+                                        label="Retirement Date (വിരമിക്കുന്ന തീയതി)" type="date" />
+                                </v-col>
+                            </v-row>
+                        </v-card-text>
+                    </v-card>
 
-                    <!-- Multiple Addresses -->
-                    <v-row>
-                        <v-col cols="12">
-                            <UiParentCard title="Other Addresses">
-                                <v-row class="border border-secondary rounded pa-2 mb-3"
-                                    v-for="(address, index) in stepThree.addresses" :key="index">
-                                    <!-- <v-col cols="12" md="0">
-                                            <v-badge color="info" :content="index + 1" inline></v-badge>
-                                        </v-col> -->
-                                    <v-col cols="12" md="3">
-                                        <v-text-field variant="outlined" v-model="address.houseName"
-                                            label="House Name" />
+                    <v-card variant="outlined" class="step-three-card">
+                        <v-card-title class="step-three-card-header">
+                            <v-avatar color="lightsecondary" size="36">
+                                <MapPinIcon class="text-secondary" size="20" />
+                            </v-avatar>
+                            <div>
+                                <div class="text-h5">Mail & Location Settings</div>
+                                <div class="text-caption text-lightText">Choose how mail and location details are handled</div>
+                            </div>
+                        </v-card-title>
+                        <v-card-text>
+                            <div class="step-three-setting">
+                                <div>
+                                    <div class="text-subtitle-1 font-weight-medium">Use Redirection Address (Retd Add.)</div>
+                                    <div class="text-caption text-lightText">Send mail to a different address</div>
+                                </div>
+                                <v-switch v-model="stepThree.isRedirected" color="secondary" hide-details inset />
+                            </div>
+                            <div class="step-three-setting">
+                                <div>
+                                    <div class="text-subtitle-1 font-weight-medium">Living Abroad (വിദേശത്ത്)</div>
+                                    <div class="text-caption text-lightText">Mark this person as living outside the country</div>
+                                </div>
+                                <v-switch v-model="stepThree.isAbroad" color="secondary" hide-details inset />
+                            </div>
+
+                            <v-expand-transition>
+                                <v-row v-if="stepThree.isRedirected" class="mt-2">
+                                    <v-col cols="12" md="6">
+                                        <v-text-field variant="outlined" v-model="stepThree.redirectedHouseName"
+                                            label="Redirected House Name" />
                                     </v-col>
-                                    <v-col cols="12" md="3">
-                                        <v-text-field variant="outlined" v-model="address.houseNumber"
-                                            label="House Number" />
-                                    </v-col>
-                                    <v-col cols="12" md="3">
-                                        <v-text-field variant="outlined" v-model="address.streetName"
-                                            label="Street Name" />
-                                    </v-col>
-                                    <v-col cols="12" md="3">
-                                        <v-text-field variant="outlined" v-model="address.streetNumber"
-                                            label="Street Number" />
-                                    </v-col>
-                                    <v-col cols="12" md="3">
-                                        <v-text-field variant="outlined" v-model="address.village"
-                                            label="Village (വില്ലേജ്)" />
-                                    </v-col>
-                                    <v-col cols="12" md="3">
-                                        <v-text-field variant="outlined" v-model="address.postOffice"
-                                            label="Post Office (പോസ്റ്റ് ഓഫീസ്)" />
-                                    </v-col>
-                                    <v-col cols="12" md="3">
-                                        <v-select variant="outlined" v-model="address.locationType"
-                                            :items="['Domestic (സ്വദേശത്ത്)', 'Abroad (വിദേശത്ത്)']"
-                                            label="Location Type" />
-                                    </v-col>
-                                    <v-col cols="12" md="3">
-                                        <v-card-actions>
-                                            <v-btn color="error" @click="removeAddress(index)">Remove</v-btn>
-                                        </v-card-actions>
+                                    <v-col cols="12" md="6">
+                                        <v-text-field variant="outlined" v-model="stepThree.redirectedHouseNumber"
+                                            label="Redirected House Number" />
                                     </v-col>
                                 </v-row>
-                                <v-row>
-                                    <v-col cols="12">
-                                        <v-btn color="secondary" @click="addAddress">New Address</v-btn>
-                                    </v-col>
-                                </v-row>
-                            </UiParentCard>
-                        </v-col>
-                    </v-row>
+                            </v-expand-transition>
+                        </v-card-text>
+                    </v-card>
+
+                    <v-card variant="outlined" class="step-three-card">
+                        <v-card-title class="step-three-addresses-header">
+                            <div>
+                                <div class="text-h5">Other Addresses</div>
+                                <div class="text-caption text-lightText">Add domestic or overseas addresses</div>
+                            </div>
+                            <v-btn color="secondary" variant="outlined" @click="addAddress">
+                                <PlusIcon size="18" class="mr-1" />
+                                Add Address
+                            </v-btn>
+                        </v-card-title>
+                        <v-card-text>
+                            <v-row>
+                                <v-col v-for="(address, index) in stepThree.addresses" :key="index" cols="12" lg="6">
+                                    <v-card variant="outlined" class="step-three-address-card">
+                                        <v-card-title class="step-three-address-card-header">
+                                            <div class="d-flex align-center ga-2">
+                                                <v-avatar color="lightsecondary" size="30">
+                                                    <MapPinIcon class="text-secondary" size="17" />
+                                                </v-avatar>
+                                                <span class="text-subtitle-1 font-weight-bold">Address {{ index + 1 }}</span>
+                                            </div>
+                                            <v-btn color="error" variant="text" icon size="small"
+                                                :aria-label="`Remove address ${index + 1}`" @click="removeAddress(index)">
+                                                <TrashIcon size="18" />
+                                            </v-btn>
+                                        </v-card-title>
+                                        <v-card-text>
+                                            <v-row>
+                                                <v-col cols="12" sm="6">
+                                                    <v-text-field variant="outlined" v-model="address.houseName"
+                                                        label="House Name" />
+                                                </v-col>
+                                                <v-col cols="12" sm="6">
+                                                    <v-text-field variant="outlined" v-model="address.houseNumber"
+                                                        label="House Number" />
+                                                </v-col>
+                                                <v-col cols="12" sm="6">
+                                                    <v-text-field variant="outlined" v-model="address.streetName"
+                                                        label="Street Name" />
+                                                </v-col>
+                                                <v-col cols="12" sm="6">
+                                                    <v-text-field variant="outlined" v-model="address.streetNumber"
+                                                        label="Street Number" />
+                                                </v-col>
+                                                <v-col cols="12" sm="6">
+                                                    <v-text-field variant="outlined" v-model="address.village"
+                                                        label="Village (വില്ലേജ്)" />
+                                                </v-col>
+                                                <v-col cols="12" sm="6">
+                                                    <v-text-field variant="outlined" v-model="address.postOffice"
+                                                        label="Post Office (പോസ്റ്റ് ഓഫീസ്)" />
+                                                </v-col>
+                                                <v-col cols="12">
+                                                    <v-select variant="outlined" v-model="address.locationType"
+                                                        :items="['Domestic (സ്വദേശത്ത്)', 'Abroad (വിദേശത്ത്)']"
+                                                        label="Location Type" />
+                                                </v-col>
+                                            </v-row>
+                                        </v-card-text>
+                                    </v-card>
+                                </v-col>
+                            </v-row>
+                            <v-btn color="secondary" variant="outlined" block class="d-sm-none mt-2" @click="addAddress">
+                                <PlusIcon size="18" class="mr-1" />
+                                Add Another Address
+                            </v-btn>
+                        </v-card-text>
+                    </v-card>
                 </v-form>
             </template>
 
             <!-- Step 4: Family Details -->
             <template v-slot:item.4>
-                <v-form v-model="stepFour.valid">
-                    <UiParentCard title="Marriage Information">
-                        <v-row class="border border-secondary rounded pa-2 mb-3">
-                            <!-- Marriage Details -->
-                            <v-col cols="12" md="3">
+                <v-form v-model="stepFour.valid" class="step-four-form">
+                    <v-card variant="outlined" class="step-four-card">
+                        <v-card-title class="record-step-card-header">
+                            <v-avatar color="lightsecondary" size="36">
+                                <HeartIcon class="text-secondary" size="20" />
+                            </v-avatar>
+                            <div>
+                                <div class="text-h5">Marriage Information</div>
+                                <div class="text-caption text-lightText">Optional marriage and previous-address details</div>
+                            </div>
+                        </v-card-title>
+                        <v-card-text>
+                            <v-row>
+                            <v-col cols="12" md="4">
                                 <v-text-field variant="outlined" v-model="stepFour.marriageDate"
                                     label="Marriage Date (വിവാഹം നടന്ന തീയതി, മാസം, വർഷം)" type="date" />
                             </v-col>
-                            <v-col cols="12" md="5">
+                            <v-col cols="12" md="8">
                                 <v-text-field variant="outlined" v-model="stepFour.previousAddress"
                                     label="Previous Address (മുമ്പത്തെ മേൽവിലാസം)" />
                             </v-col>
-                        </v-row>
-                    </UiParentCard>
-                    <!-- Childbirth Details -->
-                    <UiParentCard title="Child Record">
-                        <v-row>
-                            <v-col cols="12" v-for="(child, index) in stepFour.children" :key="index">
-                                <v-row class="border border-secondary rounded  mb-1">
-                                    <v-col cols="12" md="4">
+                            </v-row>
+                        </v-card-text>
+                    </v-card>
+
+                    <v-card variant="outlined" class="step-four-card">
+                        <v-card-title class="step-four-children-header">
+                            <div class="d-flex align-center ga-3">
+                                <v-avatar color="lightsecondary" size="36">
+                                    <UsersIcon class="text-secondary" size="20" />
+                                </v-avatar>
+                                <div>
+                                    <div class="text-h5">Children</div>
+                                    <div class="text-caption text-lightText">Add one card for each child</div>
+                                </div>
+                            </div>
+                            <v-btn color="secondary" variant="outlined" @click="addChild">
+                                <PlusIcon size="18" class="mr-1" />
+                                Add Child
+                            </v-btn>
+                        </v-card-title>
+                        <v-card-text>
+                            <v-row>
+                            <v-col cols="12" lg="6" v-for="(child, index) in stepFour.children" :key="index">
+                                <v-card variant="outlined" class="step-four-child-card">
+                                    <v-card-title class="step-four-child-header">
+                                        <span class="text-subtitle-1 font-weight-bold">Child {{ index + 1 }}</span>
+                                        <v-btn color="error" variant="text" icon size="small"
+                                            :aria-label="`Remove child ${index + 1}`" @click="removeChild(index)">
+                                            <TrashIcon size="18" />
+                                        </v-btn>
+                                    </v-card-title>
+                                    <v-card-text>
+                                        <v-row>
+                                    <v-col cols="12">
                                         <v-text-field variant="outlined" v-model="child.name" label="Child's Name"
                                             required />
                                     </v-col>
-                                    <v-col cols="12" md="3">
+                                    <v-col cols="12" sm="6">
                                         <v-text-field variant="outlined" v-model="child.dateOfBirth"
                                             label="Child's Date of Birth (കുട്ടി ജനിച്ച തീയതി)" type="date" required />
                                     </v-col>
-                                    <v-col cols="12" md="2">
+                                    <v-col cols="12" sm="6">
                                         <v-select variant="outlined" v-model="child.gender" :items="['male', 'female']"
                                             label="Child's Gender (Male/ Female)" required />
                                     </v-col>
-                                    <v-col cols="12" md="2">
-                                        <v-card-actions>
-                                            <v-btn color="error" @click="removeChild(index)">Remove</v-btn>
-                                        </v-card-actions>
-                                    </v-col>
-                                </v-row>
+                                        </v-row>
+                                    </v-card-text>
+                                </v-card>
                             </v-col>
-                            <v-col cols="12">
-                                <v-btn color="secondary" @click="addChild">Add Child</v-btn>
-                            </v-col>
-                        </v-row>
-                    </UiParentCard>
+                            </v-row>
+                            <v-btn color="secondary" variant="outlined" block class="d-sm-none mt-2" @click="addChild">
+                                <PlusIcon size="18" class="mr-1" />
+                                Add Another Child
+                            </v-btn>
+                        </v-card-text>
+                    </v-card>
                 </v-form>
             </template>
 
             <!-- Step 5: Policy -->
             <template v-slot:item.5>
-                <v-form v-model="stepFive.valid">
-                    <UiParentCard title="Policy Details">
-                        <v-row>
-                            <v-col cols="12" v-for="(policy, index) in stepFive.policies" :key="index">
-                                <v-row class="border border-secondary rounded pa-2 mb-3">
-                                    <v-col cols="12" md="4">
+                <v-form v-model="stepFive.valid" class="step-five-form">
+                    <v-card variant="outlined" class="step-five-card">
+                        <v-card-title class="step-five-header">
+                            <div class="d-flex align-center ga-3">
+                                <v-avatar color="lightsecondary" size="36">
+                                    <ShieldCheckIcon class="text-secondary" size="20" />
+                                </v-avatar>
+                                <div>
+                                    <div class="text-h5">Policy Details</div>
+                                    <div class="text-caption text-lightText">Add account and policy numbers</div>
+                                </div>
+                            </div>
+                            <v-btn color="secondary" variant="outlined" @click="addPolicy">
+                                <PlusIcon size="18" class="mr-1" />
+                                Add Policy
+                            </v-btn>
+                        </v-card-title>
+                        <v-card-text>
+                            <v-row>
+                            <v-col cols="12" md="6" v-for="(policy, index) in stepFive.policies" :key="index">
+                                <v-card variant="outlined" class="step-five-policy-card">
+                                    <v-card-title class="step-five-policy-header">
+                                        <span class="text-subtitle-1 font-weight-bold">Policy {{ index + 1 }}</span>
+                                        <v-btn color="error" variant="text" icon size="small"
+                                            :aria-label="`Remove policy ${index + 1}`" @click="removePolicy(index)">
+                                            <TrashIcon size="18" />
+                                        </v-btn>
+                                    </v-card-title>
+                                    <v-card-text>
+                                        <v-row>
+                                    <v-col cols="12">
                                         <v-select variant="outlined" v-model="policy.type"
                                             :items="['Account Number', 'PLI Number', 'RPLI Number', 'IPPB Number', 'Savings Bank Number', 'Other Account Numbers']"
                                             label="Policy Type" required />
                                     </v-col>
-                                    <v-col cols="12" md="6">
+                                    <v-col cols="12">
                                         <v-text-field variant="outlined" v-model="policy.number" label="Policy Number"
                                             required />
                                     </v-col>
-                                    <v-col cols="12" md="1">
-                                        <v-card-actions>
-                                            <v-btn color="error" @click="removePolicy(index)">Remove</v-btn>
-                                        </v-card-actions>
-                                    </v-col>
-                                </v-row>
+                                        </v-row>
+                                    </v-card-text>
+                                </v-card>
                             </v-col>
-                            <v-col cols="12">
-                                <v-btn color="secondary" @click="addPolicy">Add Policy</v-btn>
-                            </v-col>
-                        </v-row>
-                    </UiParentCard>
+                            </v-row>
+                            <v-btn color="secondary" variant="outlined" block class="d-sm-none mt-2" @click="addPolicy">
+                                <PlusIcon size="18" class="mr-1" />
+                                Add Another Policy
+                            </v-btn>
+                        </v-card-text>
+                    </v-card>
                 </v-form>
             </template>
 
@@ -1028,5 +1214,212 @@ const viewDocument = (index: number) => {
 
 :deep(.sensitive-visibility-field .v-field__append-inner) {
     opacity: 1;
+}
+
+.step-three-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.step-four-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.step-five-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.step-five-card {
+    border-color: rgba(var(--v-border-color), 0.15);
+}
+
+.step-five-header,
+.step-five-policy-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.step-five-header {
+    padding: 16px 20px;
+}
+
+.step-five-policy-card {
+    height: 100%;
+}
+
+.step-five-policy-header {
+    padding: 12px 16px;
+}
+
+.step-four-card {
+    border-color: rgba(var(--v-border-color), 0.15);
+}
+
+.step-four-children-header,
+.step-four-child-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.step-four-children-header {
+    padding: 16px 20px;
+}
+
+.step-four-child-card {
+    height: 100%;
+}
+
+.step-four-child-header {
+    padding: 12px 16px;
+}
+
+.step-one-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.step-one-card {
+    border-color: rgba(var(--v-border-color), 0.15);
+}
+
+.record-step-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+}
+
+.step-one-profile-image :deep(.v-col) {
+    padding: 0;
+}
+
+.step-one-profile-row {
+    gap: 20px;
+}
+
+.step-one-profile-image {
+    width: 120px;
+}
+
+.step-one-profile-upload {
+    min-width: 0;
+}
+
+.step-three-card {
+    border-color: rgba(var(--v-border-color), 0.15);
+}
+
+.step-three-card-header,
+.step-three-addresses-header,
+.step-three-address-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.step-three-card-header {
+    justify-content: flex-start;
+    padding: 16px 20px;
+}
+
+.step-three-addresses-header {
+    padding: 16px 20px;
+}
+
+.step-three-setting {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 64px;
+    padding: 10px 14px;
+    margin-bottom: 10px;
+    border-radius: 12px;
+    background: rgb(var(--v-theme-lightsecondary));
+}
+
+.step-three-address-card {
+    height: 100%;
+}
+
+.step-three-address-card-header {
+    padding: 12px 16px;
+}
+
+@media (max-width: 599px) {
+    .step-one-form {
+        gap: 12px;
+    }
+
+    .record-step-card-header {
+        padding: 14px;
+    }
+
+    .step-one-profile-row {
+        gap: 12px;
+    }
+
+    .step-one-profile-image {
+        width: 100%;
+    }
+
+    .step-three-form {
+        gap: 12px;
+    }
+
+    .step-four-form {
+        gap: 12px;
+    }
+
+    .step-five-form {
+        gap: 12px;
+    }
+
+    .step-five-header {
+        align-items: flex-start;
+        padding: 14px;
+    }
+
+    .step-five-header > .v-btn {
+        display: none;
+    }
+
+    .step-four-children-header {
+        align-items: flex-start;
+        padding: 14px;
+    }
+
+    .step-four-children-header > .v-btn {
+        display: none;
+    }
+
+    .step-three-card-header,
+    .step-three-addresses-header {
+        padding: 14px;
+    }
+
+    .step-three-addresses-header {
+        align-items: flex-start;
+    }
+
+    .step-three-addresses-header .v-btn {
+        display: none;
+    }
+
+    .step-three-setting {
+        min-height: 72px;
+        padding: 12px;
+    }
 }
 </style>
