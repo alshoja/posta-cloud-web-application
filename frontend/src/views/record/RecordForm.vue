@@ -658,46 +658,47 @@ const viewDocument = (index: number) => {
                             </v-avatar>
                             <div>
                                 <div class="text-h5">Document Auto-fill</div>
-                                <div class="text-caption text-lightText">Fill matching details from an identity document</div>
+                                <div class="text-caption text-lightText">Fill matching details from an identity document
+                                </div>
                             </div>
                         </v-card-title>
                         <v-card-text>
                             <v-row>
                                 <v-col cols="12">
-                                <v-alert :type="ocrServiceAvailable ? 'info' : 'warning'" variant="tonal"
-                                    density="comfortable">
-                                    {{ documentAutofillMessage }}
-                                    <span v-if="ocrServiceAvailable && !ocrLoading">
-                                        Please check filled details before saving.
-                                    </span>
-                                </v-alert>
+                                    <v-alert :type="ocrServiceAvailable ? 'info' : 'warning'" variant="tonal" color="secondary"
+                                        density="comfortable">
+                                        {{ documentAutofillMessage }}
+                                        <span v-if="ocrServiceAvailable && !ocrLoading">
+                                            Please check filled details before saving.
+                                        </span>
+                                    </v-alert>
                                 </v-col>
                                 <v-col v-if="ocrFilledFields.length > 0" cols="12">
-                                <v-chip-group>
-                                    <v-chip v-for="field in ocrFilledFields" :key="field" color="success"
-                                        variant="tonal" size="small">
-                                        Filled {{ field }}
-                                    </v-chip>
-                                </v-chip-group>
+                                    <v-chip-group>
+                                        <v-chip v-for="field in ocrFilledFields" :key="field" color="success"
+                                            variant="tonal" size="small">
+                                            Filled {{ field }}
+                                        </v-chip>
+                                    </v-chip-group>
                                 </v-col>
                                 <v-col cols="12" md="3">
-                                <v-select v-model="ocrDocumentType" :items="ocrDocumentTypes" variant="outlined"
-                                    label="Document"
-                                    :disabled="ocrLoading || ocrServiceLoading || !canUseOcrAutofill" />
+                                    <v-select v-model="ocrDocumentType" :items="ocrDocumentTypes" variant="outlined"
+                                        label="Document"
+                                        :disabled="ocrLoading || ocrServiceLoading || !canUseOcrAutofill" />
                                 </v-col>
                                 <v-col cols="12" md="6" lg="7">
-                                <v-file-input v-model="ocrScanFile" variant="outlined"
-                                    label="Upload Aadhaar, voter ID, or driving licence"
-                                    accept=".pdf,.doc,.docx,image/png,image/jpeg"
-                                    :disabled="ocrLoading || ocrServiceLoading || !canUseOcrAutofill" />
+                                    <v-file-input v-model="ocrScanFile" variant="outlined"
+                                        label="Upload Aadhaar, voter ID, or driving licence"
+                                        accept=".pdf,.doc,.docx,image/png,image/jpeg"
+                                        :disabled="ocrLoading || ocrServiceLoading || !canUseOcrAutofill" />
                                 </v-col>
                                 <v-col cols="12" md="3" lg="2" class="d-flex align-center">
-                                <v-btn variant="outlined" color="secondary" size="large" class="w-100 w-md-auto"
-                                    :loading="ocrLoading || ocrServiceLoading"
-                                    :disabled="ocrLoading || ocrServiceLoading || !canUseOcrAutofill"
-                                    @click="runOcrAutofill">
-                                    Fill From Document
-                                </v-btn>
+                                    <v-btn variant="outlined" color="secondary" size="large" class="w-100 w-md-auto"
+                                        :loading="ocrLoading || ocrServiceLoading"
+                                        :disabled="ocrLoading || ocrServiceLoading || !canUseOcrAutofill"
+                                        @click="runOcrAutofill">
+                                        Fill From Document
+                                    </v-btn>
                                 </v-col>
                             </v-row>
                         </v-card-text>
@@ -715,25 +716,25 @@ const viewDocument = (index: number) => {
                         </v-card-title>
                         <v-card-text>
                             <v-row>
-                            <v-col cols="12" sm="6">
-                                <v-text-field variant="outlined" v-model="stepOne.firstName" label="First Name*"
-                                    required :rules="[validationRules.required]" />
-                            </v-col>
-                            <v-col cols="12" sm="6">
-                                <v-text-field variant="outlined" v-model="stepOne.lastName" label="Last Name" />
-                            </v-col>
-                            <v-col cols="12">
-                                <v-text-field variant="outlined" v-model="stepOne.email" label="Email*"
-                                    :rules="[validationRules.required, validationRules.email]" />
-                            </v-col>
-                            <v-col cols="12" sm="6">
-                                <v-text-field variant="outlined" v-model="stepOne.dateOfBirth" label="Date of Birth"
-                                    type="date" />
-                            </v-col>
-                            <v-col cols="12" sm="6">
-                                <v-select variant="outlined" v-model="stepOne.gender"
-                                    :items="['male', 'female', 'other']" label="Gender" />
-                            </v-col>
+                                <v-col cols="12" sm="6">
+                                    <v-text-field variant="outlined" v-model="stepOne.firstName" label="First Name*"
+                                        required :rules="[validationRules.required]" />
+                                </v-col>
+                                <v-col cols="12" sm="6">
+                                    <v-text-field variant="outlined" v-model="stepOne.lastName" label="Last Name" />
+                                </v-col>
+                                <v-col cols="12">
+                                    <v-text-field variant="outlined" v-model="stepOne.email" label="Email*"
+                                        :rules="[validationRules.required, validationRules.email]" />
+                                </v-col>
+                                <v-col cols="12" sm="6">
+                                    <v-text-field variant="outlined" v-model="stepOne.dateOfBirth" label="Date of Birth"
+                                        type="date" />
+                                </v-col>
+                                <v-col cols="12" sm="6">
+                                    <v-select variant="outlined" v-model="stepOne.gender"
+                                        :items="['male', 'female', 'other']" label="Gender" />
+                                </v-col>
                             </v-row>
                         </v-card-text>
                     </v-card>
@@ -750,14 +751,14 @@ const viewDocument = (index: number) => {
                         </v-card-title>
                         <v-card-text>
                             <v-row>
-                            <v-col cols="12" md="6">
-                                <v-text-field variant="outlined" v-model="stepOne.mobileNumber"
-                                    label="Mobile Number(+91)" />
-                            </v-col>
-                            <v-col cols="12" md="6">
-                                <v-text-field variant="outlined" v-model="stepOne.whatsappNumber"
-                                    label="WhatsApp Number(+91)" />
-                            </v-col>
+                                <v-col cols="12" md="6">
+                                    <v-text-field variant="outlined" v-model="stepOne.mobileNumber"
+                                        label="Mobile Number(+91)" />
+                                </v-col>
+                                <v-col cols="12" md="6">
+                                    <v-text-field variant="outlined" v-model="stepOne.whatsappNumber"
+                                        label="WhatsApp Number(+91)" />
+                                </v-col>
                             </v-row>
                         </v-card-text>
                     </v-card>
@@ -774,31 +775,33 @@ const viewDocument = (index: number) => {
                         </v-card-title>
                         <v-card-text>
                             <v-row>
-                            <v-col cols="12" sm="6">
-                                <v-text-field variant="outlined" v-model="stepOne.houseName" label="House Name" />
-                            </v-col>
-                            <v-col cols="12" sm="6">
-                                <v-text-field variant="outlined" v-model="stepOne.houseNumber" label="House Number" />
-                            </v-col>
-                            <v-col cols="12" sm="6">
-                                <v-text-field variant="outlined" v-model="stepOne.streetName" label="Street Name" />
-                            </v-col>
-                            <v-col cols="12" sm="6">
-                                <v-text-field variant="outlined" v-model="stepOne.streetNumber" label="Street Number" />
-                            </v-col>
-                            <v-col cols="12" md="6">
-                                <v-text-field variant="outlined" v-model="stepOne.village" label="Village" />
-                            </v-col>
-                            <v-col cols="12" md="6">
-                                <v-text-field type="number" variant="outlined" v-model="stepOne.postOffice"
-                                    label="Post Office" />
-                            </v-col>
-                            <v-col cols="12" md="6">
-                                <v-text-field variant="outlined" v-model="stepOne.panchayat" label="Panchayat" />
-                            </v-col>
-                            <v-col cols="12" md="6">
-                                <v-text-field variant="outlined" v-model="stepOne.district" label="District" />
-                            </v-col>
+                                <v-col cols="12" sm="6">
+                                    <v-text-field variant="outlined" v-model="stepOne.houseName" label="House Name" />
+                                </v-col>
+                                <v-col cols="12" sm="6">
+                                    <v-text-field variant="outlined" v-model="stepOne.houseNumber"
+                                        label="House Number" />
+                                </v-col>
+                                <v-col cols="12" sm="6">
+                                    <v-text-field variant="outlined" v-model="stepOne.streetName" label="Street Name" />
+                                </v-col>
+                                <v-col cols="12" sm="6">
+                                    <v-text-field variant="outlined" v-model="stepOne.streetNumber"
+                                        label="Street Number" />
+                                </v-col>
+                                <v-col cols="12" md="6">
+                                    <v-text-field variant="outlined" v-model="stepOne.village" label="Village" />
+                                </v-col>
+                                <v-col cols="12" md="6">
+                                    <v-text-field type="number" variant="outlined" v-model="stepOne.postOffice"
+                                        label="Post Office" />
+                                </v-col>
+                                <v-col cols="12" md="6">
+                                    <v-text-field variant="outlined" v-model="stepOne.panchayat" label="Panchayat" />
+                                </v-col>
+                                <v-col cols="12" md="6">
+                                    <v-text-field variant="outlined" v-model="stepOne.district" label="District" />
+                                </v-col>
                             </v-row>
                         </v-card-text>
                     </v-card>
@@ -812,44 +815,42 @@ const viewDocument = (index: number) => {
                         <v-row class="border border-secondary rounded pa-2 mb-3">
                             <v-col cols="12">
                                 <v-alert type="info" color="secondary" variant="tonal" density="comfortable">
-                                    Sensitive details are hidden on screen by default. Use the eye icon to show or hide them.
+                                    Sensitive details are hidden on screen by default. Use the eye icon to show or hide
+                                    them.
                                 </v-alert>
                             </v-col>
 
                             <v-col cols="12" md="4">
-                                <v-text-field class="sensitive-visibility-field" variant="outlined" v-model="stepTwo.aadhaarNumber" label="Aadhaar Number"
-                                    :type="sensitiveFieldType"
+                                <v-text-field class="sensitive-visibility-field" variant="outlined"
+                                    v-model="stepTwo.aadhaarNumber" label="Aadhaar Number" :type="sensitiveFieldType"
                                     :append-inner-icon="sensitiveFieldIcon"
                                     @click:append-inner="toggleSensitiveDataVisibility"
                                     :rules="[validationRules.maxLength(12), validationRules.minLength(12)]" />
                             </v-col>
                             <v-col cols="12" md="4">
-                                <v-text-field class="sensitive-visibility-field" variant="outlined" v-model="stepTwo.drivingLicense"
-                                    label="Driving License"
-                                    :type="sensitiveFieldType"
+                                <v-text-field class="sensitive-visibility-field" variant="outlined"
+                                    v-model="stepTwo.drivingLicense" label="Driving License" :type="sensitiveFieldType"
                                     :append-inner-icon="sensitiveFieldIcon"
                                     @click:append-inner="toggleSensitiveDataVisibility"
                                     :rules="[validationRules.maxLength(15), validationRules.minLength(15)]" />
                             </v-col>
                             <v-col cols="12" md="4">
-                                <v-text-field class="sensitive-visibility-field" variant="outlined" v-model="stepTwo.electionID" label="Election ID"
-                                    :type="sensitiveFieldType"
+                                <v-text-field class="sensitive-visibility-field" variant="outlined"
+                                    v-model="stepTwo.electionID" label="Election ID" :type="sensitiveFieldType"
                                     :append-inner-icon="sensitiveFieldIcon"
                                     @click:append-inner="toggleSensitiveDataVisibility"
                                     :rules="[validationRules.maxLength(10), validationRules.minLength(10)]" />
                             </v-col>
                             <v-col cols="12" md="4">
-                                <v-text-field class="sensitive-visibility-field" variant="outlined" v-model="stepTwo.passportNumber"
-                                    label="Passport Number"
-                                    :type="sensitiveFieldType"
+                                <v-text-field class="sensitive-visibility-field" variant="outlined"
+                                    v-model="stepTwo.passportNumber" label="Passport Number" :type="sensitiveFieldType"
                                     :append-inner-icon="sensitiveFieldIcon"
                                     @click:append-inner="toggleSensitiveDataVisibility"
                                     :rules="[validationRules.maxLength(8), validationRules.minLength(8)]" />
                             </v-col>
                             <v-col cols="12" md="4">
-                                <v-text-field class="sensitive-visibility-field" variant="outlined" v-model="stepTwo.postBoxNumber"
-                                    label="Post Box Number"
-                                    :type="sensitiveFieldType"
+                                <v-text-field class="sensitive-visibility-field" variant="outlined"
+                                    v-model="stepTwo.postBoxNumber" label="Post Box Number" :type="sensitiveFieldType"
                                     :append-inner-icon="sensitiveFieldIcon"
                                     @click:append-inner="toggleSensitiveDataVisibility" />
                             </v-col>
@@ -892,13 +893,15 @@ const viewDocument = (index: number) => {
                             </v-avatar>
                             <div>
                                 <div class="text-h5">Mail & Location Settings</div>
-                                <div class="text-caption text-lightText">Choose how mail and location details are handled</div>
+                                <div class="text-caption text-lightText">Choose how mail and location details are
+                                    handled</div>
                             </div>
                         </v-card-title>
                         <v-card-text>
                             <div class="step-three-setting">
                                 <div>
-                                    <div class="text-subtitle-1 font-weight-medium">Use Redirection Address (Retd Add.)</div>
+                                    <div class="text-subtitle-1 font-weight-medium">Use Redirection Address (Retd Add.)
+                                    </div>
                                     <div class="text-caption text-lightText">Send mail to a different address</div>
                                 </div>
                                 <v-switch v-model="stepThree.isRedirected" color="secondary" hide-details inset />
@@ -906,7 +909,8 @@ const viewDocument = (index: number) => {
                             <div class="step-three-setting">
                                 <div>
                                     <div class="text-subtitle-1 font-weight-medium">Living Abroad (വിദേശത്ത്)</div>
-                                    <div class="text-caption text-lightText">Mark this person as living outside the country</div>
+                                    <div class="text-caption text-lightText">Mark this person as living outside the
+                                        country</div>
                                 </div>
                                 <v-switch v-model="stepThree.isAbroad" color="secondary" hide-details inset />
                             </div>
@@ -946,10 +950,12 @@ const viewDocument = (index: number) => {
                                                 <v-avatar color="lightsecondary" size="30">
                                                     <MapPinIcon class="text-secondary" size="17" />
                                                 </v-avatar>
-                                                <span class="text-subtitle-1 font-weight-bold">Address {{ index + 1 }}</span>
+                                                <span class="text-subtitle-1 font-weight-bold">Address {{ index + 1
+                                                    }}</span>
                                             </div>
                                             <v-btn color="error" variant="text" icon size="small"
-                                                :aria-label="`Remove address ${index + 1}`" @click="removeAddress(index)">
+                                                :aria-label="`Remove address ${index + 1}`"
+                                                @click="removeAddress(index)">
                                                 <TrashIcon size="18" />
                                             </v-btn>
                                         </v-card-title>
@@ -989,7 +995,8 @@ const viewDocument = (index: number) => {
                                     </v-card>
                                 </v-col>
                             </v-row>
-                            <v-btn color="secondary" variant="outlined" block class="d-sm-none mt-2" @click="addAddress">
+                            <v-btn color="secondary" variant="outlined" block class="d-sm-none mt-2"
+                                @click="addAddress">
                                 <PlusIcon size="18" class="mr-1" />
                                 Add Another Address
                             </v-btn>
@@ -1008,19 +1015,20 @@ const viewDocument = (index: number) => {
                             </v-avatar>
                             <div>
                                 <div class="text-h5">Marriage Information</div>
-                                <div class="text-caption text-lightText">Optional marriage and previous-address details</div>
+                                <div class="text-caption text-lightText">Optional marriage and previous-address details
+                                </div>
                             </div>
                         </v-card-title>
                         <v-card-text>
                             <v-row>
-                            <v-col cols="12" md="4">
-                                <v-text-field variant="outlined" v-model="stepFour.marriageDate"
-                                    label="Marriage Date (വിവാഹം നടന്ന തീയതി, മാസം, വർഷം)" type="date" />
-                            </v-col>
-                            <v-col cols="12" md="8">
-                                <v-text-field variant="outlined" v-model="stepFour.previousAddress"
-                                    label="Previous Address (മുമ്പത്തെ മേൽവിലാസം)" />
-                            </v-col>
+                                <v-col cols="12" md="4">
+                                    <v-text-field variant="outlined" v-model="stepFour.marriageDate"
+                                        label="Marriage Date (വിവാഹം നടന്ന തീയതി, മാസം, വർഷം)" type="date" />
+                                </v-col>
+                                <v-col cols="12" md="8">
+                                    <v-text-field variant="outlined" v-model="stepFour.previousAddress"
+                                        label="Previous Address (മുമ്പത്തെ മേൽവിലാസം)" />
+                                </v-col>
                             </v-row>
                         </v-card-text>
                     </v-card>
@@ -1043,33 +1051,35 @@ const viewDocument = (index: number) => {
                         </v-card-title>
                         <v-card-text>
                             <v-row>
-                            <v-col cols="12" lg="6" v-for="(child, index) in stepFour.children" :key="index">
-                                <v-card variant="outlined" class="step-four-child-card">
-                                    <v-card-title class="step-four-child-header">
-                                        <span class="text-subtitle-1 font-weight-bold">Child {{ index + 1 }}</span>
-                                        <v-btn color="error" variant="text" icon size="small"
-                                            :aria-label="`Remove child ${index + 1}`" @click="removeChild(index)">
-                                            <TrashIcon size="18" />
-                                        </v-btn>
-                                    </v-card-title>
-                                    <v-card-text>
-                                        <v-row>
-                                    <v-col cols="12">
-                                        <v-text-field variant="outlined" v-model="child.name" label="Child's Name"
-                                            required />
-                                    </v-col>
-                                    <v-col cols="12" sm="6">
-                                        <v-text-field variant="outlined" v-model="child.dateOfBirth"
-                                            label="Child's Date of Birth (കുട്ടി ജനിച്ച തീയതി)" type="date" required />
-                                    </v-col>
-                                    <v-col cols="12" sm="6">
-                                        <v-select variant="outlined" v-model="child.gender" :items="['male', 'female']"
-                                            label="Child's Gender (Male/ Female)" required />
-                                    </v-col>
-                                        </v-row>
-                                    </v-card-text>
-                                </v-card>
-                            </v-col>
+                                <v-col cols="12" lg="6" v-for="(child, index) in stepFour.children" :key="index">
+                                    <v-card variant="outlined" class="step-four-child-card">
+                                        <v-card-title class="step-four-child-header">
+                                            <span class="text-subtitle-1 font-weight-bold">Child {{ index + 1 }}</span>
+                                            <v-btn color="error" variant="text" icon size="small"
+                                                :aria-label="`Remove child ${index + 1}`" @click="removeChild(index)">
+                                                <TrashIcon size="18" />
+                                            </v-btn>
+                                        </v-card-title>
+                                        <v-card-text>
+                                            <v-row>
+                                                <v-col cols="12">
+                                                    <v-text-field variant="outlined" v-model="child.name"
+                                                        label="Child's Name" required />
+                                                </v-col>
+                                                <v-col cols="12" sm="6">
+                                                    <v-text-field variant="outlined" v-model="child.dateOfBirth"
+                                                        label="Child's Date of Birth (കുട്ടി ജനിച്ച തീയതി)" type="date"
+                                                        required />
+                                                </v-col>
+                                                <v-col cols="12" sm="6">
+                                                    <v-select variant="outlined" v-model="child.gender"
+                                                        :items="['male', 'female']"
+                                                        label="Child's Gender (Male/ Female)" required />
+                                                </v-col>
+                                            </v-row>
+                                        </v-card-text>
+                                    </v-card>
+                                </v-col>
                             </v-row>
                             <v-btn color="secondary" variant="outlined" block class="d-sm-none mt-2" @click="addChild">
                                 <PlusIcon size="18" class="mr-1" />
@@ -1101,30 +1111,30 @@ const viewDocument = (index: number) => {
                         </v-card-title>
                         <v-card-text>
                             <v-row>
-                            <v-col cols="12" md="6" v-for="(policy, index) in stepFive.policies" :key="index">
-                                <v-card variant="outlined" class="step-five-policy-card">
-                                    <v-card-title class="step-five-policy-header">
-                                        <span class="text-subtitle-1 font-weight-bold">Policy {{ index + 1 }}</span>
-                                        <v-btn color="error" variant="text" icon size="small"
-                                            :aria-label="`Remove policy ${index + 1}`" @click="removePolicy(index)">
-                                            <TrashIcon size="18" />
-                                        </v-btn>
-                                    </v-card-title>
-                                    <v-card-text>
-                                        <v-row>
-                                    <v-col cols="12">
-                                        <v-select variant="outlined" v-model="policy.type"
-                                            :items="['Account Number', 'PLI Number', 'RPLI Number', 'IPPB Number', 'Savings Bank Number', 'Other Account Numbers']"
-                                            label="Policy Type" required />
-                                    </v-col>
-                                    <v-col cols="12">
-                                        <v-text-field variant="outlined" v-model="policy.number" label="Policy Number"
-                                            required />
-                                    </v-col>
-                                        </v-row>
-                                    </v-card-text>
-                                </v-card>
-                            </v-col>
+                                <v-col cols="12" md="6" v-for="(policy, index) in stepFive.policies" :key="index">
+                                    <v-card variant="outlined" class="step-five-policy-card">
+                                        <v-card-title class="step-five-policy-header">
+                                            <span class="text-subtitle-1 font-weight-bold">Policy {{ index + 1 }}</span>
+                                            <v-btn color="error" variant="text" icon size="small"
+                                                :aria-label="`Remove policy ${index + 1}`" @click="removePolicy(index)">
+                                                <TrashIcon size="18" />
+                                            </v-btn>
+                                        </v-card-title>
+                                        <v-card-text>
+                                            <v-row>
+                                                <v-col cols="12">
+                                                    <v-select variant="outlined" v-model="policy.type"
+                                                        :items="['Account Number', 'PLI Number', 'RPLI Number', 'IPPB Number', 'Savings Bank Number', 'Other Account Numbers']"
+                                                        label="Policy Type" required />
+                                                </v-col>
+                                                <v-col cols="12">
+                                                    <v-text-field variant="outlined" v-model="policy.number"
+                                                        label="Policy Number" required />
+                                                </v-col>
+                                            </v-row>
+                                        </v-card-text>
+                                    </v-card>
+                                </v-col>
                             </v-row>
                             <v-btn color="secondary" variant="outlined" block class="d-sm-none mt-2" @click="addPolicy">
                                 <PlusIcon size="18" class="mr-1" />
@@ -1136,54 +1146,134 @@ const viewDocument = (index: number) => {
             </template>
 
 
-            <!-- Step 5: Documents -->
+            <!-- Step 6: Documents -->
             <template v-slot:item.6>
-                <v-form v-model="stepSix.valid">
-                    <UiParentCard title="Supporting Documents">
-                        <v-row>
-                            <v-col cols="12" v-for="(document, index) in stepSix.documents" :key="index">
-                                <v-row class="border border-secondary rounded pa-2 mb-3">
-                                    <v-col cols="12" md="3">
-                                        <v-text-field variant="outlined" v-model="document.name"
-                                            label="Document Name (e.g., Aadhaar Copy, Address Proof)"
-                                            :rules="[validationRules.required]" />
-                                    </v-col>
-                                    <v-col cols="12" md="3">
-                                        <FileUpload :label="`Upload Document`" :rules="[validationRules.required]"
-                                            @uploaded="(fileUrl) => setUploadUrlForDoc(fileUrl, index)" />
-                                    </v-col>
-                                    <v-col cols="12" md="4">
-                                        <v-card-actions>
-                                            <v-btn color="error" @click="removeDocument(index)">Remove</v-btn>
-                                            <v-btn v-if="document.file" color="primary" @click="viewDocument(index)">
-                                                View Document
-                                            </v-btn>
-                                        </v-card-actions>
-                                    </v-col>
-                                </v-row>
-                            </v-col>
-                            <v-col cols="12">
-                                <v-btn color="secondary" @click="uploadDocument">Add Document</v-btn>
-                            </v-col>
-                        </v-row>
-                    </UiParentCard>
+                <v-form v-model="stepSix.valid" class="step-six-form">
+                    <v-card variant="outlined" class="step-six-card">
+                        <v-card-title class="step-six-header">
+                            <div class="d-flex align-center ga-3">
+                                <v-avatar color="lightsecondary" size="36">
+                                    <FileTextIcon class="text-secondary" size="20" />
+                                </v-avatar>
+
+                                <div>
+                                    <div class="text-h5">Supporting Documents</div>
+                                    <div class="text-caption text-lightText">
+                                        Upload Aadhaar, address proof, or other documents
+                                    </div>
+                                </div>
+                            </div>
+
+                            <v-btn color="secondary" variant="outlined" @click="uploadDocument"
+                                class="d-none d-sm-flex">
+                                <PlusIcon size="18" class="mr-1" />
+                                Add Document
+                            </v-btn>
+                        </v-card-title>
+
+                        <v-card-text>
+                            <v-row>
+                                <v-col cols="12" md="6" v-for="(document, index) in stepSix.documents" :key="index">
+                                    <v-card variant="outlined" class="step-six-document-card">
+                                        <v-card-title class="step-six-document-header">
+                                            <span class="text-subtitle-1 font-weight-bold">
+                                                Document {{ index + 1 }}
+                                            </span>
+
+                                            <div class="d-flex align-center ga-1">
+                                                <v-tooltip text="Preview Document">
+                                                    <template #activator="{ props }">
+                                                        <v-btn v-bind="props" icon variant="text" color="secondary"
+                                                            @click="viewDocument(index)">
+                                                            <EyeIcon size="18" />
+                                                        </v-btn>
+                                                    </template>
+                                                </v-tooltip>
+
+                                                <v-tooltip text="Download Document">
+                                                    <template #activator="{ props }">
+                                                        <v-btn v-bind="props" icon variant="text" color="secondary">
+                                                            <DownloadIcon size="18" />
+                                                        </v-btn>
+                                                    </template>
+                                                </v-tooltip>
+
+                                                <v-tooltip text="Remove Document">
+                                                    <template #activator="{ props }">
+                                                        <v-btn v-bind="props" icon variant="text" color="error"
+                                                            @click="removeDocument(index)">
+                                                            <TrashIcon size="18" />
+                                                        </v-btn>
+                                                    </template>
+                                                </v-tooltip>
+                                            </div>
+                                        </v-card-title>
+
+                                        <v-card-text class="pt-0">
+                                            <v-row>
+                                                <v-col cols="12">
+                                                    <v-text-field variant="outlined" v-model="document.name"
+                                                        label="Document Name"
+                                                        placeholder="e.g., Aadhaar Copy, Address Proof"
+                                                        :rules="[validationRules.required]" />
+                                                </v-col>
+
+                                                <v-col cols="12">
+                                                    <FileUpload label="Upload Document"
+                                                        :rules="[validationRules.required]"
+                                                        @uploaded="(fileUrl) => setUploadUrlForDoc(fileUrl, index)" />
+                                                </v-col>
+
+                                                <v-col cols="12" v-if="document.file">
+
+                                                </v-col>
+                                            </v-row>
+                                        </v-card-text>
+                                    </v-card>
+                                </v-col>
+                            </v-row>
+
+                            <v-btn color="secondary" variant="outlined" block class="d-sm-none mt-2"
+                                @click="uploadDocument">
+                                <PlusIcon size="18" class="mr-1" />
+                                Add Another Document
+                            </v-btn>
+                        </v-card-text>
+                    </v-card>
                 </v-form>
+
                 <FileViewer :isVisible="isModalVisible" :file="currentDocumentUrl || ''"
                     @update:isVisible="isModalVisible = $event" />
             </template>
 
-            <!-- Step 6: Review and submit  -->
+            <!-- Step 7: Review & Submit -->
             <template v-slot:item.7>
-                <UiParentCard title="Review & Submit">
-                    <ViewComponent
-                        :form="{ ...stepOne, ...stepTwo, ...stepThree, ...stepFour, ...stepFive, ...stepSix }"
-                        review-mode
-                    />
-                </UiParentCard>
+                <v-card variant="outlined" class="step-seven-card">
+                    <v-card-title class="step-seven-header">
+                        <div class="d-flex align-center ga-3">
+                            <v-avatar color="lightsecondary" size="36">
+                                <ClipboardCheckIcon class="text-secondary" size="20" />
+                            </v-avatar>
+
+                            <div>
+                                <div class="text-h5">Review & Submit</div>
+                                <div class="text-caption text-lightText">
+                                    Check all entered details before submitting
+                                </div>
+                            </div>
+                        </div>
+                    </v-card-title>
+
+                    <v-card-text>
+                        <ViewComponent
+                            :form="{ ...stepOne, ...stepTwo, ...stepThree, ...stepFour, ...stepFive, ...stepSix }"
+                            review-mode />
+                    </v-card-text>
+                </v-card>
             </template>
 
             <!-- Custom Next and Prev buttons -->
-            <template v-slot:actions="{}">
+            <template v-slot:actions="{ }">
                 <v-row class="d-flex align-center justify-space-between ma-5">
                     <v-btn :disabled="stepper.step === 1" outlined color="secondary" size="default" density="default"
                         @click="previousStep">
@@ -1194,8 +1284,7 @@ const viewDocument = (index: number) => {
 
                     <DropdownButton v-if="stepper.step < stepper.items.length" :loading="loading"
                         :disabled="!isCurrentStepValid" primary-label="Save & Continue" secondary-label="Save Draft"
-                        :compact="true"
-                        @primary-click="submitStepData('DRAFT', true)" @secondary-click="saveDraft" />
+                        :compact="true" @primary-click="submitStepData('DRAFT', true)" @secondary-click="saveDraft" />
 
                     <DropdownButton v-else :loading="loading" :compact="true" primary-label="Finish & Submit"
                         secondary-label="Save Draft" @primary-click="submitStepper" @secondary-click="saveDraft" />
@@ -1391,7 +1480,7 @@ const viewDocument = (index: number) => {
         padding: 14px;
     }
 
-    .step-five-header > .v-btn {
+    .step-five-header>.v-btn {
         display: none;
     }
 
@@ -1400,7 +1489,7 @@ const viewDocument = (index: number) => {
         padding: 14px;
     }
 
-    .step-four-children-header > .v-btn {
+    .step-four-children-header>.v-btn {
         display: none;
     }
 
@@ -1421,5 +1510,48 @@ const viewDocument = (index: number) => {
         min-height: 72px;
         padding: 12px;
     }
+
+}
+
+.step-six-card {
+    border-radius: 12px;
+}
+
+.step-six-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+}
+
+.step-six-document-card {
+    border-radius: 12px;
+    height: 100%;
+}
+
+.step-six-document-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 8px;
+}
+
+@media (max-width: 600px) {
+    .step-six-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+}
+
+.step-seven-card {
+    border-radius: 12px;
+}
+
+.step-seven-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
 }
 </style>
