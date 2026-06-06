@@ -124,7 +124,7 @@ const returnToPreviousPage = () => {
             </v-avatar>
             <div>
               <div class="text-h5">{{ assistantName }}</div>
-              <div class="text-caption text-medium-emphasis">Ask me to find records.</div>
+              <div class="text-caption text-medium-emphasis">Ask me anything about postal records</div>
             </div>
           </div>
           <div class="d-flex align-center ga-1">

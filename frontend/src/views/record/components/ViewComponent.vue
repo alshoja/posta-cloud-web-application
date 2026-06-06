@@ -198,7 +198,7 @@ const useDefaultProfileImage = () => {
                             </v-card>
                         </v-col>
                     </v-row>
-                    <v-alert v-else type="info" variant="tonal">No additional addresses available.</v-alert>
+                    <v-alert v-else type="info" color="secondary" variant="tonal">No additional addresses available.</v-alert>
                 </DetailSection>
 
                 <DetailSection id="family" title="Family Details" :icon="HeartIcon">
@@ -218,7 +218,7 @@ const useDefaultProfileImage = () => {
                             </v-card>
                         </v-col>
                     </v-row>
-                    <v-alert v-else type="info" variant="tonal">No children available.</v-alert>
+                    <v-alert v-else type="info" color="secondary" variant="tonal">No children available.</v-alert>
                 </DetailSection>
 
                 <DetailSection id="policies" title="Policy Details" :icon="ShieldCheckIcon">
@@ -230,7 +230,7 @@ const useDefaultProfileImage = () => {
                             </tr>
                         </tbody>
                     </v-table>
-                    <v-alert v-else type="info" variant="tonal">No policies available.</v-alert>
+                    <v-alert v-else type="info" color="secondary" variant="tonal">No policies available.</v-alert>
                 </DetailSection>
 
                 <DetailSection id="documents" title="Documents" :icon="FileTextIcon">
@@ -245,7 +245,7 @@ const useDefaultProfileImage = () => {
                             </tr>
                         </tbody>
                     </v-table>
-                    <v-alert v-else type="info" variant="tonal">No documents available.</v-alert>
+                    <v-alert v-else type="info" color="secondary" variant="tonal">No documents available.</v-alert>
                 </DetailSection>
             </v-col>
         </v-row>
