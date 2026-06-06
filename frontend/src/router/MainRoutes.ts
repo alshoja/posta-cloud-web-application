@@ -37,6 +37,11 @@ const MainRoutes = {
       component: () => import('@/views/record/ListRecords.vue')
     },
     {
+      name: 'AI Chat',
+      path: '/ai-chat',
+      component: () => import('@/views/ai/AiChatPage.vue')
+    },
+    {
       name: 'Tabler Icons',
       path: '/icons/tabler',
       component: () => import('@/views/utilities/icons/TablerIcons.vue')

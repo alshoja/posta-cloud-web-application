@@ -2,19 +2,48 @@
 import MarkdownIt from 'markdown-it'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { MessageCircleIcon, RobotIcon, SendIcon, XIcon } from 'vue-tabler-icons'
+import { ArrowsMaximizeIcon, ArrowsMinimizeIcon, MessageCircleIcon, RobotIcon, SendIcon, XIcon } from 'vue-tabler-icons'
 import { useAiChatStore, type AiChatRecordResult } from '@/stores/aiChat'
+
+const props = withDefaults(defineProps<{
+  fullPage?: boolean
+}>(), {
+  fullPage: false
+})
 
 const aiChatStore = useAiChatStore()
 const router = useRouter()
 const draftMessage = ref('')
 const messagesContainer = ref<HTMLElement | null>(null)
+const showAllStarterPrompts = ref(false)
 
-const starterPrompts = [
-  'Show completed records',
-  'Find records from Pampadumpara',
-  'Find people living abroad',
-  'Show records with redirected address'
+const starterPromptGroups = [
+  {
+    title: 'Status & results',
+    prompts: ['Show completed records', 'Show draft records', 'Show me 20 records']
+  },
+  {
+    title: 'Location & contact',
+    prompts: [
+      'Find records from Pampadumpara',
+      'Find records in Idukki district',
+      'Find records with email gmail.com',
+      'Find mobile number 9876'
+    ]
+  },
+  {
+    title: 'Record details',
+    prompts: [
+      'Find people living abroad',
+      'Show records with redirected address',
+      'Show records with documents',
+      'Show records without policies'
+    ]
+  },
+  {
+    title: 'Continue & summarize',
+    prompts: ['Show me the next 10', 'Previous page', 'Summarize record 151']
+  }
 ]
 
 const assistantName = 'Posta Mitra'
@@ -25,6 +54,9 @@ const markdownRenderer = new MarkdownIt({
 })
 
 const canSend = computed(() => draftMessage.value.trim().length > 0 && !aiChatStore.isLoading)
+const hasRecordResults = computed(() =>
+  aiChatStore.messages.some((message) => Boolean(message.records?.length))
+)
 
 watch(
   () => aiChatStore.messages.length,
@@ -69,12 +101,22 @@ const openRecord = (recordId?: string) => {
   aiChatStore.closeChat()
   router.push(`/edit/record/${recordId}`)
 }
+
+const openFullPage = () => {
+  aiChatStore.closeChat()
+  router.push({ name: 'AI Chat' })
+}
+
+const returnToPreviousPage = () => {
+  aiChatStore.openChat()
+  router.back()
+}
 </script>
 
 <template>
-  <div class="ai-chat-widget">
+  <div class="ai-chat-widget" :class="{ 'ai-chat-widget-full-page': props.fullPage }">
     <v-slide-y-reverse-transition>
-      <v-card v-if="aiChatStore.isOpen" class="ai-chat-panel" elevation="12">
+      <v-card v-if="props.fullPage || aiChatStore.isOpen" class="ai-chat-panel" :class="{ 'ai-chat-panel-full-page': props.fullPage }" elevation="12">
         <v-card-title class="ai-chat-header">
           <div class="d-flex align-center ga-2">
             <v-avatar color="secondary" size="34">
@@ -85,9 +127,43 @@ const openRecord = (recordId?: string) => {
               <div class="text-caption text-medium-emphasis">Ask me to find records.</div>
             </div>
           </div>
-          <v-btn icon variant="text" size="small" @click="aiChatStore.closeChat">
-            <XIcon size="18" />
-          </v-btn>
+          <div class="d-flex align-center ga-1">
+            <v-tooltip v-if="props.fullPage" text="Minimize chat">
+              <template #activator="{ props: tooltipProps }">
+                <v-btn
+                  v-bind="tooltipProps"
+                  color="secondary"
+                  variant="outlined"
+                  size="small"
+                  icon
+                  class="ai-chat-full-page-button"
+                  aria-label="Minimize chat"
+                  @click="returnToPreviousPage"
+                >
+                  <ArrowsMinimizeIcon size="16" />
+                </v-btn>
+              </template>
+            </v-tooltip>
+            <v-tooltip v-if="!props.fullPage" text="Open full page">
+              <template #activator="{ props: tooltipProps }">
+                <v-btn
+                  v-bind="tooltipProps"
+                  color="secondary"
+                  variant="outlined"
+                  size="small"
+                  icon
+                  class="ai-chat-full-page-button"
+                  aria-label="Open full page"
+                  @click="openFullPage"
+                >
+                  <ArrowsMaximizeIcon size="16" />
+                </v-btn>
+              </template>
+            </v-tooltip>
+            <v-btn v-if="!props.fullPage" icon variant="text" size="small" @click="aiChatStore.closeChat">
+              <XIcon size="18" />
+            </v-btn>
+          </div>
         </v-card-title>
 
         <v-divider />
@@ -149,17 +225,64 @@ const openRecord = (recordId?: string) => {
           </div>
 
           <div v-if="aiChatStore.messages.length === 1" class="ai-chat-prompts">
-            <v-chip
-              v-for="prompt in starterPrompts"
-              :key="prompt"
+            <div class="ai-chat-prompts-title">Try one of these searches</div>
+            <div v-for="group in starterPromptGroups" :key="group.title" class="ai-chat-prompt-group">
+              <div class="ai-chat-prompt-group-title">{{ group.title }}</div>
+              <div class="ai-chat-prompt-chips">
+                <v-chip
+                  v-for="prompt in showAllStarterPrompts ? group.prompts : group.prompts.slice(0, 1)"
+                  :key="prompt"
+                  size="small"
+                  color="secondary"
+                  variant="tonal"
+                  :disabled="aiChatStore.isLoading"
+                  @click="sendStarterPrompt(prompt)"
+                >
+                  {{ prompt }}
+                </v-chip>
+              </div>
+            </div>
+            <v-btn
               size="small"
               color="secondary"
-              variant="tonal"
-              :disabled="aiChatStore.isLoading"
-              @click="sendStarterPrompt(prompt)"
+              variant="text"
+              class="align-self-start"
+              @click="showAllStarterPrompts = !showAllStarterPrompts"
             >
-              {{ prompt }}
-            </v-chip>
+              {{ showAllStarterPrompts ? 'Show less' : 'More suggestions' }}
+            </v-btn>
+          </div>
+
+          <div v-if="hasRecordResults && !aiChatStore.isLoading" class="ai-chat-follow-up">
+            <div class="ai-chat-prompt-chips">
+              <v-chip color="secondary" variant="tonal" size="small" @click="sendStarterPrompt('Previous page')">
+                Previous
+              </v-chip>
+              <v-chip color="secondary" variant="tonal" size="small" @click="sendStarterPrompt('Show me the next 10')">
+                Next 10
+              </v-chip>
+              <v-chip color="secondary" variant="outlined" size="small" @click="showAllStarterPrompts = !showAllStarterPrompts">
+                {{ showAllStarterPrompts ? 'Hide suggestions' : 'More suggestions' }}
+              </v-chip>
+            </div>
+
+            <div v-if="showAllStarterPrompts" class="ai-chat-more-prompts">
+              <div v-for="group in starterPromptGroups" :key="group.title" class="ai-chat-prompt-group">
+                <div class="ai-chat-prompt-group-title">{{ group.title }}</div>
+                <div class="ai-chat-prompt-chips">
+                  <v-chip
+                    v-for="prompt in group.prompts"
+                    :key="prompt"
+                    size="small"
+                    color="secondary"
+                    variant="tonal"
+                    @click="sendStarterPrompt(prompt)"
+                  >
+                    {{ prompt }}
+                  </v-chip>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div v-if="aiChatStore.isLoading" class="ai-chat-message ai-chat-message-assistant">
@@ -193,13 +316,14 @@ const openRecord = (recordId?: string) => {
       </v-card>
     </v-slide-y-reverse-transition>
 
-    <v-btn class="ai-chat-button" color="secondary" size="large" elevation="10" @click="aiChatStore.toggleChat">
+    <v-btn v-if="!props.fullPage" class="ai-chat-button" color="secondary" size="large" elevation="10" @click="aiChatStore.toggleChat">
       <div v-if="!aiChatStore.isOpen" class="ai-chat-button-content">
         <MessageCircleIcon size="22" />
         <span>AI</span>
       </div>
       <XIcon v-else size="24" />
     </v-btn>
+
   </div>
 </template>
 
@@ -219,11 +343,39 @@ const openRecord = (recordId?: string) => {
   overflow: hidden;
 }
 
+.ai-chat-widget-full-page {
+  position: static;
+  width: 100%;
+  height: 100%;
+}
+
+.ai-chat-panel-full-page {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  border-radius: 12px;
+}
+
+.ai-chat-panel-full-page .ai-chat-messages {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+}
+
 .ai-chat-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 16px;
+}
+
+.ai-chat-full-page-button {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
 }
 
 .ai-chat-messages {
@@ -301,9 +453,42 @@ const openRecord = (recordId?: string) => {
 
 .ai-chat-prompts {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-direction: column;
+  gap: 10px;
   margin-top: 8px;
+}
+
+.ai-chat-prompts-title {
+  color: rgb(var(--v-theme-darkText));
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.ai-chat-prompt-group-title {
+  margin-bottom: 5px;
+  color: rgb(var(--v-theme-lightText));
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.ai-chat-prompt-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ai-chat-follow-up {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.ai-chat-more-prompts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .ai-chat-records {
@@ -348,5 +533,6 @@ const openRecord = (recordId?: string) => {
   .ai-chat-messages {
     height: 340px;
   }
+
 }
 </style>

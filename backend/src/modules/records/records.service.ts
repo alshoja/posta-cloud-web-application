@@ -350,11 +350,12 @@ export class RecordsService {
   }
 
   async findAll(
-    search: string,
+    search: string | undefined,
     page: number,
     limit: number,
     sortBy: string,
     sortOrder: 'ASC' | 'DESC',
+    status?: RecordStatus | 'ALL',
   ): Promise<{ data: RecordEntity[]; total: number }> {
     try {
       const userId = this.request.user.sub;
@@ -414,6 +415,10 @@ export class RecordsService {
               });
           }),
         );
+      }
+
+      if (status && status !== 'ALL') {
+        query.andWhere('record.status = :status', { status });
       }
 
       const [data, total] = await query.getManyAndCount();

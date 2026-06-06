@@ -1,4 +1,4 @@
-import { AddressBookIcon, CircleIcon, DashboardIcon, KeyIcon } from 'vue-tabler-icons'
+import { AddressBookIcon, CircleIcon, DashboardIcon } from 'vue-tabler-icons'
 
 export interface menu {
   header?: string

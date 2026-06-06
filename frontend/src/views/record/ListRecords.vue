@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import UiParentCard from '@/components/shared/UiParentCard.vue';
-import type { RecordDetail } from '@/interfaces/record.interface';
+import type { RecordDetail, RecordStatus } from '@/interfaces/record.interface';
 import { useAuthStore } from '@/stores/auth';
 import { useRecordStore } from '@/stores/record';
 import { useSnackbarStore } from '@/stores/snackbar.store';
@@ -22,10 +22,16 @@ const dialog = ref(false);
 const dialogDelete = ref(false);
 const editedIndex = ref<number>(-1);
 const search = ref<string | undefined>(undefined);
+const statusFilter = ref<RecordStatus | 'ALL'>('ALL');
 const serverItem = ref<RecordDetail>();
 const serverItems = ref<RecordDetail[]>();
 const totalItems = ref(0);
 const itemsPerPage = ref(10);
+const statusOptions = [
+    { title: 'All', value: 'ALL' },
+    { title: 'Draft', value: 'DRAFT' },
+    { title: 'Completed', value: 'COMPLETED' },
+];
 
 const router = useRouter();
 
@@ -80,6 +86,12 @@ const editItem = (item: RecordDetail) => {
     router.push({ name: 'Edit Record', params: { recordId: item.id } });
 };
 
+const editDialogItem = () => {
+    if (!serverItem.value || !canEditRecord(serverItem.value)) return;
+    dialog.value = false;
+    editItem(serverItem.value);
+};
+
 const canEditRecord = (item: RecordDetail) => item.status !== 'COMPLETED';
 const canDeleteRecord = (item: RecordDetail) => item.user?.id === currentUserId;
 const canReopenRecord = (item: RecordDetail) => isAdminUser && item.status === 'COMPLETED';
@@ -106,6 +118,7 @@ const reopenItem = async (item: RecordDetail) => {
             itemsPerPage: itemsPerPage.value,
             sortBy: [],
             searchQuery: search.value || '',
+            status: statusFilter.value,
         });
         snackbar.showSnackbar('Record reopened successfully.', 'success', []);
     } catch (error) {
@@ -115,13 +128,14 @@ const reopenItem = async (item: RecordDetail) => {
     }
 };
 
-const loadRecords = async ({ page, itemsPerPage, sortBy, searchQuery }: { page: number, itemsPerPage: number, sortBy: { key: string, order: string }[], searchQuery: string }) => {
+const loadRecords = async ({ page, itemsPerPage, sortBy, searchQuery, status = statusFilter.value }: { page: number, itemsPerPage: number, sortBy: { key: string, order: string }[], searchQuery: string, status?: RecordStatus | 'ALL' }) => {
     await recordStore.fetchAllRecords({
         page: page,
         limit: itemsPerPage,
         sortBy: sortBy.length ? sortBy[0].key : undefined,
         sortOrder: sortBy.length ? sortBy[0].order : undefined,
-        search: searchQuery
+        search: searchQuery,
+        status
     });
     serverItems.value = recordStore.records.data;
     totalItems.value = recordStore.records.total;
@@ -162,12 +176,13 @@ watch(
     }
 );
 
-watch(search, (newSearch) => {
+watch([search, statusFilter], ([newSearch, newStatus]) => {
     debouncedLoadRecords({
         page: 1,
         itemsPerPage: 10,
         sortBy: [],
         searchQuery: newSearch,
+        status: newStatus,
     });
 });
 
@@ -177,15 +192,30 @@ watch(search, (newSearch) => {
     <BaseBreadcrumb :title="page.title" :breadcrumbs="breadcrumbs" />
     
     <UiParentCard title="All Records">
-        <v-row class="align-center ">
+        <v-row class="records-toolbar-row align-center">
             <v-col cols="12" md="4" lg="3">
-                <v-text-field menu-icon="" label="Search records" placeholder="Name, email, or mobile" v-model="search" variant="outlined">
+                <v-text-field
+                    menu-icon=""
+                    label="Search records"
+                    placeholder="Name, email, or mobile"
+                    v-model="search"
+                    variant="outlined"
+                    hide-details
+                >
                     <template v-slot:prepend-inner>
                         <SearchIcon stroke-width="1.5" size="20" class="text-lightText SearchIcon" />
                     </template>
                 </v-text-field>
             </v-col>
-            
+            <v-col cols="12" md="3" lg="2">
+                <v-select
+                    v-model="statusFilter"
+                    :items="statusOptions"
+                    label="Status"
+                    variant="outlined"
+                    hide-details
+                />
+            </v-col>
         </v-row>
      
         <div class="records-table-wrapper">
@@ -259,13 +289,13 @@ watch(search, (newSearch) => {
 
     <div class="text-center pa-4">
         <v-dialog v-model="dialog" transition="dialog-bottom-transition" fullscreen>
-            <v-card v-if="serverItem">
-                <v-toolbar>
-                    <v-toolbar-title>{{ serverItem.firstName }}</v-toolbar-title>
-                    <v-spacer></v-spacer>
-                    <v-btn variant="text" @click="dialog = false">Close</v-btn>
-                </v-toolbar>
-                <ViewComponent class="pa-3" :form="serverItem" />
+            <v-card v-if="serverItem" class="detail-dialog">
+                <ViewComponent
+                    :form="serverItem"
+                    :can-edit="canEditRecord(serverItem)"
+                    @close="dialog = false"
+                    @edit="editDialogItem"
+                />
             </v-card>
         </v-dialog>
 
@@ -307,5 +337,9 @@ watch(search, (newSearch) => {
     align-items: center;
     gap: 8px;
     flex-wrap: nowrap;
+}
+
+.detail-dialog {
+    overflow-y: auto;
 }
 </style>

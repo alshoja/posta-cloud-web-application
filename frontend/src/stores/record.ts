@@ -13,6 +13,16 @@ import type {
 import { defineStore } from 'pinia'
 
 const baseUrl = `${import.meta.env.VITE_API_URL}/records`
+
+interface FetchRecordsOptions {
+  search?: string
+  page?: number
+  limit?: number
+  sortBy?: string
+  sortOrder?: string
+  status?: RecordStatus | 'ALL'
+}
+
 export const useRecordStore = defineStore('Record', {
   state: () => ({
     records: {} as PaginatedRecords,
@@ -177,8 +187,9 @@ export const useRecordStore = defineStore('Record', {
       page = 1,
       limit = 10,
       sortBy = 'id',
-      sortOrder = 'DESC'
-    } = {}) {
+      sortOrder = 'DESC',
+      status
+    }: FetchRecordsOptions = {}) {
       try {
         const response = await axios.get(baseUrl, {
           params: {
@@ -186,7 +197,8 @@ export const useRecordStore = defineStore('Record', {
             page,
             limit,
             sortBy,
-            sortOrder
+            sortOrder,
+            status
           }
         })
         this.records = response.data

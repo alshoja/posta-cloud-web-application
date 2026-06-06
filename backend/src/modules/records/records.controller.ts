@@ -19,6 +19,7 @@ import { StepTwoDto } from './dto/step-two.dto';
 import { RecordsService } from './records.service';
 import { Roles } from '../auth/roles.decorator';
 import { UserRole } from '../users/enums/user-role.enum';
+import { FindRecordsQueryDto } from './dto/find-records-query.dto';
 
 @Controller('records')
 export class RecordsController {
@@ -78,19 +79,14 @@ export class RecordsController {
 
   @Get()
   @UseInterceptors(ClassSerializerInterceptor)
-  findAll(
-    @Query('search') search: string,
-    @Query('page') page = 1,
-    @Query('limit') limit = 10,
-    @Query('sortBy') sortBy = 'firstName',
-    @Query('sortOrder') sortOrder: 'ASC' | 'DESC' = 'ASC',
-  ) {
+  findAll(@Query() query: FindRecordsQueryDto) {
     return this.recordsService.findAll(
-      search,
-      Number(page),
-      Number(limit),
-      sortBy,
-      sortOrder,
+      query.search,
+      query.page,
+      query.limit,
+      query.sortBy,
+      query.sortOrder,
+      query.status,
     );
   }
 

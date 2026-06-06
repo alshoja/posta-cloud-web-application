@@ -969,7 +969,9 @@ const viewDocument = (index: number) => {
                                     <v-col cols="12" md="4">
                                         <v-card-actions>
                                             <v-btn color="error" @click="removeDocument(index)">Remove</v-btn>
-                                            <v-btn color="primary" @click="viewDocument(index)">View Document</v-btn>
+                                            <v-btn v-if="document.file" color="primary" @click="viewDocument(index)">
+                                                View Document
+                                            </v-btn>
                                         </v-card-actions>
                                     </v-col>
                                 </v-row>
@@ -988,7 +990,9 @@ const viewDocument = (index: number) => {
             <template v-slot:item.7>
                 <UiParentCard title="Review & Submit">
                     <ViewComponent
-                        :form="{ ...stepOne, ...stepTwo, ...stepThree, ...stepFour, ...stepFive, ...stepSix }" />
+                        :form="{ ...stepOne, ...stepTwo, ...stepThree, ...stepFour, ...stepFive, ...stepSix }"
+                        review-mode
+                    />
                 </UiParentCard>
             </template>
 

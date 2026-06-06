@@ -17,7 +17,9 @@ export const useFileStore = defineStore('File', {
         })
         this.fileUrl = response.data.url
       } catch (error) {
+        this.fileUrl = ''
         console.error('Upload failed:', error)
+        throw error
       } finally {
       }
     },
