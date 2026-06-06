@@ -7,9 +7,21 @@ import { useRecordStore } from '@/stores/record';
 import { useSnackbarStore } from '@/stores/snackbar.store';
 import ViewComponent from '@/views/record/components/ViewComponent.vue';
 import _ from "lodash";
-import { computed, ref, shallowRef, watch } from 'vue';
+import { computed, onMounted, ref, shallowRef, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { EditIcon, RefreshIcon, SearchIcon, TrashIcon, ViewfinderIcon } from 'vue-tabler-icons';
+import {
+    CalendarIcon,
+    EditIcon,
+    MailIcon,
+    MapPinIcon,
+    PhoneIcon,
+    PlusIcon,
+    RefreshIcon,
+    SearchIcon,
+    TrashIcon,
+    UserIcon,
+    ViewfinderIcon,
+} from 'vue-tabler-icons';
 
 const page = ref({ title: 'Records Overview' });
 const breadcrumbs = shallowRef([
@@ -27,6 +39,8 @@ const serverItem = ref<RecordDetail>();
 const serverItems = ref<RecordDetail[]>();
 const totalItems = ref(0);
 const itemsPerPage = ref(10);
+const currentPage = ref(1);
+const loading = ref(false);
 const statusOptions = [
     { title: 'All', value: 'ALL' },
     { title: 'Draft', value: 'DRAFT' },
@@ -40,23 +54,21 @@ const authStore = useAuthStore();
 const snackbar = useSnackbarStore()
 const isAdminUser = authStore.user?.role === 'ADMIN';
 const currentUserId = authStore.user?.id;
-const headers = computed(() => [
-    { title: 'Record ID', key: 'id' },
-    { title: 'First Name', sortable: false, key: 'firstName' },
-    { title: 'Email', key: 'email' },
-    { title: 'Mobile', key: 'mobileNumber', },
-    { title: 'Gender', key: 'gender', },
-    ...(isAdminUser ? [{ title: 'Added By', key: 'addedBy' }] : []),
-    { title: 'Entry Date', key: 'createdAt', },
-    { title: 'Status', key: 'status' },
-    { title: 'Actions', sortable: false, key: 'actions' },
-]);
+const totalPages = computed(() => Math.max(1, Math.ceil(totalItems.value / itemsPerPage.value)));
+const firstVisibleRecord = computed(() => totalItems.value ? ((currentPage.value - 1) * itemsPerPage.value) + 1 : 0);
+const lastVisibleRecord = computed(() => Math.min(currentPage.value * itemsPerPage.value, totalItems.value));
 
 const closeDelete = () => {
     dialogDelete.value = false;
 };
 
-const debouncedLoadRecords = _.debounce((options) => loadRecords(options), 300);
+const debouncedLoadRecords = _.debounce(() => {
+    if (currentPage.value === 1) {
+        loadCurrentPage();
+    } else {
+        currentPage.value = 1;
+    }
+}, 300);
 
 const deleteItem = (item: RecordDetail) => {
     if (serverItems.value) {
@@ -72,8 +84,12 @@ const deleteItemConfirm = async () => {
         if (itemToDelete?.id) {
             try {
                 await recordStore.remove(itemToDelete.id);
-                serverItems.value.splice(editedIndex.value, 1);
                 closeDelete();
+                if (serverItems.value.length === 1 && currentPage.value > 1) {
+                    currentPage.value--;
+                } else {
+                    await loadCurrentPage();
+                }
             } catch (error) {
                 console.error("Failed to delete item remotely:", error);
                 const errorMessage = (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'An error occurred';
@@ -114,13 +130,11 @@ const reopenItem = async (item: RecordDetail) => {
 
     try {
         await recordStore.reopen(item.id);
-        await loadRecords({
-            page: 1,
-            itemsPerPage: itemsPerPage.value,
-            sortBy: [],
-            searchQuery: search.value || '',
-            status: statusFilter.value,
-        });
+        if (currentPage.value === 1) {
+            await loadCurrentPage();
+        } else {
+            currentPage.value = 1;
+        }
         snackbar.showSnackbar('Record reopened successfully.', 'success', []);
     } catch (error) {
         console.error('Failed to reopen record:', error);
@@ -129,17 +143,20 @@ const reopenItem = async (item: RecordDetail) => {
     }
 };
 
-const loadRecords = async ({ page, itemsPerPage, sortBy, searchQuery, status = statusFilter.value }: { page: number, itemsPerPage: number, sortBy: { key: string, order: string }[], searchQuery: string, status?: RecordStatus | 'ALL' }) => {
-    await recordStore.fetchAllRecords({
-        page: page,
-        limit: itemsPerPage,
-        sortBy: sortBy.length ? sortBy[0].key : undefined,
-        sortOrder: sortBy.length ? sortBy[0].order : undefined,
-        search: searchQuery,
-        status
-    });
-    serverItems.value = recordStore.records.data;
-    totalItems.value = recordStore.records.total;
+const loadCurrentPage = async () => {
+    loading.value = true;
+    try {
+        await recordStore.fetchAllRecords({
+            page: currentPage.value,
+            limit: itemsPerPage.value,
+            search: search.value || '',
+            status: statusFilter.value
+        });
+        serverItems.value = recordStore.records.data;
+        totalItems.value = recordStore.records.total;
+    } finally {
+        loading.value = false;
+    }
 };
 
 const openDialog = (record: RecordDetail) => {
@@ -171,121 +188,202 @@ const getAddedBy = (item: RecordDetail) => {
     return fullName || item.user?.email || '-';
 };
 
+const getRecordName = (item: RecordDetail) =>
+    [item.firstName, item.lastName].filter(Boolean).join(' ') || 'Unnamed record';
+
+const getRecordInitials = (item: RecordDetail) =>
+    [item.firstName, item.lastName]
+        .filter(Boolean)
+        .map((name) => name.charAt(0).toUpperCase())
+        .join('')
+        .slice(0, 2) || 'R';
+
+const getProfileImageUrl = (profileImage?: string) => {
+    if (!profileImage) return '';
+    if (profileImage.startsWith('blob:') || profileImage.startsWith('data:')) return profileImage;
+
+    const assetBaseUrl = import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '');
+    try {
+        const profileImageUrl = new URL(profileImage, window.location.origin);
+        return `${assetBaseUrl}/${profileImageUrl.pathname.split('/').pop()}`;
+    } catch {
+        return `${assetBaseUrl}/${profileImage.split('/').pop()}`;
+    }
+};
+
+const getRecordLocation = (item: RecordDetail) =>
+    [item.village, item.panchayat, item.district].filter(Boolean).join(', ') || 'Location not saved';
+
+const formatEntryDate = (createdAt?: Date) =>
+    createdAt ? new Date(createdAt).toLocaleDateString('en-GB') : 'Date not saved';
+
+const createRecord = () => router.push({ name: 'Create Record' });
+
 watch(
     () => dialogDelete.value, (val) => {
         if (!val) closeDelete();
     }
 );
 
-watch([search, statusFilter], ([newSearch, newStatus]) => {
-    debouncedLoadRecords({
-        page: 1,
-        itemsPerPage: 10,
-        sortBy: [],
-        searchQuery: newSearch,
-        status: newStatus,
-    });
+watch([search, statusFilter], () => {
+    debouncedLoadRecords();
 });
 
+watch(currentPage, loadCurrentPage);
+
+watch(itemsPerPage, () => {
+    if (currentPage.value === 1) {
+        loadCurrentPage();
+    } else {
+        currentPage.value = 1;
+    }
+});
+
+onMounted(loadCurrentPage);
 </script>
 
 <template>
     <BaseBreadcrumb :title="page.title" :breadcrumbs="breadcrumbs" />
     
     <UiParentCard title="All Records">
-        <v-row class="records-toolbar-row align-center">
-            <v-col cols="12" md="4" lg="3">
-                <v-text-field
-                    menu-icon=""
-                    label="Search records"
-                    placeholder="Name, email, or mobile"
-                    v-model="search"
-                    variant="outlined"
-                    hide-details
-                >
-                    <template v-slot:prepend-inner>
-                        <SearchIcon stroke-width="1.5" size="20" class="text-lightText SearchIcon" />
-                    </template>
-                </v-text-field>
-            </v-col>
-            <v-col cols="12" md="3" lg="2">
-                <v-select
-                    v-model="statusFilter"
-                    :items="statusOptions"
-                    label="Status"
-                    variant="outlined"
-                    hide-details
-                />
-            </v-col>
-        </v-row>
-     
-        <div class="records-table-wrapper">
-           
-            <v-data-table-server v-if="headers.length" v-model:items-per-page="itemsPerPage" :headers="headers"
-                :items="serverItems" :items-length="totalItems" :loading="false" @update:options="loadRecords">
-                <template v-slot:item="{ item }">
-                    <tr>
-                        <td class="text-secondary font-weight-medium">{{ item.id || '—' }}</td>
-                        <td @click="openDialog(item)" style="cursor: pointer; ">
-                            <span color="secondary"> {{ item.firstName }}</span>
-                        </td>
-                        <td>{{ item.email }}</td>
-                        <td>{{ item.mobileNumber }}</td>
-                        <td>{{ item.gender }}</td>
-                        <td v-if="isAdminUser">{{ getAddedBy(item) }}</td>
-                        <td>{{ item?.createdAt ? new Date(item.createdAt).toLocaleDateString('en-GB') : '' }}</td>
-                        <td>
-                            <v-chip size="small" variant="tonal" :color="statusColor(item.status)">
+        <div class="records-toolbar">
+            <v-row class="records-toolbar-row align-center">
+                <v-col cols="12" md="5" lg="4">
+                    <v-text-field
+                        menu-icon=""
+                        label="Search records"
+                        placeholder="Name, email, or mobile"
+                        v-model="search"
+                        variant="outlined"
+                        hide-details
+                    >
+                        <template v-slot:prepend-inner>
+                            <SearchIcon stroke-width="1.5" size="20" class="text-lightText SearchIcon" />
+                        </template>
+                    </v-text-field>
+                </v-col>
+                <v-col cols="12" md="3" lg="2">
+                    <v-select
+                        v-model="statusFilter"
+                        :items="statusOptions"
+                        label="Status"
+                        variant="outlined"
+                        hide-details
+                    />
+                </v-col>
+                <v-col cols="12" md="4" lg="6" class="d-flex justify-md-end">
+                    <v-btn color="secondary" variant="flat" @click="createRecord">
+                        <PlusIcon size="18" class="mr-1" />
+                        Create Record
+                    </v-btn>
+                </v-col>
+            </v-row>
+        </div>
+
+        <v-progress-linear v-if="loading" indeterminate color="secondary" class="mb-3" />
+
+        <div v-if="serverItems?.length" class="records-card-list">
+            <v-card v-for="item in serverItems" :key="item.id" class="record-card" variant="outlined">
+                <div class="record-card__identity" @click="openDialog(item)">
+                    <v-avatar color="lightsecondary" size="52">
+                        <v-img v-if="item.profileImage" :src="getProfileImageUrl(item.profileImage)" cover>
+                            <template #error>
+                                <span class="record-card__initials">{{ getRecordInitials(item) }}</span>
+                            </template>
+                        </v-img>
+                        <span v-else class="record-card__initials">{{ getRecordInitials(item) }}</span>
+                    </v-avatar>
+                    <div class="record-card__person">
+                        <div class="d-flex flex-wrap align-center ga-2">
+                            <div class="record-card__name">{{ getRecordName(item) }}</div>
+                            <v-chip size="x-small" variant="tonal" :color="statusColor(item.status)">
                                 {{ formatStatus(item.status) }}
                             </v-chip>
-                        </td>
-                        <td class="actions-cell">
-                            <div class="actions-group">
-                                <v-tooltip text="View record details">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn v-bind="props" @click="openDialog(item)" variant="outlined" size="small" color="secondary">
-                                            <ViewfinderIcon class="icon" />
-                                        </v-btn>
-                                    </template>
-                                </v-tooltip>
+                        </div>
+                        <div class="record-card__id">Record ID #{{ item.id || '—' }}</div>
+                    </div>
+                </div>
 
-                                <v-tooltip :text="getEditHint(item)">
-                                    <template v-slot:activator="{ props }">
-                                        <span v-bind="props" class="d-inline-block">
-                                            <v-btn variant="outlined" size="small" color="secondary" @click="editItem(item)"
-                                                :disabled="!canEditRecord(item)">
-                                                <EditIcon class="icon" />
-                                            </v-btn>
-                                        </span>
-                                    </template>
-                                </v-tooltip>
+                <div class="record-card__details">
+                    <div class="record-card__detail">
+                        <MailIcon size="16" />
+                        <span>{{ item.email || 'Email not saved' }}</span>
+                    </div>
+                    <div class="record-card__detail">
+                        <PhoneIcon size="16" />
+                        <span>{{ item.mobileNumber || 'Mobile not saved' }}</span>
+                    </div>
+                    <div class="record-card__detail record-card__detail--wide">
+                        <MapPinIcon size="16" />
+                        <span>{{ getRecordLocation(item) }}</span>
+                    </div>
+                    <div v-if="isAdminUser" class="record-card__detail">
+                        <UserIcon size="16" />
+                        <span>Added by {{ getAddedBy(item) }}</span>
+                    </div>
+                    <div class="record-card__detail">
+                        <CalendarIcon size="16" />
+                        <span>Entered {{ formatEntryDate(item.createdAt) }}</span>
+                    </div>
+                </div>
 
-                                <v-tooltip v-if="isAdminUser" :text="getReopenHint(item)">
-                                    <template v-slot:activator="{ props }">
-                                        <span v-bind="props" class="d-inline-block">
-                                            <v-btn variant="outlined" size="small" color="primary" @click="reopenItem(item)"
-                                                :disabled="!canReopenRecord(item)">
-                                                <RefreshIcon class="icon" />
-                                            </v-btn>
-                                        </span>
-                                    </template>
-                                </v-tooltip>
+                <div class="record-card__actions">
+                    <v-tooltip text="View record details">
+                        <template #activator="{ props }">
+                            <v-btn v-bind="props" variant="outlined" size="small" color="secondary" @click="openDialog(item)">
+                                <ViewfinderIcon size="17" class="mr-1" />
+                                View
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
 
-                                <v-tooltip :text="getDeleteHint(item)">
-                                    <template v-slot:activator="{ props }">
-                                        <span v-bind="props" class="d-inline-block">
-                                            <v-btn variant="outlined" size="small" color="error" @click="deleteItem(item)" :disabled="!canDeleteRecord(item)">
-                                                <TrashIcon class="icon" />
-                                            </v-btn>
-                                        </span>
-                                    </template>
-                                </v-tooltip>
-                            </div>
-                        </td>
-                    </tr>
-                </template>
-            </v-data-table-server>
-         
+                    <v-tooltip :text="getEditHint(item)">
+                        <template #activator="{ props }">
+                            <span v-bind="props">
+                                <v-btn variant="outlined" size="small" color="secondary" @click="editItem(item)"
+                                    :disabled="!canEditRecord(item)">
+                                    <EditIcon size="17" />
+                                </v-btn>
+                            </span>
+                        </template>
+                    </v-tooltip>
+
+                    <v-tooltip v-if="isAdminUser" :text="getReopenHint(item)">
+                        <template #activator="{ props }">
+                            <span v-bind="props">
+                                <v-btn variant="outlined" size="small" color="primary" @click="reopenItem(item)"
+                                    :disabled="!canReopenRecord(item)">
+                                    <RefreshIcon size="17" />
+                                </v-btn>
+                            </span>
+                        </template>
+                    </v-tooltip>
+
+                    <v-tooltip :text="getDeleteHint(item)">
+                        <template #activator="{ props }">
+                            <span v-bind="props">
+                                <v-btn variant="outlined" size="small" color="error" @click="deleteItem(item)"
+                                    :disabled="!canDeleteRecord(item)">
+                                    <TrashIcon size="17" />
+                                </v-btn>
+                            </span>
+                        </template>
+                    </v-tooltip>
+                </div>
+            </v-card>
+        </div>
+
+        <v-alert v-else-if="!loading" type="info" color="secondary" variant="tonal">
+            No records match the selected filters.
+        </v-alert>
+
+        <div v-if="totalItems" class="records-pagination">
+            <div class="records-pagination__summary">
+                Showing {{ firstVisibleRecord }}–{{ lastVisibleRecord }} of {{ totalItems }} records
+            </div>
+            <v-pagination v-model="currentPage" :length="totalPages" :total-visible="5" color="secondary" />
+            <v-select v-model="itemsPerPage" :items="[5, 10, 20, 50]" label="Per page" variant="outlined"
+                density="compact" hide-details class="records-pagination__limit" />
         </div>
     </UiParentCard>
 
@@ -320,28 +418,175 @@ watch([search, statusFilter], ([newSearch, newStatus]) => {
     row-gap: 0;
 }
 
-.records-info-alert {
-    margin-top: 0;
+.records-toolbar {
+    margin-bottom: 18px;
 }
 
-.records-table-wrapper {
-    position: relative;
+.records-card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
-.actions-cell {
-    min-width: 220px;
-    padding-top: 10px;
-    padding-bottom: 10px;
+.record-card {
+    display: grid;
+    grid-template-columns: minmax(210px, 0.9fr) minmax(320px, 1.7fr) auto;
+    align-items: center;
+    gap: 20px;
+    padding: 16px 18px;
+    border-color: rgba(var(--v-border-color), 0.14);
+    border-radius: 14px;
+    background: rgb(var(--v-theme-surface));
+    transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
-.actions-group {
+.record-card:hover {
+    border-color: rgba(var(--v-theme-secondary), 0.24);
+    box-shadow: 0 8px 24px rgba(var(--v-theme-secondary), 0.08);
+    transform: translateY(-1px);
+}
+
+.record-card__identity {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
+    min-width: 0;
+    cursor: pointer;
+}
+
+.record-card__initials {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: rgb(var(--v-theme-secondary));
+    font-size: 0.9rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.record-card__person {
+    min-width: 0;
+}
+
+.record-card__name {
+    overflow: hidden;
+    color: rgb(var(--v-theme-darkText));
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.record-card__id {
+    margin-top: 3px;
+    color: rgb(var(--v-theme-secondary));
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.record-card__details {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px 18px;
+    min-width: 0;
+}
+
+.record-card__detail {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+    color: rgb(var(--v-theme-lightText));
+    font-size: 0.75rem;
+}
+
+.record-card__detail svg {
+    flex: 0 0 auto;
+    color: rgb(var(--v-theme-secondary));
+}
+
+.record-card__detail span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.record-card__detail--wide {
+    grid-column: span 2;
+}
+
+.record-card__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 7px;
     flex-wrap: nowrap;
+}
+
+.records-pagination {
+    display: grid;
+    grid-template-columns: 1fr auto 110px;
+    align-items: center;
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.records-pagination__summary {
+    color: rgb(var(--v-theme-lightText));
+    font-size: 0.75rem;
+}
+
+.records-pagination__limit {
+    min-width: 110px;
 }
 
 .detail-dialog {
     overflow-y: auto;
+}
+
+@media (max-width: 1100px) {
+    .record-card {
+        grid-template-columns: minmax(210px, 0.9fr) minmax(280px, 1.3fr);
+    }
+
+    .record-card__actions {
+        grid-column: 1 / -1;
+        justify-content: flex-end;
+        padding-top: 10px;
+        border-top: 1px solid rgba(var(--v-border-color), 0.1);
+    }
+}
+
+@media (max-width: 700px) {
+    .record-card {
+        grid-template-columns: 1fr;
+        gap: 14px;
+        padding: 14px;
+    }
+
+    .record-card__details {
+        grid-template-columns: 1fr;
+    }
+
+    .record-card__detail--wide {
+        grid-column: auto;
+    }
+
+    .record-card__actions {
+        grid-column: auto;
+        justify-content: flex-start;
+        overflow-x: auto;
+    }
+
+    .records-pagination {
+        grid-template-columns: 1fr;
+        justify-items: center;
+    }
+
+    .records-pagination__limit {
+        width: 120px;
+    }
 }
 </style>
