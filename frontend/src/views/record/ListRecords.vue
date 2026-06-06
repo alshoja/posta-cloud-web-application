@@ -41,6 +41,7 @@ const snackbar = useSnackbarStore()
 const isAdminUser = authStore.user?.role === 'ADMIN';
 const currentUserId = authStore.user?.id;
 const headers = computed(() => [
+    { title: 'Record ID', key: 'id' },
     { title: 'First Name', sortable: false, key: 'firstName' },
     { title: 'Email', key: 'email' },
     { title: 'Mobile', key: 'mobileNumber', },
@@ -224,6 +225,7 @@ watch([search, statusFilter], ([newSearch, newStatus]) => {
                 :items="serverItems" :items-length="totalItems" :loading="false" @update:options="loadRecords">
                 <template v-slot:item="{ item }">
                     <tr>
+                        <td class="text-secondary font-weight-medium">{{ item.id || '—' }}</td>
                         <td @click="openDialog(item)" style="cursor: pointer; ">
                             <span color="secondary"> {{ item.firstName }}</span>
                         </td>

@@ -683,7 +683,7 @@ const downloadDocument = async (index: number) => {
     <BaseBreadcrumb :title="page.title" :breadcrumbs="breadcrumbs" />
     <UiParentCard title="Create Record">
 
-        <v-stepper rounded="lg" :editable="stepper.edit" v-model="stepper.step" :items="stepper.items">
+        <v-stepper rounded="lg" class="record-stepper" :editable="stepper.edit" v-model="stepper.step" :items="stepper.items">
             <!-- Step 1: Personal Details -->
             <template v-slot:item.1>
                 <v-form v-model="stepOne.valid" class="step-one-form">
@@ -752,7 +752,7 @@ const downloadDocument = async (index: number) => {
                                         :disabled="ocrLoading || ocrServiceLoading || !canUseOcrAutofill" />
                                 </v-col>
                                 <v-col cols="12" md="3" lg="2" class="d-flex align-center">
-                                    <v-btn variant="outlined" color="secondary" size="large" class="w-100 w-md-auto"
+                                    <v-btn variant="outlined" color="secondary" size="large" class="w-100 w-md-auto mb-6"
                                         :loading="ocrLoading || ocrServiceLoading"
                                         :disabled="ocrLoading || ocrServiceLoading || !canUseOcrAutofill"
                                         @click="runOcrAutofill">
@@ -1505,6 +1505,15 @@ const downloadDocument = async (index: number) => {
 
 .step-one-profile-upload {
     min-width: 0;
+}
+
+.record-stepper :deep(.v-stepper-item--selected .v-stepper-item__avatar) {
+    color: rgb(var(--v-theme-on-secondary));
+    background: rgb(var(--v-theme-secondary));
+}
+
+.record-stepper :deep(.v-stepper-item--selected .v-stepper-item__title) {
+    color: rgb(var(--v-theme-secondary));
 }
 
 .step-three-card {

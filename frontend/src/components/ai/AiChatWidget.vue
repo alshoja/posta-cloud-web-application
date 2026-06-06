@@ -54,9 +54,12 @@ const markdownRenderer = new MarkdownIt({
 })
 
 const canSend = computed(() => draftMessage.value.trim().length > 0 && !aiChatStore.isLoading)
-const hasRecordResults = computed(() =>
-  aiChatStore.messages.some((message) => Boolean(message.records?.length))
-)
+const followUpPrompts = [
+  'Show completed records',
+  'Show draft records',
+  'Show records with documents',
+  'Show records with a post-retirement address'
+]
 
 watch(
   () => aiChatStore.messages.length,
@@ -170,7 +173,7 @@ const returnToPreviousPage = () => {
 
         <v-card-text ref="messagesContainer" class="ai-chat-messages">
           <div
-            v-for="message in aiChatStore.messages"
+            v-for="(message, messageIndex) in aiChatStore.messages"
             :key="message.id"
             class="ai-chat-message"
             :class="message.role === 'user' ? 'ai-chat-message-user' : 'ai-chat-message-assistant'"
@@ -243,6 +246,23 @@ const returnToPreviousPage = () => {
               </v-card>
 
             </div>
+
+            <div v-if="message.role === 'assistant' && messageIndex > 0" class="ai-chat-answer-suggestions">
+              <div class="ai-chat-answer-suggestions-title">Suggested next questions</div>
+              <div class="ai-chat-prompt-chips">
+                <v-chip
+                  v-for="prompt in followUpPrompts"
+                  :key="prompt"
+                  size="small"
+                  color="secondary"
+                  variant="tonal"
+                  :disabled="aiChatStore.isLoading"
+                  @click="sendStarterPrompt(prompt)"
+                >
+                  {{ prompt }}
+                </v-chip>
+              </div>
+            </div>
           </div>
 
           <div v-if="aiChatStore.messages.length === 1" class="ai-chat-prompts">
@@ -272,38 +292,6 @@ const returnToPreviousPage = () => {
             >
               {{ showAllStarterPrompts ? 'Show less' : 'More suggestions' }}
             </v-btn>
-          </div>
-
-          <div v-if="hasRecordResults && !aiChatStore.isLoading" class="ai-chat-follow-up">
-            <div class="ai-chat-prompt-chips">
-              <v-chip color="secondary" variant="tonal" size="small" @click="sendStarterPrompt('Previous page')">
-                Previous
-              </v-chip>
-              <v-chip color="secondary" variant="tonal" size="small" @click="sendStarterPrompt('Show me the next 10')">
-                Next 10
-              </v-chip>
-              <v-chip color="secondary" variant="outlined" size="small" @click="showAllStarterPrompts = !showAllStarterPrompts">
-                {{ showAllStarterPrompts ? 'Hide suggestions' : 'More suggestions' }}
-              </v-chip>
-            </div>
-
-            <div v-if="showAllStarterPrompts" class="ai-chat-more-prompts">
-              <div v-for="group in starterPromptGroups" :key="group.title" class="ai-chat-prompt-group">
-                <div class="ai-chat-prompt-group-title">{{ group.title }}</div>
-                <div class="ai-chat-prompt-chips">
-                  <v-chip
-                    v-for="prompt in group.prompts"
-                    :key="prompt"
-                    size="small"
-                    color="secondary"
-                    variant="tonal"
-                    @click="sendStarterPrompt(prompt)"
-                  >
-                    {{ prompt }}
-                  </v-chip>
-                </div>
-              </div>
-            </div>
           </div>
 
           <div v-if="aiChatStore.isLoading" class="ai-chat-message ai-chat-message-assistant">
@@ -580,17 +568,19 @@ const returnToPreviousPage = () => {
   gap: 6px;
 }
 
-.ai-chat-follow-up {
+.ai-chat-answer-suggestions {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding-top: 4px;
+  width: 100%;
+  max-width: 94%;
+  gap: 6px;
+  margin-top: 8px;
 }
 
-.ai-chat-more-prompts {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.ai-chat-answer-suggestions-title {
+  color: rgb(var(--v-theme-lightText));
+  font-size: 0.68rem;
+  font-weight: 600;
 }
 
 .ai-chat-records {
