@@ -2,7 +2,7 @@
 import MarkdownIt from 'markdown-it'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowsMaximizeIcon, ArrowsMinimizeIcon, MessageCircleIcon, RobotIcon, SendIcon, XIcon } from 'vue-tabler-icons'
+import { ArrowsMaximizeIcon, ArrowsMinimizeIcon, FileDescriptionIcon, MessageCircleIcon, RobotIcon, SendIcon, XIcon } from 'vue-tabler-icons'
 import { useAiChatStore, type AiChatRecordResult } from '@/stores/aiChat'
 
 const props = withDefaults(defineProps<{
@@ -35,7 +35,7 @@ const starterPromptGroups = [
     title: 'Record details',
     prompts: [
       'Find people living abroad',
-      'Show records with redirected address',
+      'Show records with a post-retirement address',
       'Show records with documents',
       'Show records without policies'
     ]
@@ -179,8 +179,29 @@ const returnToPreviousPage = () => {
               <RobotIcon size="13" />
               <span>{{ assistantName }} · AI</span>
             </div>
+            <div v-if="message.role === 'assistant' && message.intent === 'record_summary' && Number(message.total) > 0" class="ai-chat-summary-card">
+              <div class="ai-chat-summary-header">
+                <div class="d-flex align-center ga-2">
+                  <v-avatar color="lightsecondary" size="36">
+                    <FileDescriptionIcon class="text-secondary" size="19" />
+                  </v-avatar>
+                  <div>
+                    <div class="ai-chat-summary-title">Record Summary</div>
+                    <div v-if="message.recordId" class="ai-chat-summary-id">Record ID #{{ message.recordId }}</div>
+                  </div>
+                </div>
+                <v-chip size="x-small" color="secondary" variant="tonal">Overview</v-chip>
+              </div>
+              <v-divider />
+              <div class="ai-chat-summary-content ai-chat-markdown" v-html="renderAssistantMarkdown(message.content)" />
+              <div v-if="message.recordId" class="ai-chat-summary-actions">
+                <v-btn size="small" color="secondary" variant="outlined" @click="openRecord(message.recordId)">
+                  Open record
+                </v-btn>
+              </div>
+            </div>
             <div
-              v-if="message.role === 'assistant'"
+              v-else-if="message.role === 'assistant'"
               class="ai-chat-bubble ai-chat-markdown"
               v-html="renderAssistantMarkdown(message.content)"
             />
@@ -449,6 +470,87 @@ const returnToPreviousPage = () => {
 
 .ai-chat-markdown :deep(strong) {
   font-weight: 700;
+}
+
+.ai-chat-summary-card {
+  width: 100%;
+  max-width: 94%;
+  overflow: hidden;
+  border: 1px solid rgba(var(--v-theme-secondary), 0.18);
+  border-radius: 14px;
+  background: white;
+  box-shadow: 0 6px 20px rgba(var(--v-theme-secondary), 0.06);
+}
+
+.ai-chat-summary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+.ai-chat-summary-title {
+  color: rgb(var(--v-theme-darkText));
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.ai-chat-summary-id {
+  margin-top: 1px;
+  color: rgb(var(--v-theme-lightText));
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.ai-chat-summary-content {
+  padding: 12px 14px 6px;
+  color: rgb(var(--v-theme-darkText));
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.ai-chat-summary-content :deep(table) {
+  width: 100%;
+  margin: 10px 0;
+  overflow: hidden;
+  border: 1px solid rgba(var(--v-border-color), 0.18);
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 10px;
+}
+
+.ai-chat-summary-content :deep(th),
+.ai-chat-summary-content :deep(td) {
+  padding: 7px 9px;
+  border-bottom: 1px solid rgba(var(--v-border-color), 0.13);
+  text-align: left;
+  vertical-align: top;
+}
+
+.ai-chat-summary-content :deep(th) {
+  color: rgb(var(--v-theme-secondary));
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: rgb(var(--v-theme-lightsecondary));
+}
+
+.ai-chat-summary-content :deep(td:first-child) {
+  width: 42%;
+  color: rgb(var(--v-theme-lightText));
+  font-weight: 600;
+}
+
+.ai-chat-summary-content :deep(tr:last-child td) {
+  border-bottom: 0;
+}
+
+.ai-chat-summary-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 4px 14px 12px;
 }
 
 .ai-chat-prompts {

@@ -12,7 +12,7 @@ export interface RecordSummaryContext {
   policyTypes: string[];
   addressesCount: number;
   childrenCount: number;
-  mailRedirectionEnabled: boolean;
+  postRetirementAddressEnabled: boolean;
   abroad: boolean;
   lastCompletedStep: number;
 }

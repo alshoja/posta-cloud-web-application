@@ -347,7 +347,7 @@ export class AiChatService {
         .filter(Boolean),
       addressesCount: record.addresses?.length ?? 0,
       childrenCount: record.children?.length ?? 0,
-      mailRedirectionEnabled: Boolean(record.isRedirected || record.redirectionAddress),
+      postRetirementAddressEnabled: Boolean(record.isRedirected || record.redirectionAddress),
       abroad: Boolean(record.isAbroad),
       lastCompletedStep: record.lastCompletedStep,
     };

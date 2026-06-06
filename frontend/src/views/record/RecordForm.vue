@@ -967,18 +967,19 @@ const downloadDocument = async (index: number) => {
                                 <MapPinIcon class="text-secondary" size="20" />
                             </v-avatar>
                             <div>
-                                <div class="text-h5">Mail & Location Settings</div>
-                                <div class="text-caption text-lightText">Choose how mail and location details are
-                                    handled</div>
+                                <div class="text-h5">Retirement & Location Details</div>
+                                <div class="text-caption text-lightText">Record future residence and location details
+                                </div>
                             </div>
                         </v-card-title>
                         <v-card-text>
                             <div class="step-three-setting"
                                 :class="{ 'step-three-setting--active': stepThree.isRedirected }">
                                 <div>
-                                    <div class="text-subtitle-1 font-weight-medium">Use Redirection Address (Retd Add.)
+                                    <div class="text-subtitle-1 font-weight-medium">Add Post-Retirement Address
                                     </div>
-                                    <div class="text-caption text-lightText">Send mail to a different address</div>
+                                    <div class="text-caption text-lightText">Where this person plans to live after
+                                        retirement</div>
                                 </div>
                                 <v-switch v-model="stepThree.isRedirected"
                                     :color="stepThree.isRedirected ? 'secondary' : 'grey'" hide-details inset />
@@ -998,11 +999,11 @@ const downloadDocument = async (index: number) => {
                                 <v-row v-if="stepThree.isRedirected" class="mt-2">
                                     <v-col cols="12" md="6">
                                         <v-text-field variant="outlined" v-model="stepThree.redirectedHouseName"
-                                            label="Redirected House Name" />
+                                            label="Post-Retirement House Name" />
                                     </v-col>
                                     <v-col cols="12" md="6">
                                         <v-text-field variant="outlined" v-model="stepThree.redirectedHouseNumber"
-                                            label="Redirected House Number" />
+                                            label="Post-Retirement House Number" />
                                     </v-col>
                                 </v-row>
                             </v-expand-transition>

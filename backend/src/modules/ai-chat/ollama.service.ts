@@ -93,6 +93,7 @@ export class OllamaService {
       'Allowed filter keys: status, search, name, email, mobileNumber, village, panchayat, district, postOffice, isRedirected, isAbroad, hasDocuments, hasPolicies, limit.',
       'Allowed status values: DRAFT, COMPLETED.',
       'Boolean filters must be true or false.',
+      'Map requests about a post-retirement address or retirement address to isRedirected.',
       'postOffice must be a number.',
       'limit must be a positive number when the user asks for a specific number of results.',
       'record_summary should include recordId when the user gives a record id.',
@@ -118,7 +119,9 @@ export class OllamaService {
       'Use Markdown only. Do not use HTML.',
       'Start with one short friendly sentence.',
       'Then include a compact Markdown table with the columns "Item" and "Details".',
-      'Mention status, location, contact availability, documents/policies count, mail redirection, abroad status, and completion progress when available.',
+      'Always include the record ID in the table.',
+      'Mention status, location, contact availability, documents/policies count, post-retirement address availability, abroad status, and completion progress when available.',
+      'Use the label "Post-Retirement Address" and never call it mail redirection.',
       'If a value says "Not saved", say it is not saved instead of guessing.',
     ].join(' ');
   }

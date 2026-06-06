@@ -88,6 +88,7 @@ const useDefaultProfileImage = () => {
                         <h1 class="profile-header__name">{{ fullName }}</h1>
                         <v-chip :color="statusColor" variant="tonal" size="x-small">{{ statusLabel }}</v-chip>
                     </div>
+                    <div class="profile-header__record-id">Record ID #{{ form.id || '—' }}</div>
                     <div class="profile-header__contacts mt-1">
                         {{ form.email || 'No email available' }}
                         <span class="mx-2">|</span>
@@ -287,6 +288,12 @@ const useDefaultProfileImage = () => {
     font-size: 1.35rem;
     font-weight: 600;
     line-height: 1.7rem;
+}
+
+.profile-header__record-id {
+    color: rgb(var(--v-theme-secondary));
+    font-size: 0.72rem;
+    font-weight: 700;
 }
 
 .profile-header__contacts {
