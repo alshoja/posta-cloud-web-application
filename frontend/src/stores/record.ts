@@ -228,7 +228,7 @@ export const useRecordStore = defineStore('Record', {
     },
     async reopen(id: string) {
       try {
-        const response = await axios.post(`${baseUrl}/reopen/${id}`, null, {
+        const response = await axios.post(`${baseUrl}/reopen/${id}`, '{}', {
           headers: { 'Content-Type': 'application/json' }
         })
         return response.data

@@ -14,7 +14,7 @@ import ProfileImage from '@/views/record/components/ProfileImage.vue';
 import ViewComponent from '@/views/record/components/ViewComponent.vue';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { BriefcaseIcon, CameraIcon, HeartIcon, HomeIcon, MapPinIcon, PhoneIcon, PlusIcon, ScanIcon, ShieldCheckIcon, TrashIcon, UserIcon, UsersIcon } from 'vue-tabler-icons';
+import { BriefcaseIcon, CameraIcon, HeartIcon, HomeIcon, IdIcon, MapPinIcon, PhoneIcon, PlusIcon, ScanIcon, ShieldCheckIcon, TrashIcon, UserIcon, UsersIcon } from 'vue-tabler-icons';
 
 const route = useRoute()
 const loading = ref(false);
@@ -168,6 +168,13 @@ const addPolicy = () => {
 };
 
 const removePolicy = (index: number) => {
+    if (stepFive.policies.length === 1) {
+        stepFive.policies[0] = {
+            type: '',
+            number: '',
+        };
+        return;
+    }
     stepFive.policies.splice(index, 1);
 }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -224,6 +231,13 @@ const setFormFields = (record: RecordDetail) => {
     stepTwo.aadhaarNumber = record.aadhaarNumber || scannedIdentityFields.aadhaarNumber || '';
     stepTwo.drivingLicense = record.drivingLicense || scannedIdentityFields.drivingLicense || '';
     stepTwo.electionID = record.electionID || scannedIdentityFields.electionID || '';
+
+    if (!stepFive.policies?.length) {
+        stepFive.policies = [{
+            type: '',
+            number: '',
+        }];
+    }
 };
 
 onMounted(() => {
@@ -413,8 +427,13 @@ function setUploadUrl(url: string) {
     // console.log('File uploaded successfully! URL:', url);
 }
 
-function setUploadUrlForDoc(fileUrl: string, index: number) {
+function setUploadUrlForDoc(fileUrl: string, fileName: string, index: number) {
     stepSix.documents[index].file = fileUrl;
+    stepSix.documents[index].name = fileName;
+}
+
+function clearUploadForDoc(index: number) {
+    stepSix.documents[index].file = '';
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -618,6 +637,46 @@ const viewDocument = (index: number) => {
     currentDocumentUrl.value = stepSix.documents[index].file;
     isModalVisible.value = true;
 };
+
+const getDocumentAssetUrl = (file: string) => {
+    if (file.startsWith('blob:') || file.startsWith('data:')) return file;
+
+    const assetBaseUrl = import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '');
+    try {
+        const fileUrl = new URL(file, window.location.origin);
+        return `${assetBaseUrl}/${fileUrl.pathname.split('/').pop()}`;
+    } catch {
+        return `${assetBaseUrl}/${file.split('/').pop()}`;
+    }
+};
+
+const downloadDocument = async (index: number) => {
+    const document = stepSix.documents[index];
+    if (!document.file) return;
+
+    try {
+        const response = await axiosInstance.get(getDocumentAssetUrl(document.file), {
+            responseType: 'blob',
+        });
+        const fileUrl = URL.createObjectURL(response.data);
+        const downloadLink = window.document.createElement('a');
+        const extension = document.file.split('?')[0].split('.').pop();
+        const documentName = document.name || 'document';
+        const downloadName = extension && !documentName.toLowerCase().endsWith(`.${extension.toLowerCase()}`)
+            ? `${documentName}.${extension}`
+            : documentName;
+
+        downloadLink.href = fileUrl;
+        downloadLink.download = downloadName;
+        window.document.body.appendChild(downloadLink);
+        downloadLink.click();
+        downloadLink.remove();
+        window.setTimeout(() => URL.revokeObjectURL(fileUrl), 1000);
+    } catch (error) {
+        console.log('Document download error:', error);
+        snackbar.showSnackbar('Could not download the document. Please try again.', 'error', []);
+    }
+};
 </script>
 
 <template>
@@ -810,52 +869,68 @@ const viewDocument = (index: number) => {
 
             <!-- Step 2: Sensitive Details -->
             <template v-slot:item.2>
-                <v-form v-model="stepTwo.valid">
-                    <UiParentCard title="Identity Documents">
-                        <v-row class="border border-secondary rounded pa-2 mb-3">
-                            <v-col cols="12">
-                                <v-alert type="info" color="secondary" variant="tonal" density="comfortable">
-                                    Sensitive details are hidden on screen by default. Use the eye icon to show or hide
-                                    them.
-                                </v-alert>
-                            </v-col>
+                <v-form v-model="stepTwo.valid" class="step-two-form">
+                    <v-card variant="outlined" class="step-two-card">
+                        <v-card-title class="step-two-header">
+                            <div class="d-flex align-center ga-3">
+                                <v-avatar color="lightsecondary" size="36">
+                                    <IdIcon class="text-secondary" size="20" />
+                                </v-avatar>
+                                <div>
+                                    <div class="text-h5">Identity Documents</div>
+                                    <div class="text-caption text-lightText">Secure identity and postal reference numbers</div>
+                                </div>
+                            </div>
+                            <v-btn color="secondary" variant="text" size="small"
+                                :prepend-icon="showSensitiveData ? '$eyeOff' : '$eye'"
+                                @click="toggleSensitiveDataVisibility">
+                                {{ showSensitiveData ? 'Hide details' : 'Show details' }}
+                            </v-btn>
+                        </v-card-title>
+                        <v-card-text>
+                            <v-alert type="info" color="secondary" variant="tonal" density="compact"
+                                class="step-two-alert mb-5 mt-1">
+                                Details are hidden by default to protect personal information.
+                            </v-alert>
 
-                            <v-col cols="12" md="4">
+                            <v-row>
+                            <v-col cols="12" md="6">
                                 <v-text-field class="sensitive-visibility-field" variant="outlined"
                                     v-model="stepTwo.aadhaarNumber" label="Aadhaar Number" :type="sensitiveFieldType"
                                     :append-inner-icon="sensitiveFieldIcon"
                                     @click:append-inner="toggleSensitiveDataVisibility"
                                     :rules="[validationRules.maxLength(12), validationRules.minLength(12)]" />
                             </v-col>
-                            <v-col cols="12" md="4">
+                            <v-col cols="12" md="6">
                                 <v-text-field class="sensitive-visibility-field" variant="outlined"
                                     v-model="stepTwo.drivingLicense" label="Driving License" :type="sensitiveFieldType"
                                     :append-inner-icon="sensitiveFieldIcon"
                                     @click:append-inner="toggleSensitiveDataVisibility"
                                     :rules="[validationRules.maxLength(15), validationRules.minLength(15)]" />
                             </v-col>
-                            <v-col cols="12" md="4">
+                            <v-col cols="12" md="6">
                                 <v-text-field class="sensitive-visibility-field" variant="outlined"
                                     v-model="stepTwo.electionID" label="Election ID" :type="sensitiveFieldType"
                                     :append-inner-icon="sensitiveFieldIcon"
                                     @click:append-inner="toggleSensitiveDataVisibility"
                                     :rules="[validationRules.maxLength(10), validationRules.minLength(10)]" />
                             </v-col>
-                            <v-col cols="12" md="4">
+                            <v-col cols="12" md="6">
                                 <v-text-field class="sensitive-visibility-field" variant="outlined"
                                     v-model="stepTwo.passportNumber" label="Passport Number" :type="sensitiveFieldType"
                                     :append-inner-icon="sensitiveFieldIcon"
                                     @click:append-inner="toggleSensitiveDataVisibility"
                                     :rules="[validationRules.maxLength(8), validationRules.minLength(8)]" />
                             </v-col>
-                            <v-col cols="12" md="4">
+                            <v-col cols="12" md="6">
                                 <v-text-field class="sensitive-visibility-field" variant="outlined"
                                     v-model="stepTwo.postBoxNumber" label="Post Box Number" :type="sensitiveFieldType"
                                     :append-inner-icon="sensitiveFieldIcon"
                                     @click:append-inner="toggleSensitiveDataVisibility" />
                             </v-col>
-                        </v-row>
-                    </UiParentCard>
+                            </v-row>
+                        </v-card-text>
+                    </v-card>
                 </v-form>
             </template>
 
@@ -898,21 +973,25 @@ const viewDocument = (index: number) => {
                             </div>
                         </v-card-title>
                         <v-card-text>
-                            <div class="step-three-setting">
+                            <div class="step-three-setting"
+                                :class="{ 'step-three-setting--active': stepThree.isRedirected }">
                                 <div>
                                     <div class="text-subtitle-1 font-weight-medium">Use Redirection Address (Retd Add.)
                                     </div>
                                     <div class="text-caption text-lightText">Send mail to a different address</div>
                                 </div>
-                                <v-switch v-model="stepThree.isRedirected" color="secondary" hide-details inset />
+                                <v-switch v-model="stepThree.isRedirected"
+                                    :color="stepThree.isRedirected ? 'secondary' : 'grey'" hide-details inset />
                             </div>
-                            <div class="step-three-setting">
+                            <div class="step-three-setting"
+                                :class="{ 'step-three-setting--active': stepThree.isAbroad }">
                                 <div>
                                     <div class="text-subtitle-1 font-weight-medium">Living Abroad (വിദേശത്ത്)</div>
                                     <div class="text-caption text-lightText">Mark this person as living outside the
                                         country</div>
                                 </div>
-                                <v-switch v-model="stepThree.isAbroad" color="secondary" hide-details inset />
+                                <v-switch v-model="stepThree.isAbroad"
+                                    :color="stepThree.isAbroad ? 'secondary' : 'grey'" hide-details inset />
                             </div>
 
                             <v-expand-transition>
@@ -1181,22 +1260,25 @@ const viewDocument = (index: number) => {
                                             </span>
 
                                             <div class="d-flex align-center ga-1">
-                                                <v-tooltip text="Preview Document">
-                                                    <template #activator="{ props }">
-                                                        <v-btn v-bind="props" icon variant="text" color="secondary"
-                                                            @click="viewDocument(index)">
-                                                            <EyeIcon size="18" />
-                                                        </v-btn>
-                                                    </template>
-                                                </v-tooltip>
+                                                <template v-if="document.file">
+                                                    <v-tooltip text="Preview Document">
+                                                        <template #activator="{ props }">
+                                                            <v-btn v-bind="props" icon variant="text" color="secondary"
+                                                                @click="viewDocument(index)">
+                                                                <EyeIcon size="18" />
+                                                            </v-btn>
+                                                        </template>
+                                                    </v-tooltip>
 
-                                                <v-tooltip text="Download Document">
-                                                    <template #activator="{ props }">
-                                                        <v-btn v-bind="props" icon variant="text" color="secondary">
-                                                            <DownloadIcon size="18" />
-                                                        </v-btn>
-                                                    </template>
-                                                </v-tooltip>
+                                                    <v-tooltip text="Download Document">
+                                                        <template #activator="{ props }">
+                                                            <v-btn v-bind="props" icon variant="text" color="secondary"
+                                                                @click="downloadDocument(index)">
+                                                                <DownloadIcon size="18" />
+                                                            </v-btn>
+                                                        </template>
+                                                    </v-tooltip>
+                                                </template>
 
                                                 <v-tooltip text="Remove Document">
                                                     <template #activator="{ props }">
@@ -1221,11 +1303,9 @@ const viewDocument = (index: number) => {
                                                 <v-col cols="12">
                                                     <FileUpload label="Upload Document"
                                                         :rules="[validationRules.required]"
-                                                        @uploaded="(fileUrl) => setUploadUrlForDoc(fileUrl, index)" />
-                                                </v-col>
-
-                                                <v-col cols="12" v-if="document.file">
-
+                                                        :existing-file-url="document.file"
+                                                        @uploaded="(fileUrl, fileName) => setUploadUrlForDoc(fileUrl, fileName, index)"
+                                                        @cleared="clearUploadForDoc(index)" />
                                                 </v-col>
                                             </v-row>
                                         </v-card-text>
@@ -1377,6 +1457,28 @@ const viewDocument = (index: number) => {
     gap: 16px;
 }
 
+.step-two-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.step-two-card {
+    border-color: rgba(var(--v-border-color), 0.15);
+}
+
+.step-two-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 20px;
+}
+
+.step-two-alert {
+    border-radius: 10px;
+}
+
 .step-one-card {
     border-color: rgba(var(--v-border-color), 0.15);
 }
@@ -1435,6 +1537,13 @@ const viewDocument = (index: number) => {
     padding: 10px 14px;
     margin-bottom: 10px;
     border-radius: 12px;
+    border: 1px solid rgba(var(--v-border-color), 0.12);
+    background: rgba(var(--v-theme-on-surface), 0.035);
+    transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.step-three-setting--active {
+    border-color: rgba(var(--v-theme-secondary), 0.14);
     background: rgb(var(--v-theme-lightsecondary));
 }
 
@@ -1449,6 +1558,21 @@ const viewDocument = (index: number) => {
 @media (max-width: 599px) {
     .step-one-form {
         gap: 12px;
+    }
+
+    .step-two-form {
+        gap: 12px;
+    }
+
+    .step-two-header {
+        align-items: flex-start;
+        padding: 14px;
+    }
+
+    .step-two-header .v-btn {
+        min-width: 40px;
+        padding-inline: 8px;
+        font-size: 0;
     }
 
     .record-step-card-header {
