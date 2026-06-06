@@ -66,7 +66,7 @@ Services:
 
 ![Posta Cloud form screen](https://github.com/user-attachments/assets/46d8a67a-ff77-4cfc-b7a9-2c0ac4fe2a8a)
 
-![Posta Cloud detail screen](https://github.com/user-attachments/assets/deff9a56-4c98-4587-aa53-6a934794eb20)
+<img width="2281" height="1148" alt="image" src="https://github.com/user-attachments/assets/761cf6ea-ca41-4d19-9180-f08439d0937f" />
 
 ## Quick Start
 
