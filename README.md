@@ -67,7 +67,7 @@ Backend API (`backend`, NestJS)
  |     -> enforce record access and run the six-step workflow
  |     -> save records and uploaded document metadata
  |     -> PostgreSQL/pgvector (`postgres_db`)
- |     -> queue document indexing in Redis (`redis`)
+ |     -> queue document embedding in Redis (`redis`)
  |
  +-- AI Module
        |

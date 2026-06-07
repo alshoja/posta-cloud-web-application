@@ -43,10 +43,9 @@ docker compose exec backend npm run migration:run
 Review generated migrations before committing. Commit migrations with the entity changes that caused them.
 
 For document RAG, run the committed pgvector-extension migration before a
-generated migration that creates vector columns. In development, the backend
-creates the HNSW document-vector index after TypeORM synchronization. When
-preparing production migrations, include the same HNSW index in a reviewed
-manual migration because production does not run the development initializer.
+generated migration that creates vector columns. The committed manual HNSW
+index migration must run after the migration that creates the
+`document_chunks` table and its vector column.
 
 Production should only run committed migrations. Do not generate migrations in production. Before running migrations from the production backend container, confirm the production image includes the migration config and runtime command; the current Dockerfile is optimized for running the compiled backend app.
 

@@ -15,5 +15,5 @@ record queries.
 - Records are user-owned. Admins can access completed records plus their own drafts.
 - Use `RecordQueryService.guardQueryAccess()` for reusable or cross-module record queries.
 - Completed records are not editable unless an admin reopens them.
-- Step six queues document indexing through the AI module only after its transaction commits.
-- Document extraction status and chunks are persistence concerns; extraction logic belongs to `ai/document-index`.
+- Step six queues document embedding through the AI module only after its transaction commits.
+- Document extraction status and chunks are persistence concerns; extraction logic belongs to `ai/document-embedding`.

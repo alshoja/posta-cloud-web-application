@@ -1,20 +1,23 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable } from '@nestjs/common';
 import { Queue } from 'bullmq';
-import { DOCUMENT_INDEX_QUEUE_NAME } from '../../../shared/constants/document-index.constants';
+import {
+  DOCUMENT_EMBEDDING_JOB,
+  DOCUMENT_EMBEDDING_QUEUE,
+} from 'src/shared/constants/document-embedding.constants';
 
 @Injectable()
-export class DocumentIndexService {
+export class DocumentIngestionQueueService {
   constructor(
-    @InjectQueue(DOCUMENT_INDEX_QUEUE_NAME)
-    private readonly documentIndexQueue: Queue,
+    @InjectQueue(DOCUMENT_EMBEDDING_QUEUE)
+    private readonly documentIngestionQueue: Queue,
   ) {}
 
   async queueDocuments(documentIds: number[]): Promise<void> {
     await Promise.all(
       documentIds.map((documentId) =>
-        this.documentIndexQueue.add(
-          'index-document',
+        this.documentIngestionQueue.add(
+          DOCUMENT_EMBEDDING_JOB,
           { documentId },
           {
             attempts: 2,

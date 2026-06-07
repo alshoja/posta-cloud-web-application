@@ -8,12 +8,12 @@ import {
 import { REQUEST } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, ObjectLiteral, Repository, SelectQueryBuilder } from 'typeorm';
-import { AuthenticatedRequest } from '../auth/types/express';
-import { UserRole } from '../users/enums/user-role.enum';
-import { Record as RecordEntity } from './entities/record.entity';
-import { RecordStatus } from './enums/record-status.enum';
-import { RecordSearchFilterDto } from './dto/search/record-search-filter.dto';
-import { RecordSearchResultDto } from './dto/search/record-search-result.dto';
+import { AuthenticatedRequest } from '../../auth/types/express';
+import { UserRole } from '../../users/enums/user-role.enum';
+import { RecordSearchFilterDto } from '../dto/search/record-search-filter.dto';
+import { RecordSearchResultDto } from '../dto/search/record-search-result.dto';
+import { Record as RecordEntity } from '../entities/record.entity';
+import { RecordStatus } from '../enums/record-status.enum';
 
 @Injectable({ scope: Scope.REQUEST })
 export class RecordQueryService {

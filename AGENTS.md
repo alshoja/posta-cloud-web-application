@@ -84,6 +84,11 @@ Follow SOLID principles in backend code.
 - Configure CORS intentionally and restrict origins through environment configuration.
 - Avoid sensitive data in logs.
 - Read secrets from environment variables; never hardcode them.
+- BullMQ job names must start with the `job-` prefix and be declared as named
+  constants. Do not hardcode job-name strings in queue producers or processors.
+  Keep producer and consumer constants synchronized across services. Name queue
+  constants with the `_QUEUE` suffix and job constants with the `_JOB` suffix;
+  do not add the redundant `_NAME` suffix.
 
 ## Database And Migrations
 

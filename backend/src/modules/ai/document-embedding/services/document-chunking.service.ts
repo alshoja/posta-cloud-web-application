@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { createHash } from 'node:crypto';
-import { ExtractedDocumentPage } from './interfaces/extracted-document-page.interface';
+import { ExtractedDocumentPage } from '../interfaces/extracted-document-page.interface';
 
 export interface PreparedDocumentChunk {
   chunkIndex: number;
@@ -9,14 +9,16 @@ export interface PreparedDocumentChunk {
 }
 
 @Injectable()
-export class DocumentContentService {
-  redactAndChunk(pages: ExtractedDocumentPage[]): PreparedDocumentChunk[] {
+export class DocumentChunkingService {
+  prepareDocumentChunks(
+    pages: ExtractedDocumentPage[],
+  ): PreparedDocumentChunk[] {
     let chunkIndex = 0;
     const chunks: PreparedDocumentChunk[] = [];
 
     for (const page of pages) {
-      const redacted = this.redactSensitiveText(page.text);
-      for (const content of this.chunkText(redacted)) {
+      const redactedText = this.removeSensitiveInformation(page.text);
+      for (const content of this.splitTextIntoOverlappingChunks(redactedText)) {
         chunks.push({
           chunkIndex,
           pageNumber: page.pageNumber,
@@ -29,13 +31,13 @@ export class DocumentContentService {
     return chunks;
   }
 
-  createContentHash(chunks: PreparedDocumentChunk[]): string {
+  createDocumentChunksHash(chunks: PreparedDocumentChunk[]): string {
     return createHash('sha256')
       .update(chunks.map((chunk) => chunk.content).join('\n'))
       .digest('hex');
   }
 
-  private redactSensitiveText(text: string): string {
+  private removeSensitiveInformation(text: string): string {
     return text
       .replace(/\b[A-Z]{3}\s?\d{7}\b/gi, '[REDACTED ID]')
       .replace(/\b[A-Z]{2}\s?\d{2}\s?\d{4}\s?\d{7}\b/gi, '[REDACTED ID]')
@@ -47,7 +49,7 @@ export class DocumentContentService {
       .trim();
   }
 
-  private chunkText(text: string): string[] {
+  private splitTextIntoOverlappingChunks(text: string): string[] {
     const chunks: string[] = [];
     const chunkSize = 1200;
     const overlap = 200;

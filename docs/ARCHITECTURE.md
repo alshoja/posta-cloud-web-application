@@ -8,7 +8,7 @@ Posta Cloud is a Docker Compose application made of a Vue frontend, NestJS backe
 - `backend`: NestJS API served on port `5001`.
 - `ocr-worker`: background worker that consumes OCR jobs from Redis.
 - `postgres_db`: PostgreSQL with pgvector and persistent Docker volume storage.
-- `redis`: queue backend used for OCR, document indexing, and temporary AI search context.
+- `redis`: queue backend used for OCR, document embedding, and temporary AI search context.
 - `ollama`: local chat and embedding model server.
 - `pgadmin`: database administration UI for local development.
 
@@ -27,7 +27,7 @@ Frontend
       -> Ollama chat and embedding APIs
 ```
 
-Uploaded files live in the shared uploads directory. The backend queues document indexing after a document is saved. Images are sent to the OCR worker. PDFs are first checked for embedded text; scanned PDFs are rendered page by page in the backend and their temporary images are sent sequentially to the existing OCR worker.
+Uploaded files live in the shared uploads directory. The backend queues document embedding after a document is saved. Images are sent to the OCR worker. PDFs are first checked for embedded text; scanned PDFs are rendered page by page in the backend and their temporary images are sent sequentially to the existing OCR worker.
 
 ## Backend Structure
 
@@ -42,7 +42,7 @@ The parent `backend/src/modules/ai` area separates AI behavior by responsibility
 - `ai-chat`: public endpoint, intent classification, normalization, and routing.
 - `structured-retrieval`: record search, pagination context, and safe record summaries.
 - `rag`: semantic retrieval and document-grounded answers.
-- `document-index`: extraction, redaction, chunking, embeddings, and vector persistence.
+- `document-embedding`: extraction, redaction, chunking, embeddings, and vector persistence.
 - `ollama`: generic `chat()` and `embed()` integration only.
 - `prompts`, `dto`, and `enums`: shared AI contracts.
 
@@ -52,8 +52,8 @@ The parent `backend/src/modules/ai` area separates AI behavior by responsibility
 
 ```text
 Document saved
-  -> Redis document-index queue
-  -> DocumentIndexProcessor
+  -> Redis document-embedding queue
+  -> DocumentIngestionProcessor
   -> extract text
       -> PDF with embedded text: unpdf
       -> scanned PDF: unpdf render at scale 2 -> OCR worker, maximum 10 pages

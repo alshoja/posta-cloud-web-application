@@ -7,7 +7,7 @@ import { DocumentChunk } from '../../records/entities/document-chunk.entity';
 import { Document } from '../../records/entities/document.entity';
 import { Record as RecordEntity } from '../../records/entities/record.entity';
 import { RecordStatus } from '../../records/enums/record-status.enum';
-import { RecordQueryService } from '../../records/record-query.service';
+import { RecordQueryService } from '../../records/services/record-query.service';
 import { AiChatCitationDto } from '../dto/ai-chat-citation.dto';
 import { AiChatResponseDto } from '../dto/ai-chat-response.dto';
 import { RagDocumentChunkDto } from '../dto/rag-document-chunk.dto';

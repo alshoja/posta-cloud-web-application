@@ -10,22 +10,24 @@ import {
 import { REQUEST } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, DataSource, Repository } from 'typeorm';
-import { AuthenticatedRequest } from '../auth/types/express';
-import { StepFiveDto } from './dto/step-five.dto';
-import { StepFourDto } from './dto/step-four.dto';
-import { StepOneDto } from './dto/step-one.dto';
-import { StepSixDto } from './dto/step-six.dto';
-import { StepThreeDto } from './dto/step-three.dto';
-import { StepTwoDto } from './dto/step-two.dto';
-import { RecordStatus } from './enums/record-status.enum';
-import { Address } from './entities/address.entity';
-import { Child } from './entities/child.entity';
-import { Document } from './entities/document.entity';
-import { Policy } from './entities/policy.entity';
-import { Record as RecordEntity } from './entities/record.entity';
-import { UserRole } from '../users/enums/user-role.enum';
-import { DocumentIndexService } from '../ai/document-index/document-index.service';
+
 import { extname } from 'node:path';
+import { DocumentIngestionQueueService } from 'src/modules/ai/document-embedding/services/document-ingestion-queue.service';
+import { AuthenticatedRequest } from 'src/modules/auth/types/express';
+import { UserRole } from 'src/modules/users/enums/user-role.enum';
+import { StepFiveDto } from '../dto/step-five.dto';
+import { StepFourDto } from '../dto/step-four.dto';
+import { StepOneDto } from '../dto/step-one.dto';
+import { StepSixDto } from '../dto/step-six.dto';
+import { StepThreeDto } from '../dto/step-three.dto';
+import { StepTwoDto } from '../dto/step-two.dto';
+import { Address } from '../entities/address.entity';
+import { Child } from '../entities/child.entity';
+import { Document } from '../entities/document.entity';
+import { Policy } from '../entities/policy.entity';
+import { RecordStatus } from '../enums/record-status.enum';
+import { Record as RecordEntity } from '../entities/record.entity';
+
 
 @Injectable({ scope: Scope.REQUEST })
 export class RecordsService {
@@ -35,7 +37,7 @@ export class RecordsService {
     @InjectRepository(RecordEntity)
     private readonly recordRepository: Repository<RecordEntity>,
     private dataSource: DataSource,
-    private readonly documentIndexService: DocumentIndexService,
+    private readonly documentIngestionQueueService: DocumentIngestionQueueService,
   ) {}
 
   async createStepOne(
@@ -339,12 +341,12 @@ export class RecordsService {
       const record = await recordRepository.findOneOrFail({ where: { id: recordsId } });
 
       await queryRunner.commitTransaction();
-      await this.documentIndexService
+      await this.documentIngestionQueueService
         .queueDocuments(
           insertedDocuments.identifiers.map((identifier) => identifier.id),
         )
         .catch((error) =>
-          console.error('Failed to queue document indexing:', error),
+          console.error('Failed to queue document embedding:', error),
         );
       return {
         id: recordsId,
@@ -517,10 +519,10 @@ export class RecordsService {
     };
   }
 
-  async reindexDocuments(id: number): Promise<{ queued: number }> {
+  async reembedDocuments(id: number): Promise<{ queued: number }> {
     const record = await this.findOne(id);
     const documentIds = (record.documents ?? []).map((document) => document.id);
-    await this.documentIndexService.queueDocuments(documentIds);
+    await this.documentIngestionQueueService.queueDocuments(documentIds);
     return { queued: documentIds.length };
   }
 

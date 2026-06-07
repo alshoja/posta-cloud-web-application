@@ -2,24 +2,24 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Job } from 'bullmq';
 import { Repository } from 'typeorm';
-import { DOCUMENT_INDEX_QUEUE_NAME } from '../../../shared/constants/document-index.constants';
+import { DOCUMENT_EMBEDDING_QUEUE } from '../../../shared/constants/document-embedding.constants';
 import { validateEmbedding } from '../../../shared/utilities/vector.utility';
 import { Document } from '../../records/entities/document.entity';
 import { DocumentChunk } from '../../records/entities/document-chunk.entity';
 import { DocumentExtractionStatus } from '../../records/enums/document-extraction-status.enum';
 import { OllamaService } from '../ollama/ollama.service';
-import { DocumentContentService } from './document-content.service';
-import { DocumentTextService } from './document-text.service';
+import { DocumentChunkingService } from './services/document-chunking.service';
+import { DocumentParserService } from './services/document-parser.service';
 
-@Processor(DOCUMENT_INDEX_QUEUE_NAME, { concurrency: 1 })
-export class DocumentIndexProcessor extends WorkerHost {
+@Processor(DOCUMENT_EMBEDDING_QUEUE, { concurrency: 1 })
+export class DocumentIngestionProcessor extends WorkerHost {
   constructor(
     @InjectRepository(Document)
     private readonly documentRepository: Repository<Document>,
     @InjectRepository(DocumentChunk)
     private readonly documentChunkRepository: Repository<DocumentChunk>,
-    private readonly documentTextService: DocumentTextService,
-    private readonly documentContentService: DocumentContentService,
+    private readonly documentParserService: DocumentParserService,
+    private readonly documentChunkingService: DocumentChunkingService,
     private readonly ollamaService: OllamaService,
   ) {
     super();
@@ -37,11 +37,12 @@ export class DocumentIndexProcessor extends WorkerHost {
       extractionStatus: DocumentExtractionStatus.PROCESSING,
       extractionError: null,
     });
+
     await this.documentChunkRepository.delete({ documentId: document.id });
 
     try {
-      const pages = await this.documentTextService.extract(document.file);
-      const chunks = this.documentContentService.redactAndChunk(pages);
+      const pages = await this.documentParserService.extract(document.file);
+      const chunks = this.documentChunkingService.prepareDocumentChunks(pages);
       if (chunks.length === 0) {
         throw new Error('No usable text was found in this document');
       }
@@ -62,7 +63,7 @@ export class DocumentIndexProcessor extends WorkerHost {
       await this.documentRepository.update(document.id, {
         extractionStatus: DocumentExtractionStatus.READY,
         extractionError: null,
-        contentHash: this.documentContentService.createContentHash(chunks),
+        contentHash: this.documentChunkingService.createDocumentChunksHash(chunks),
         indexedAt: new Date(),
       });
     } catch (error) {

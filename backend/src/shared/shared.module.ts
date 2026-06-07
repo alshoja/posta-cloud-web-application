@@ -5,7 +5,7 @@ import { ValidateFile } from './validators/file.validator';
 import { BullModule } from '@nestjs/bullmq';
 import { OcrService } from './services/ocr.service';
 import { RedisModule } from './redis.module';
-import { OCR_QUEUE_NAME } from './constants/queue.constants';
+import { OCR_QUEUE } from './constants/queue.constants';
 import { EncryptionConfigService } from './services/encryption-config.service';
 
 @Module({
@@ -13,7 +13,7 @@ import { EncryptionConfigService } from './services/encryption-config.service';
     ConfigModule,
     RedisModule,
     BullModule.registerQueue({
-      name: OCR_QUEUE_NAME,
+      name: OCR_QUEUE,
     }),
   ],
   providers: [ExistsRule, ValidateFile, OcrService, EncryptionConfigService],

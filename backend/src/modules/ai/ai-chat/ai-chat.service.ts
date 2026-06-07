@@ -24,9 +24,9 @@ export class AiChatService {
       case AiChatIntent.RECORD_SEARCH:
         return this.structuredRetrievalService.getFilteredRecords(recordIntent.filters ?? {});
       case AiChatIntent.RECORD_NEXT_PAGE:
-        return this.structuredRetrievalService.getNextOrPreviousRecords('next',recordIntent.filters?.limit);
+        return this.structuredRetrievalService.getNextOrPreviousRecords('next', recordIntent.filters?.limit);
       case AiChatIntent.RECORD_PREVIOUS_PAGE:
-        return this.structuredRetrievalService.getNextOrPreviousRecords('previous',recordIntent.filters?.limit);
+        return this.structuredRetrievalService.getNextOrPreviousRecords('previous', recordIntent.filters?.limit);
       case AiChatIntent.RECORD_SUMMARY:
         return this.structuredRetrievalService.getRecordSummary(recordIntent.recordId);
       case AiChatIntent.DOCUMENT_QUESTION:

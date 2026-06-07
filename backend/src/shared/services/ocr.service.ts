@@ -2,24 +2,44 @@ import { Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { RedisService } from './redis.service';
-import { OCR_QUEUE_NAME } from '../constants/queue.constants';
+import {
+  OCR_IDENTITY_EXTRACTION_JOB,
+  OCR_IMAGE_TEXT_EXTRACTION_JOB,
+  OCR_QUEUE,
+} from '../constants/queue.constants';
+import { BullQueueEventsService } from './bull-queue-events.service';
 
 const OCR_WORKER_HEARTBEAT_KEY = 'ocr_worker:heartbeat';
 
 @Injectable()
 export class OcrService {
   constructor(
-    @InjectQueue(OCR_QUEUE_NAME) private ocrQueue: Queue,
-    private redisService: RedisService
-  ) { }
+    @InjectQueue(OCR_QUEUE) private ocrQueue: Queue,
+    private redisService: RedisService,
+    private readonly bullQueueEventsService: BullQueueEventsService,
+  ) {}
 
   async uploadAndQueue(file: Express.Multer.File, documentType?: string) {
-    const job = await this.ocrQueue.add('extract-text', {
+    const job = await this.ocrQueue.add(OCR_IDENTITY_EXTRACTION_JOB, {
       filePath: `/app/uploads/${file.filename}`,
       documentType,
     });
 
     return { jobId: job.id };
+  }
+
+  async extractImageText(filePath: string): Promise<string> {
+    const job = await this.ocrQueue.add(OCR_IMAGE_TEXT_EXTRACTION_JOB, {
+      filePath,
+    });
+    
+    const result = await this.bullQueueEventsService.waitForJob<{ text?: string }>(
+      OCR_QUEUE,
+      job,
+      120_000,
+    );
+
+    return result.text ?? '';
   }
 
   async getServiceStatus() {

@@ -1,7 +1,7 @@
 import { Injectable, Scope, ServiceUnavailableException } from '@nestjs/common';
 import { RecordSearchFilterDto } from '../../records/dto/search/record-search-filter.dto';
 import { Record as RecordEntity } from '../../records/entities/record.entity';
-import { RecordQueryService } from '../../records/record-query.service';
+import { RecordQueryService } from '../../records/services/record-query.service';
 import { AiChatResponseDto } from '../dto/ai-chat-response.dto';
 import { RecordSummaryDto } from '../dto/record-summary.dto';
 import { AiChatIntent } from '../enums/ai-chat-intent.enum';

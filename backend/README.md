@@ -8,7 +8,7 @@ only the README for the feature module you are changing.
 - [`auth`](src/modules/auth/README.md): JWT authentication and global auth/role guards.
 - [`users`](src/modules/users/README.md): user persistence and default admin setup.
 - [`records`](src/modules/records/README.md): six-step record workflow and authorized record queries.
-- [`ai`](src/modules/ai/README.md): Posta Mitra, document indexing, and RAG.
+- [`ai`](src/modules/ai/README.md): Posta Mitra, document embedding, and RAG.
 - [`shared`](src/shared/README.md): queues, Redis, common services, and utilities.
 
 Database migrations live in `database/migrations`.

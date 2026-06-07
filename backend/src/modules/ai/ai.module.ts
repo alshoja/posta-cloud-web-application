@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { AiChatModule } from './ai-chat/ai-chat.module';
-import { DocumentIndexModule } from './document-index/document-index.module';
+import { DocumentEmbeddingModule } from './document-embedding/document-embedding.module';
 
 @Module({
-  imports: [AiChatModule, DocumentIndexModule],
+  imports: [AiChatModule, DocumentEmbeddingModule],
 })
 export class AiModule {}

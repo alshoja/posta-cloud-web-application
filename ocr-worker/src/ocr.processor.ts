@@ -3,6 +3,10 @@ import { Job } from 'bullmq';
 import * as tesseract from 'tesseract.js';
 import { promises as fs } from 'node:fs';
 import { RedisService } from './redis.service';
+import {
+  OCR_IDENTITY_EXTRACTION_JOB,
+  OCR_IMAGE_TEXT_EXTRACTION_JOB,
+} from './queue.constants';
 
 type OcrJobData = {
   filePath?: string;
@@ -51,7 +55,7 @@ export class OcrProcessor extends WorkerHost {
       await fs.access(filePath);
 
       switch (job.name) {
-        case 'extract-text': {
+        case OCR_IDENTITY_EXTRACTION_JOB: {
           console.log(`Processing OCR for file: ${filePath}`);
           const {
             data: { text },
@@ -70,16 +74,12 @@ export class OcrProcessor extends WorkerHost {
 
           return parsed;
         }
-        case 'extract-rag-text': {
+        case OCR_IMAGE_TEXT_EXTRACTION_JOB: {
           console.log(`Processing RAG OCR for file: ${filePath}`);
           const {
             data: { text },
           } = await tesseract.recognize(filePath, 'eng');
           return { text: this.normalizeOcrText(text) };
-        }
-        case 'someOtherJob': {
-          console.info(`Unknown job name: ${job.name}`);
-          break;
         }
         default: {
           throw new Error(`Unsupported OCR job name: ${job.name}`);

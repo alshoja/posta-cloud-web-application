@@ -16,7 +16,7 @@ import { StepOneDto } from './dto/step-one.dto';
 import { StepSixDto } from './dto/step-six.dto';
 import { StepThreeDto } from './dto/step-three.dto';
 import { StepTwoDto } from './dto/step-two.dto';
-import { RecordsService } from './records.service';
+import { RecordsService } from './services/records.service';
 import { Roles } from '../auth/roles.decorator';
 import { UserRole } from '../users/enums/user-role.enum';
 import { FindRecordsQueryDto } from './dto/find-records-query.dto';
@@ -77,9 +77,9 @@ export class RecordsController {
     return this.recordsService.reopen(id);
   }
 
-  @Post(':id/documents/reindex')
-  reindexDocuments(@Param('id', ParseIntPipe) id: number) {
-    return this.recordsService.reindexDocuments(id);
+  @Post(':id/documents/reembed')
+  reembedDocuments(@Param('id', ParseIntPipe) id: number) {
+    return this.recordsService.reembedDocuments(id);
   }
 
   @Get()

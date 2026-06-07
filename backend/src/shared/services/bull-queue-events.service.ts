@@ -7,7 +7,7 @@ import { getBullConnection } from '../utilities/bull-connection.utility';
 export class BullQueueEventsService implements OnModuleDestroy {
   private readonly queueEvents = new Map<string, QueueEvents>();
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(private readonly configService: ConfigService) { }
 
   async waitForJob<T>(
     queueName: string,
@@ -15,12 +15,6 @@ export class BullQueueEventsService implements OnModuleDestroy {
     timeout: number,
   ): Promise<T> {
     return job.waitUntilFinished(this.getQueueEvents(queueName), timeout) as Promise<T>;
-  }
-
-  async onModuleDestroy(): Promise<void> {
-    await Promise.all(
-      [...this.queueEvents.values()].map((queueEvents) => queueEvents.close()),
-    );
   }
 
   private getQueueEvents(queueName: string): QueueEvents {
@@ -34,5 +28,11 @@ export class BullQueueEventsService implements OnModuleDestroy {
     });
     this.queueEvents.set(queueName, queueEvents);
     return queueEvents;
+  }
+
+  async onModuleDestroy(): Promise<void> {
+    await Promise.all(
+      [...this.queueEvents.values()].map((queueEvents) => queueEvents.close()),
+    );
   }
 }
