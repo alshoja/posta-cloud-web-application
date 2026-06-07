@@ -47,6 +47,7 @@ interface AiChatResponse {
 }
 
 const baseUrl = `${import.meta.env.VITE_API_URL}/ai-chat/message`
+const AI_CHAT_TIMEOUT_MS = 120_000
 
 const createMessageId = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`
 const extractRecordId = (message: string) =>
@@ -58,6 +59,10 @@ const getAiChatErrorMessage = (error: unknown) => {
 
   if (responseMessage) {
     return responseMessage
+  }
+
+  if (axiosError.code === 'ECONNABORTED') {
+    return 'Posta AI took too long to answer. Please try again.'
   }
 
   return 'Posta AI is warming up. Please try again.'
@@ -100,9 +105,15 @@ export const useAiChatStore = defineStore('aiChat', {
       this.isLoading = true
 
       try {
-        const response = await axios.post<AiChatResponse>(baseUrl, {
-          message: trimmedMessage
-        })
+        const response = await axios.post<AiChatResponse>(
+          baseUrl,
+          {
+            message: trimmedMessage
+          },
+          {
+            timeout: AI_CHAT_TIMEOUT_MS
+          }
+        )
         const records = response.data.records ?? []
 
         this.messages.push({

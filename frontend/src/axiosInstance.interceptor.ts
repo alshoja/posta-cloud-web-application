@@ -82,6 +82,9 @@ axiosInstance.interceptors.response.use(
         getResponseErrorMessage(error.response.data) ||
         `Error ${error.response.status}: ${error.response.statusText}` ||
         errorMessage
+    } else if (error.code === 'ECONNABORTED') {
+      console.error('Request Timeout:', error.message)
+      errorMessage = 'The request took too long to complete. Please try again.'
     } else if (error.request) {
       console.error('No Response:', error.request)
       errorMessage = 'No response received from the server. Please check your internet connection.'

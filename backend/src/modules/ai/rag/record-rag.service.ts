@@ -17,7 +17,7 @@ import { OllamaService } from '../ollama/ollama.service';
 import { RAG_ANSWER_PROMPT } from '../prompts/rag.prompts';
 
 const DOCUMENT_CHUNK_LIMIT = 8;
-const DISTANCE_THRESHOLD = 0.6;
+const DISTANCE_THRESHOLD = 0.8;
 
 @Injectable({ scope: Scope.REQUEST })
 export class RecordRagService {
