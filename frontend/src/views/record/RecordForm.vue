@@ -694,7 +694,7 @@ const downloadDocument = async (index: number) => {
                             </v-avatar>
                             <div>
                                 <div class="text-h5">Profile Photo</div>
-                                <div class="text-caption text-lightText">JPG or PNG, maximum 1 MB</div>
+                                <div class="text-caption text-lightText">JPG or PNG, maximum 2 MB</div>
                             </div>
                         </v-card-title>
                         <v-card-text>
