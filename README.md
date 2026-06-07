@@ -64,7 +64,8 @@ Services:
 
 ![Posta Cloud records screen](https://github.com/user-attachments/assets/6df7fc33-0d4c-4753-a637-4a1124997674)
 
-![Posta Cloud form screen](https://github.com/user-attachments/assets/46d8a67a-ff77-4cfc-b7a9-2c0ac4fe2a8a)
+<img width="2551" height="1311" alt="image" src="https://github.com/user-attachments/assets/2f71a0d8-8649-4e9e-92fc-b7bd630ad74f" />
+
 
 <img width="2281" height="1148" alt="image" src="https://github.com/user-attachments/assets/761cf6ea-ca41-4d19-9180-f08439d0937f" />
 
