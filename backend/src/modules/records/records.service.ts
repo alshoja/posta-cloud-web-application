@@ -24,6 +24,8 @@ import { Document } from './entities/document.entity';
 import { Policy } from './entities/policy.entity';
 import { Record as RecordEntity } from './entities/record.entity';
 import { UserRole } from '../users/enums/user-role.enum';
+import { DocumentIndexService } from '../ai/document-index/document-index.service';
+import { extname } from 'node:path';
 
 @Injectable({ scope: Scope.REQUEST })
 export class RecordsService {
@@ -33,6 +35,7 @@ export class RecordsService {
     @InjectRepository(RecordEntity)
     private readonly recordRepository: Repository<RecordEntity>,
     private dataSource: DataSource,
+    private readonly documentIndexService: DocumentIndexService,
   ) {}
 
   async createStepOne(
@@ -322,12 +325,13 @@ export class RecordsService {
       const _document = stepSixDto.documents.map((document) => ({
         name: document.name?.trim() ? document.name : null,
         file: document.file?.trim() ? document.file : null,
+        mimeType: this.getDocumentMimeType(document.file),
         recordsId,
       }));
       const documentRepository = queryRunner.manager.getRepository(Document);
       const recordRepository = queryRunner.manager.getRepository(RecordEntity);
       await documentRepository.delete({ recordsId });
-      await documentRepository.insert(_document);
+      const insertedDocuments = await documentRepository.insert(_document);
       if (action === 'FINAL') {
         await this.validateFinalSubmission(recordRepository, recordsId);
       }
@@ -335,6 +339,13 @@ export class RecordsService {
       const record = await recordRepository.findOneOrFail({ where: { id: recordsId } });
 
       await queryRunner.commitTransaction();
+      await this.documentIndexService
+        .queueDocuments(
+          insertedDocuments.identifiers.map((identifier) => identifier.id),
+        )
+        .catch((error) =>
+          console.error('Failed to queue document indexing:', error),
+        );
       return {
         id: recordsId,
         status: record.status,
@@ -506,6 +517,13 @@ export class RecordsService {
     };
   }
 
+  async reindexDocuments(id: number): Promise<{ queued: number }> {
+    const record = await this.findOne(id);
+    const documentIds = (record.documents ?? []).map((document) => document.id);
+    await this.documentIndexService.queueDocuments(documentIds);
+    return { queued: documentIds.length };
+  }
+
   private determineStepSubmissionAction(
     status: RecordStatus | undefined,
     step: number,
@@ -545,6 +563,21 @@ export class RecordsService {
     }
     const normalized = value.trim();
     return normalized.length > 0 ? normalized : null;
+  }
+
+  private getDocumentMimeType(file?: string): string | null {
+    const extension = extname(file?.split('?')[0] ?? '').toLowerCase();
+    const mimeTypes: Record<string, string> = {
+      '.pdf': 'application/pdf',
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.webp': 'image/webp',
+      '.bmp': 'image/bmp',
+      '.tif': 'image/tiff',
+      '.tiff': 'image/tiff',
+    };
+    return mimeTypes[extension] ?? null;
   }
 
   private async applyStepAction(

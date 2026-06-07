@@ -10,21 +10,18 @@ networks:
 services:
   postgres_db:
     container_name: posta_cloud_db
-    image: bitnami/postgresql:latest
+    image: pgvector/pgvector:pg17
     platform: linux/amd64
     ports:
       - ${POSTGRESQL_PORT}:5432
     restart: always
     volumes:
-      - db-data:/bitnami/postgresql
+      - db-data:/var/lib/postgresql/data
       - ./database/init:/docker-entrypoint-initdb.d
     environment:
-      - POSTGRESQL_DATABASE=${POSTGRESQL_DATABASE}
-      - POSTGRESQL_USERNAME=${POSTGRESQL_USERNAME}
-      - POSTGRESQL_PASSWORD=${POSTGRESQL_PASSWORD}
-      - POSTGRESQL_LOGGING_COLLECTOR=true
-      - POSTGRESQL_LOG_MIN_ERROR_STATEMENT=error
-      - POSTGRESQL_LOG_STATEMENTS=all
+      - POSTGRES_DB=${POSTGRESQL_DATABASE}
+      - POSTGRES_USER=${POSTGRESQL_USERNAME}
+      - POSTGRES_PASSWORD=${POSTGRESQL_PASSWORD}
     logging: *default-logging
     networks:
       - common-net
@@ -123,6 +120,7 @@ services:
       - CORS_ORIGINS=${CORS_ORIGINS}
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
       - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2:3b}
+      - OLLAMA_EMBEDDING_MODEL=${OLLAMA_EMBEDDING_MODEL:-embeddinggemma}
       - AI_CHAT_ENABLED=${AI_CHAT_ENABLED:-true}
     depends_on:
       - postgres_db

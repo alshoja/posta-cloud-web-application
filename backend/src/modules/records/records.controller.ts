@@ -77,6 +77,11 @@ export class RecordsController {
     return this.recordsService.reopen(id);
   }
 
+  @Post(':id/documents/reindex')
+  reindexDocuments(@Param('id', ParseIntPipe) id: number) {
+    return this.recordsService.reindexDocuments(id);
+  }
+
   @Get()
   @UseInterceptors(ClassSerializerInterceptor)
   findAll(@Query() query: FindRecordsQueryDto) {

@@ -10,10 +10,12 @@ import { SeederModule } from './shared/seeder/seeder.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { RecordsModule } from './modules/records/records.module';
 import { UsersModule } from './modules/users/users.module';
-import { AiChatModule } from './modules/ai-chat/ai-chat.module';
-import { BullModule } from '@nestjs/bullmq/dist/bull.module';
+import { AiModule } from './modules/ai/ai.module';
+import { BullModule } from '@nestjs/bullmq';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { getBullConnection } from './shared/utilities/bull-connection.utility';
+import { BullQueueModule } from './shared/bull-queue.module';
 
 @Module({
   imports: [
@@ -34,13 +36,11 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
     BullModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
-        connection: {
-          host: configService.get<string>('config.redisHost'),
-          port: configService.get<number>('config.redisPort'),
-        },
+        connection: getBullConnection(configService),
       }),
       inject: [ConfigService],
     }),
+    BullQueueModule,
     ThrottlerModule.forRoot([
       {
         ttl: 60_000,
@@ -59,7 +59,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
     SeederModule,
     AuthModule,
     UsersModule,
-    AiChatModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [

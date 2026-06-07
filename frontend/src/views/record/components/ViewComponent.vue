@@ -236,10 +236,15 @@ const useDefaultProfileImage = () => {
 
                 <DetailSection id="documents" title="Documents" :icon="FileTextIcon">
                     <v-table v-if="form.documents?.length" density="compact" class="detail-table">
-                        <thead><tr><th>Document Name</th><th class="text-right">Actions</th></tr></thead>
+                        <thead><tr><th>Document Name</th><th>AI Index</th><th class="text-right">Actions</th></tr></thead>
                         <tbody>
                             <tr v-for="(document, index) in form.documents" :key="document.id || index">
                                 <td>{{ document.name || 'Unnamed document' }}</td>
+                                <td>
+                                    <v-chip size="x-small" color="secondary" variant="tonal">
+                                        {{ document.extractionStatus || 'PENDING' }}
+                                    </v-chip>
+                                </td>
                                 <td class="text-right">
                                     <v-btn color="secondary" variant="outlined" size="x-small" @click="viewDocument(document.file)">View</v-btn>
                                 </td>

@@ -4,9 +4,12 @@ import {
   PrimaryGeneratedColumn,
   ManyToOne,
   JoinColumn,
+  OneToMany,
   Relation,
 } from 'typeorm';
 import { Record } from './record.entity';
+import { DocumentExtractionStatus } from '../enums/document-extraction-status.enum';
+import { DocumentChunk } from './document-chunk.entity';
 
 @Entity('documents')
 export class Document {
@@ -18,6 +21,30 @@ export class Document {
 
   @Column({ nullable: true })
   file: string ;
+
+  @Column({ nullable: true })
+  mimeType?: string;
+
+  @Column({
+    type: 'enum',
+    enum: DocumentExtractionStatus,
+    default: DocumentExtractionStatus.PENDING,
+  })
+  extractionStatus: DocumentExtractionStatus;
+
+  @Column({ type: 'text', nullable: true })
+  extractionError?: string;
+
+  @Column({ nullable: true })
+  contentHash?: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  indexedAt?: Date;
+
+  @OneToMany(() => DocumentChunk, (chunk) => chunk.document, {
+    cascade: true,
+  })
+  chunks: Relation<DocumentChunk>[];
 
   @ManyToOne(() => Record, (records) => records.documents, {
     onDelete: 'CASCADE',

@@ -1,6 +1,6 @@
 import { RecordStatus } from '../../records/enums/record-status.enum';
 
-export interface RecordSummaryContext {
+export class RecordSummaryDto {
   id: number;
   name: string;
   status: RecordStatus;

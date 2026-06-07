@@ -89,6 +89,13 @@ Follow SOLID principles in backend code.
 
 Creating or editing an entity/model does not automatically create a migration.
 
+Development uses TypeORM synchronization while iterating on entity changes. Do
+not create or generate migration files for ordinary development entity changes
+unless the user explicitly asks for one or a reviewed production migration is
+being prepared. Create a manual migration only when it is genuinely required
+for behavior TypeORM synchronization or migration generation cannot reliably
+handle, such as PostgreSQL extensions, specialized indexes, or data backfills.
+
 Migration files live in the repository under:
 
 ```text

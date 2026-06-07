@@ -4,7 +4,14 @@ import type { RecordDetail } from '@/interfaces/record.interface'
 import { defineStore } from 'pinia'
 
 export type AiChatMessageRole = 'user' | 'assistant'
-export type AiChatIntent = 'record_search' | 'record_next_page' | 'record_previous_page' | 'record_summary' | 'unsupported'
+export type AiChatIntent = 'record_search' | 'record_next_page' | 'record_previous_page' | 'record_summary' | 'document_question' | 'document_search' | 'unsupported'
+
+export interface AiChatCitation {
+  documentId: number
+  recordId: number
+  documentName: string
+  pageNumber?: number
+}
 
 export type AiChatRecordResult = Pick<
     RecordDetail,
@@ -27,6 +34,7 @@ export interface AiChatMessage {
   recordId?: string
   total?: number
   records?: AiChatRecordResult[]
+  citations?: AiChatCitation[]
 }
 
 interface AiChatResponse {
@@ -35,6 +43,7 @@ interface AiChatResponse {
   answer?: string
   records?: AiChatRecordResult[]
   total?: number
+  citations?: AiChatCitation[]
 }
 
 const baseUrl = `${import.meta.env.VITE_API_URL}/ai-chat/message`
@@ -106,7 +115,8 @@ export const useAiChatStore = defineStore('aiChat', {
             response.data.intent === 'record_summary' && Number(response.data.total) > 0
               ? extractRecordId(trimmedMessage)
               : undefined,
-          records
+          records,
+          citations: response.data.citations ?? []
         })
       } catch (error) {
         console.error('AI chat request failed:', error)

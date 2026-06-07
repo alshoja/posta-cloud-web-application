@@ -41,6 +41,7 @@ const totalItems = ref(0);
 const itemsPerPage = ref(10);
 const currentPage = ref(1);
 const loading = ref(false);
+const reopeningRecordId = ref<string>();
 const statusOptions = [
     { title: 'All', value: 'ALL' },
     { title: 'Draft', value: 'DRAFT' },
@@ -128,18 +129,25 @@ const getReopenHint = (item: RecordDetail) =>
 const reopenItem = async (item: RecordDetail) => {
     if (!item.id) return;
 
+    reopeningRecordId.value = item.id;
     try {
-        await recordStore.reopen(item.id);
-        if (currentPage.value === 1) {
+        const reopenedRecord = await recordStore.reopen(item.id);
+        Object.assign(item, reopenedRecord);
+
+        if (serverItem.value?.id === item.id) {
+            Object.assign(serverItem.value, reopenedRecord);
+        }
+
+        if (statusFilter.value === 'COMPLETED') {
             await loadCurrentPage();
-        } else {
-            currentPage.value = 1;
         }
         snackbar.showSnackbar('Record reopened successfully.', 'success', []);
     } catch (error) {
         console.error('Failed to reopen record:', error);
         const errorMessage = (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Unable to reopen record.';
         snackbar.showSnackbar(errorMessage, 'error', []);
+    } finally {
+        reopeningRecordId.value = undefined;
     }
 };
 
@@ -352,7 +360,8 @@ onMounted(loadCurrentPage);
                         <template #activator="{ props }">
                             <span v-bind="props">
                                 <v-btn variant="outlined" size="small" color="primary" @click="reopenItem(item)"
-                                    :disabled="!canReopenRecord(item)">
+                                    :loading="reopeningRecordId === item.id"
+                                    :disabled="!canReopenRecord(item) || reopeningRecordId === item.id">
                                     <RefreshIcon size="17" />
                                 </v-btn>
                             </span>

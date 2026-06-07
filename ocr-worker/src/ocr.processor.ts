@@ -70,6 +70,13 @@ export class OcrProcessor extends WorkerHost {
 
           return parsed;
         }
+        case 'extract-rag-text': {
+          console.log(`Processing RAG OCR for file: ${filePath}`);
+          const {
+            data: { text },
+          } = await tesseract.recognize(filePath, 'eng');
+          return { text: this.normalizeOcrText(text) };
+        }
         case 'someOtherJob': {
           console.info(`Unknown job name: ${job.name}`);
           break;

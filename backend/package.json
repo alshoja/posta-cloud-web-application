@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "@faker-js/faker": "^9.4.0",
+    "@napi-rs/canvas": "^0.1.100",
     "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^11.1.17",
     "@nestjs/config": "^4.0.0",
@@ -43,11 +44,13 @@
     "bull": "^4.16.5",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
+    "pdfjs-dist": "^5.4.624",
     "pg": "^8.13.1",
     "redis": "^5.11.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
-    "typeorm": "^0.3.20"
+    "typeorm": "^0.3.30",
+    "unpdf": "^1.6.2"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.2",

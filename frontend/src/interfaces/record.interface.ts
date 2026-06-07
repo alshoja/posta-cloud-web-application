@@ -43,6 +43,9 @@ export interface Document {
   id?: string
   name: string
   file: string
+  extractionStatus?: 'PENDING' | 'PROCESSING' | 'READY' | 'UNSUPPORTED' | 'FAILED'
+  extractionError?: string
+  indexedAt?: Date
 }
 
 export interface Policy {

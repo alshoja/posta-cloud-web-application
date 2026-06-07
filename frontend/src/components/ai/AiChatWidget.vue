@@ -247,6 +247,19 @@ const returnToPreviousPage = () => {
 
             </div>
 
+            <div v-if="message.citations?.length" class="ai-chat-citations">
+              <div class="ai-chat-citations-title">Sources</div>
+              <v-chip
+                v-for="citation in message.citations"
+                :key="`${citation.documentId}-${citation.pageNumber || 0}`"
+                size="x-small"
+                color="secondary"
+                variant="tonal"
+              >
+                {{ citation.documentName }} · Record #{{ citation.recordId }}<template v-if="citation.pageNumber"> · Page {{ citation.pageNumber }}</template>
+              </v-chip>
+            </div>
+
             <div v-if="message.role === 'assistant' && messageIndex > 0" class="ai-chat-answer-suggestions">
               <div class="ai-chat-answer-suggestions-title">Suggested next questions</div>
               <div class="ai-chat-prompt-chips">
@@ -594,6 +607,22 @@ const returnToPreviousPage = () => {
   margin-bottom: 8px;
   border-radius: 12px;
   background: white;
+}
+
+.ai-chat-citations {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 92%;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.ai-chat-citations-title {
+  width: 100%;
+  color: rgb(var(--v-theme-lightText));
+  font-size: 0.68rem;
+  font-weight: 600;
 }
 
 .ai-chat-input {

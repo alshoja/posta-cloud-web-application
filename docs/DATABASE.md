@@ -1,6 +1,6 @@
 # Database
 
-The database is PostgreSQL running in the `postgres_db` Docker Compose service. Local data is persisted in the `posta_cloud_db_data` Docker volume.
+The database is PostgreSQL with pgvector running in the `postgres_db` Docker Compose service. Local data is persisted in the `posta_cloud_db_data` Docker volume.
 
 ## Configuration
 
@@ -27,7 +27,13 @@ Migration files live in:
 backend/database/migrations/
 ```
 
-Creating or editing an entity does not automatically create a migration. The development flow is:
+Development uses TypeORM synchronization while entities are actively changing.
+Do not generate a migration for every development entity edit. Generate and
+review migrations when preparing schema changes for production.
+
+Manual migrations should be limited to operations TypeORM cannot reliably
+generate, such as PostgreSQL extensions, specialized indexes, or data
+backfills. The production migration flow is:
 
 ```sh
 docker compose exec backend npm run migration:generate --name=<migration-name>
@@ -35,6 +41,12 @@ docker compose exec backend npm run migration:run
 ```
 
 Review generated migrations before committing. Commit migrations with the entity changes that caused them.
+
+For document RAG, run the committed pgvector-extension migration before a
+generated migration that creates vector columns. In development, the backend
+creates the HNSW document-vector index after TypeORM synchronization. When
+preparing production migrations, include the same HNSW index in a reviewed
+manual migration because production does not run the development initializer.
 
 Production should only run committed migrations. Do not generate migrations in production. Before running migrations from the production backend container, confirm the production image includes the migration config and runtime command; the current Dockerfile is optimized for running the compiled backend app.
 
