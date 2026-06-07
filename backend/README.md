@@ -1,49 +1,29 @@
 # Backend
 
-The backend is a NestJS API service for auth, users, records, document uploads, encryption, Redis queue integration, OCR job coordination, and the Posta Mitra AI chat endpoint.
+NestJS API for Posta Cloud. Start here when working inside `backend/`, then read
+only the README for the feature module you are changing.
 
-## Docker Workflow
+## Module Map
 
-From the repository root:
+- [`auth`](src/modules/auth/README.md): JWT authentication and global auth/role guards.
+- [`users`](src/modules/users/README.md): user persistence and default admin setup.
+- [`records`](src/modules/records/README.md): six-step record workflow and authorized record queries.
+- [`ai`](src/modules/ai/README.md): Posta Mitra, document indexing, and RAG.
+- [`shared`](src/shared/README.md): queues, Redis, common services, and utilities.
+
+Database migrations live in `database/migrations`.
+
+## Commands
+
+Run backend commands through Docker from the repository root:
 
 ```sh
-docker compose up -d backend
 docker compose logs -f backend
-docker compose exec backend sh
-```
-
-The development compose file mounts `./backend` into `/app`, so generated files and migrations created inside the container are visible in the repository.
-
-## Key Paths
-
-- Modules: `src/modules`
-- AI chat module: `src/modules/ai-chat`
-- Shared services and infrastructure: `src/shared`
-- Entities: `src/**/*.entity.ts`
-- Migrations: `database/migrations`
-- TypeORM config: `database/typeorm.config.ts`
-
-## AI Chat
-
-`src/modules/ai-chat` exposes `POST /api/ai-chat/message` for Posta Mitra, the frontend AI assistant.
-
-The current AI flow is intentionally small:
-
-- Ollama converts a user message into a safe record-search intent and filters.
-- The backend validates those filters and queries records with TypeORM.
-- Auth rules stay in the backend; the LLM never queries the database directly or generates SQL.
-
-See `src/modules/ai-chat/README.md` before extending AI behavior.
-
-## Common Tasks
-
-```sh
-docker compose exec backend npx nest g module <name>
-docker compose exec backend npx nest g controller <name>
-docker compose exec backend npx nest g service <name>
+docker compose exec backend npm run build
+docker compose exec backend npm run seed
 docker compose exec backend npm run migration:generate --name=<migration-name>
 docker compose exec backend npm run migration:run
-docker compose exec backend npm run seed
 ```
 
-Agent rules for Nest CLI, migrations, and specs live in [../AGENTS.md](../AGENTS.md).
+Project-wide workflow and agent rules live in [`../AGENTS.md`](../AGENTS.md).
+System architecture lives in [`../docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md).

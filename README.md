@@ -8,11 +8,11 @@ I built this as a practical sample project for field-data workflows: users can s
 
 - Full-stack TypeScript-style architecture with a Vue frontend and NestJS backend.
 - Docker Compose orchestration for frontend, backend, database, Redis, OCR worker, and pgAdmin.
-- PostgreSQL persistence with TypeORM entities and migration workflow.
+- PostgreSQL persistence with TypeORM, pgvector, and a migration workflow.
 - Redis-backed background processing for OCR tasks.
-- Document upload support with a dedicated worker reading from shared uploads.
-- Posta Mitra, a floating AI chat assistant for natural-language record search.
-- Local Ollama integration where the LLM extracts safe filters and the backend performs authorized database queries.
+- Document upload support with PDF text extraction and OCR for images and scanned PDFs.
+- Posta Mitra, a floating AI assistant for natural-language record search, summaries, and document RAG.
+- Local Ollama integration where the backend validates intents, performs authorized retrieval, and sends only controlled context to the model.
 - Environment-driven configuration for local and production deployments.
 - Security-focused documentation for secrets, personal data, and production setup.
 
@@ -22,43 +22,67 @@ I built this as a practical sample project for field-data workflows: users can s
 | --- | --- |
 | Frontend | Vue 3, Vite, Vuetify, Pinia |
 | Backend | NestJS, TypeORM, class-validator |
-| Database | PostgreSQL |
+| Database | PostgreSQL with pgvector |
 | Queue / Worker | Redis, OCR worker service |
-| AI | Ollama, local chat model |
+| AI | Ollama, local chat and embedding models |
 | Infrastructure | Docker, Docker Compose, pgAdmin |
 
 ## What The App Includes
 
 - **Record workflow**: multi-step record creation for personal, identity, occupation, family, policy, and document details.
-- **Document support**: upload files in the records flow and serve uploaded assets from the backend.
+- **Document support**: upload files, extract embedded PDF text, and OCR images or scanned PDFs.
 - **OCR auto-fill**: send supported identity documents to the OCR worker and use extracted details to reduce manual entry.
-- **Posta Mitra AI assistant**: ask questions such as “Show completed records”, “Find people living abroad”, or “Who has policies?”.
+- **Posta Mitra AI assistant**: search and summarize records or ask questions about accessible uploaded documents.
+- **Document RAG**: redact and embed document chunks, retrieve them with pgvector, and return document and page citations.
 - **Role-aware access**: regular users see their own records; admins follow the backend’s broader record visibility rules.
 - **Docker-first operation**: frontend, backend, PostgreSQL, Redis, OCR worker, Ollama, and pgAdmin run through Compose.
 
 ## Architecture
 
+The app keeps browser concerns in Vue, business and security rules in NestJS,
+background OCR in its worker, and local AI calls behind the backend. See
+[Architecture](docs/ARCHITECTURE.md) for service and data flows.
+
 ```text
-frontend -> backend API -> PostgreSQL
-                   |
-                   v
-                 Redis -> OCR worker -> uploaded documents
+User
+ |
+ v
+Frontend (`frontend`, Vue)
+ |
+ v
+Backend API (`backend`, NestJS)
+ |
+ +-- AuthModule / UsersModule
+ |     -> validate JWT, roles, and active user
+ |     -> PostgreSQL/pgvector (`postgres_db`)
+ |
+ +-- RecordsModule
+ |     -> enforce record access and run the six-step workflow
+ |     -> save records and uploaded document metadata
+ |     -> PostgreSQL/pgvector (`postgres_db`)
+ |     -> queue document indexing in Redis (`redis`)
+ |
+ +-- AI Module
+       |
+       +-- Document indexing
+       |     -> parse text PDFs in the backend
+       |     -> send images and scanned PDF pages through Redis (`redis`)
+       |     -> OCR worker (`ocr-worker`) reads shared uploads and returns text
+       |     -> redact and chunk text
+       |     -> Ollama (`ollama`) creates embeddings
+       |     -> PostgreSQL/pgvector (`postgres_db`) stores searchable chunks
+       |
+       +-- Posta Mitra chat
+             -> Ollama classifies the user intent
+             -> backend validates the intent
+             -> authorized record query
+                OR authorized pgvector document retrieval
+             -> Ollama writes summaries or document-grounded answers
+             -> frontend receives records and optional citations
 
-frontend chat -> backend AI endpoint -> Ollama
-                         |
-                         v
-                    PostgreSQL records
+pgAdmin (`pgadmin`) -> PostgreSQL/pgvector (`postgres_db`)
+                     development database administration only
 ```
-
-Services:
-
-- `frontend`: Vue app on `http://localhost:3000`
-- `backend`: NestJS API on `http://localhost:5001`
-- `ocr-worker`: background OCR processor
-- `postgres_db`: PostgreSQL database
-- `redis`: queue backend
-- `ollama`: local AI model server on `http://localhost:11434`
-- `pgadmin`: database admin UI on `http://localhost:8080`
 
 ## Screenshots
 
@@ -86,12 +110,6 @@ docker compose logs -f backend
 docker compose down
 ```
 
-For the AI assistant, pull the local model once after Compose starts:
-
-```sh
-docker compose exec ollama ollama pull llama3.2:3b
-```
-
 Open:
 
 - Frontend: `http://localhost:3000`
@@ -101,44 +119,15 @@ Open:
 
 ## AI Assistant
 
-Posta Mitra is the app’s first AI feature. It is a floating chat widget in the authenticated frontend layout.
-
-Current behavior:
-
-- The user asks a record-search question in plain language.
-- The backend sends the message to local Ollama.
-- Ollama returns a safe JSON intent and filters.
-- The backend validates those filters, applies auth rules, queries PostgreSQL, and returns compact record cards.
-
-The LLM does not query the database directly and does not generate SQL. See [AI Chat Module](backend/src/modules/ai-chat/README.md) for implementation details and future extension ideas.
-
-## Database
-
-Migration files live in `backend/database/migrations/`.
-
-```sh
-docker compose exec backend npm run migration:generate --name=<migration-name>
-docker compose exec backend npm run migration:run
-docker compose exec backend npm run seed
-```
-
-See [Database](docs/DATABASE.md) for the full workflow.
-
-## Production
-
-Production uses the existing Dockerfiles and `docker-compose.prod.yaml`:
-
-```sh
-docker compose -f docker-compose.prod.yaml up --build -d
-docker compose -f docker-compose.prod.yaml logs -f backend
-docker compose -f docker-compose.prod.yaml down
-```
-
-Production secrets belong in environment configuration and should never be committed.
+Posta Mitra supports natural-language record search, safe record summaries, and
+questions grounded in uploaded documents. The backend owns permissions and
+database queries; Ollama never receives direct database access. See the
+[AI module](backend/src/modules/ai/README.md) when changing AI behavior.
 
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
+- [Backend Modules](backend/README.md)
 - [Development](docs/DEVELOPMENT.md)
 - [Database](docs/DATABASE.md)
 - [Security](docs/SECURITY.md)

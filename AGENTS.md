@@ -117,6 +117,14 @@ Generate migrations in development only. Inspect the generated migration file be
 
 Testing is not a required acceptance step right now. Do not add or update `.spec.ts` files unless explicitly requested. Use focused build, lint, or container checks only when relevant and safe.
 
+## Documentation
+
+- Keep READMEs short, human-friendly, and scoped to their directory or module.
+- The root README is the project entry point; link to focused docs instead of duplicating their content.
+- Backend agents should start at `backend/README.md`, then read only the README nearest to the module being changed.
+- Put module responsibilities, boundaries, and local cautions in that module's README.
+- Put cross-system flows in `docs/ARCHITECTURE.md`; do not repeat them across module READMEs.
+
 ## Safety Rules
 
 - Never commit `.env`, production secrets, database dumps, real personal data, or generated credentials.
