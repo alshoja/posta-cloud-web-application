@@ -1,5 +1,10 @@
 # Posta Cloud
+![Posta Cloud records screen](https://github.com/user-attachments/assets/6df7fc33-0d4c-4753-a637-4a1124997674)
 
+<img width="2551" height="1311" alt="image" src="https://github.com/user-attachments/assets/2f71a0d8-8649-4e9e-92fc-b7bd630ad74f" />
+
+
+<img width="2281" height="1148" alt="image" src="https://github.com/user-attachments/assets/761cf6ea-ca41-4d19-9180-f08439d0937f" />
 Posta Cloud is a full-stack, Docker-managed record collection platform built with Vue 3, Vuetify, NestJS, PostgreSQL, Redis, OCR processing, and a local Ollama-powered AI assistant.
 
 I built this as a practical sample project for field-data workflows: users can store structured records for people in a local area, manage address and personal details, upload documents, use OCR support to reduce manual typing, and ask a local AI assistant to find records using natural language.
@@ -83,15 +88,6 @@ Backend API (`backend`, NestJS)
 pgAdmin (`pgadmin`) -> PostgreSQL/pgvector (`postgres_db`)
                      development database administration only
 ```
-
-## Screenshots
-
-![Posta Cloud records screen](https://github.com/user-attachments/assets/6df7fc33-0d4c-4753-a637-4a1124997674)
-
-<img width="2551" height="1311" alt="image" src="https://github.com/user-attachments/assets/2f71a0d8-8649-4e9e-92fc-b7bd630ad74f" />
-
-
-<img width="2281" height="1148" alt="image" src="https://github.com/user-attachments/assets/761cf6ea-ca41-4d19-9180-f08439d0937f" />
 
 ## Quick Start
 
