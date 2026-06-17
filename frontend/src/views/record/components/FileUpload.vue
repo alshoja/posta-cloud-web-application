@@ -39,8 +39,8 @@
                 border rounded="lg">
                 <template #prepend>
                     <v-avatar color="grey-lighten-4" rounded="lg" size="52">
-                        <v-img v-if="isImageFile(displayedExistingFileName)" :src="getAssetUrl(existingFileUrl)"
-                            cover />
+                        <AuthorizedImage v-if="isImageFile(displayedExistingFileName)" :src="existingFileUrl"
+                            alt="Uploaded image" />
                         <component :is="getFileIcon(displayedExistingFileName)" v-else size="22" />
                     </v-avatar>
                 </template>
@@ -72,6 +72,7 @@ import {
     UploadIcon,
 } from 'vue-tabler-icons';
 import { VFileUpload } from 'vuetify/labs/VFileUpload';
+import AuthorizedImage from '@/components/shared/AuthorizedImage.vue';
 
 const props = defineProps({
     rules: {
@@ -93,6 +94,10 @@ const props = defineProps({
     existingFileName: {
         type: String,
         default: '',
+    },
+    uploadPath: {
+        type: String,
+        required: true,
     },
 });
 const fileStore = useFileStore();
@@ -181,7 +186,7 @@ const uploadFile = async () => {
 
     try {
 
-        await fileStore.uploadFile(formData);
+        await fileStore.uploadFile(formData, props.uploadPath);
         const fileUrl = fileStore.fileUrl;
         emit('uploaded', fileUrl, file.name);
     } catch (error) {

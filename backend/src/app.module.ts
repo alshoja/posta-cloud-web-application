@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ServeStaticModule } from '@nestjs/serve-static';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -19,13 +18,6 @@ import { BullQueueModule } from './shared/bull-queue.module';
 
 @Module({
   imports: [
-    ServeStaticModule.forRoot({
-      rootPath: '/app/uploads',
-      serveStaticOptions: {
-        redirect: false,
-        index: false,
-      },
-    }),
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,

@@ -27,7 +27,13 @@ Frontend
       -> Ollama chat and embedding APIs
 ```
 
-Uploaded files live in the shared uploads directory. The backend queues document embedding after a document is saved. Images are sent to the OCR worker. PDFs are first checked for embedded text; scanned PDFs are rendered page by page in the backend and their temporary images are sent sequentially to the existing OCR worker.
+Uploaded files live in private MinIO buckets. Permanent documents and profile
+images use separate buckets, while autofill uploads and rendered scanned-PDF
+pages use a transient bucket with application-managed 24-hour cleanup. The
+backend queues document embedding after a document is saved. Images are sent to
+the OCR worker by private object reference. PDFs are first checked for embedded
+text; scanned PDFs are rendered page by page in the backend and their temporary
+images are sent sequentially to the OCR worker.
 
 ## Backend Structure
 

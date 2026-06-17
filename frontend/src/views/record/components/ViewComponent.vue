@@ -15,6 +15,7 @@ import type { RecordDetail } from '@/interfaces/record.interface';
 import DetailField from './DetailField.vue';
 import DetailSection from './DetailSection.vue';
 import FileViewer from './FileViewer.vue';
+import AuthorizedImage from '@/components/shared/AuthorizedImage.vue';
 
 interface NavigationItem {
     id: string;
@@ -80,7 +81,7 @@ const useDefaultProfileImage = () => {
         <v-card class="profile-header mb-3">
             <v-card-text class="profile-header__content d-flex flex-column flex-sm-row align-center ga-3">
                 <v-avatar size="76">
-                    <v-img :src="profileImage" cover @error="useDefaultProfileImage" />
+                    <AuthorizedImage :src="profileImage" alt="Profile image" @error="useDefaultProfileImage" />
                 </v-avatar>
 
                 <div class="flex-grow-1 text-center text-sm-left">

@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useRecordStore } from '@/stores/record';
 import { useSnackbarStore } from '@/stores/snackbar.store';
 import ViewComponent from '@/views/record/components/ViewComponent.vue';
+import AuthorizedImage from '@/components/shared/AuthorizedImage.vue';
 import _ from "lodash";
 import { computed, onMounted, ref, shallowRef, watch } from 'vue';
 import { useRouter } from 'vue-router';
@@ -294,11 +295,7 @@ onMounted(loadCurrentPage);
             <v-card v-for="item in serverItems" :key="item.id" class="record-card" variant="outlined">
                 <div class="record-card__identity" @click="openDialog(item)">
                     <v-avatar color="lightsecondary" size="52">
-                        <v-img v-if="item.profileImage" :src="getProfileImageUrl(item.profileImage)" cover>
-                            <template #error>
-                                <span class="record-card__initials">{{ getRecordInitials(item) }}</span>
-                            </template>
-                        </v-img>
+                        <AuthorizedImage v-if="item.profileImage" :src="item.profileImage" alt="Profile image" />
                         <span v-else class="record-card__initials">{{ getRecordInitials(item) }}</span>
                     </v-avatar>
                     <div class="record-card__person">

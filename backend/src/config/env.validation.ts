@@ -1,4 +1,10 @@
-const requiredEnvVars = ['JWT_SECRET', 'ENCRYPTION_KEY'];
+const requiredEnvVars = [
+  'JWT_SECRET',
+  'ENCRYPTION_KEY',
+  'S3_ENDPOINT',
+  'S3_BACKEND_ACCESS_KEY',
+  'S3_BACKEND_SECRET_KEY',
+];
 
 export function validateEnv(config: Record<string, unknown>) {
   const missingVars = requiredEnvVars.filter((key) => {

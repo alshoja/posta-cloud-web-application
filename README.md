@@ -74,7 +74,7 @@ Backend API (`backend`, NestJS)
        +-- Document indexing
        |     -> parse text PDFs in the backend
        |     -> send images and scanned PDF pages through Redis (`redis`)
-       |     -> OCR worker (`ocr-worker`) reads shared uploads and returns text
+       |     -> OCR worker (`ocr-worker`) downloads private MinIO objects and returns text
        |     -> redact and chunk text
        |     -> Ollama (`ollama`) creates embeddings
        |     -> PostgreSQL/pgvector (`postgres_db`) stores searchable chunks

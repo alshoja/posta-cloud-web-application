@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { XIcon } from 'vue-tabler-icons';
+import axiosInstance from '@/axiosInstance.interceptor';
 
 const props = defineProps<{
     isVisible: boolean;
@@ -27,6 +28,7 @@ const closeModal = () => {
 
 const getAssetUrl = (file: string) => {
     if (file.startsWith('blob:') || file.startsWith('data:')) return file;
+    if (file.startsWith('/api/')) return file;
 
     try {
         const fileUrl = new URL(file, window.location.origin);
@@ -36,15 +38,29 @@ const getAssetUrl = (file: string) => {
     }
 };
 
-const displayFile = (file: string) => {
+let objectUrl = '';
+const displayFile = async (file: string) => {
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+    objectUrl = '';
     imageUrl.value = undefined;
     pdfUrl.value = undefined;
     fileContent.value = undefined;
 
     if (!file) return;
 
-    const assetUrl = getAssetUrl(file);
-    const fileType = assetUrl.split('?')[0].split('.').pop()?.toLowerCase();
+    let assetUrl = getAssetUrl(file);
+    let responseType = '';
+    if (file.startsWith('/api/')) {
+        const response = await axiosInstance.get(file.replace(/^\/api/, ''), { responseType: 'blob' });
+        objectUrl = URL.createObjectURL(response.data);
+        assetUrl = objectUrl;
+        responseType = response.data.type;
+    }
+    const fileType = responseType === 'application/pdf'
+        ? 'pdf'
+        : responseType.startsWith('image/')
+            ? responseType.split('/')[1]
+            : file.split('?')[0].split('.').pop()?.toLowerCase();
     if (['jpeg', 'jpg', 'png', 'webp'].includes(fileType || '')) {
         imageUrl.value = assetUrl;
     } else if (fileType === 'pdf') {

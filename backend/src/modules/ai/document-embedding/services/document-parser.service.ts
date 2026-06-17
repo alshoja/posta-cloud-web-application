@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { basename, extname, join, resolve } from 'node:path';
-import { readFile, unlink, writeFile } from 'node:fs/promises';
+import { extname } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { OcrService } from '../../../../shared/services/ocr.service';
 import { ExtractedDocumentPage } from '../interfaces/extracted-document-page.interface';
+import { StorageService } from '../../../../shared/services/storage.service';
+import { TRANSIENT_BUCKET } from '../../../../shared/constants/storage.constants';
 
 const MAX_SCANNED_PDF_PAGES = 10;
 const MIN_MEANINGFUL_TEXT_LENGTH = 30;
@@ -13,24 +14,29 @@ type PdfDocument = Awaited<ReturnType<UnpdfModule['getDocumentProxy']>>;
 
 @Injectable()
 export class DocumentParserService {
-  private readonly uploadsRoot = resolve('/app/uploads');
   private unpdfModulePromise?: Promise<UnpdfModule>;
 
-  constructor(private readonly ocrService: OcrService) { }
+  constructor(
+    private readonly ocrService: OcrService,
+    private readonly storageService: StorageService,
+  ) { }
 
-  async extract(fileUrl: string): Promise<ExtractedDocumentPage[]> {
-    const filePath = this.getSafeUploadedFilePath(fileUrl);
-    const extension = extname(filePath).toLowerCase();
+  async extract(storageReference: string): Promise<ExtractedDocumentPage[]> {
+    const parsed = this.storageService.parseReference(storageReference);
+    if (!parsed) {
+      throw new Error('Invalid stored document reference');
+    }
+    const extension = extname(parsed.key).toLowerCase();
 
     if (extension === '.pdf') {
-      return this.parsePdf(filePath);
+      return this.parsePdf(storageReference);
     }
     // if its a direct image file, we can directly send it to OCR without going through the PDF parsing logic
     if (['.png', '.jpg', '.jpeg', '.webp', '.bmp', '.tif', '.tiff'].includes(extension)) {
       return [
         {
           pageNumber: 1,
-          text: await this.ocrService.extractImageText(filePath),
+          text: await this.ocrService.extractImageText(storageReference),
         },
       ];
     }
@@ -38,9 +44,14 @@ export class DocumentParserService {
     throw new Error('Unsupported document type');
   }
 
-  private async parsePdf(filePath: string): Promise<ExtractedDocumentPage[]> {
+  private async parsePdf(storageReference: string): Promise<ExtractedDocumentPage[]> {
     const unpdf = await this.loadUnpdfModule();
-    const pdfBuffer = new Uint8Array(await readFile(filePath));
+    const storedObject = await this.storageService.get(storageReference);
+    const chunks: Buffer[] = [];
+    for await (const chunk of storedObject.body) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+    const pdfBuffer = new Uint8Array(Buffer.concat(chunks));
     const pdf = await unpdf.getDocumentProxy(pdfBuffer);
 
     try {
@@ -79,21 +90,24 @@ export class DocumentParserService {
         canvasImport: () => import('@napi-rs/canvas'),
         scale: 2,
       });
-      const tempPath = join(
-        this.uploadsRoot,
-        `.rag-${randomUUID()}-${pageNumber}.png`,
-      );
+      const key = `document-pages/${randomUUID()}-${pageNumber}.png`;
+      let reference: string | undefined;
 
       try {
-        await writeFile(tempPath, new Uint8Array(image));
+        reference = await this.storageService.uploadBuffer(
+          TRANSIENT_BUCKET,
+          key,
+          new Uint8Array(image),
+          'image/png',
+        );
         ocrPages.push({
           pageNumber,
           text: this.normalizeText(
-            await this.ocrService.extractImageText(tempPath),
+            await this.ocrService.extractImageText(reference, true),
           ),
         });
       } finally {
-        await unlink(tempPath).catch(() => undefined);
+        await this.storageService.delete(reference).catch(() => undefined);
       }
     }
 
@@ -118,23 +132,6 @@ export class DocumentParserService {
     });
 
     return this.unpdfModulePromise;
-  }
-
-  private getSafeUploadedFilePath(fileUrl: string): string {
-    let pathname = fileUrl;
-    try {
-      pathname = new URL(fileUrl).pathname;
-    } catch {
-      pathname = fileUrl;
-    }
-
-    const filename = basename(decodeURIComponent(pathname));
-    const filePath = resolve(this.uploadsRoot, filename);
-    if (!filePath.startsWith(`${this.uploadsRoot}/`)) {
-      throw new Error('Invalid uploaded document path');
-    }
-
-    return filePath;
   }
 
   private hasMeaningfulText(pages: ExtractedDocumentPage[]): boolean {

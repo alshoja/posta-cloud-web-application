@@ -8,6 +8,8 @@ import {
   OCR_QUEUE,
 } from '../constants/queue.constants';
 import { BullQueueEventsService } from './bull-queue-events.service';
+import { StorageService } from './storage.service';
+import { TRANSIENT_BUCKET } from '../constants/storage.constants';
 
 const OCR_WORKER_HEARTBEAT_KEY = 'ocr_worker:heartbeat';
 
@@ -17,20 +19,35 @@ export class OcrService {
     @InjectQueue(OCR_QUEUE) private ocrQueue: Queue,
     private redisService: RedisService,
     private readonly bullQueueEventsService: BullQueueEventsService,
+    private readonly storageService: StorageService,
   ) {}
 
-  async uploadAndQueue(file: Express.Multer.File, documentType?: string) {
+  async uploadAndQueue(
+    file: Express.Multer.File,
+    userId: number,
+    documentType?: string,
+  ) {
+    const key = this.storageService.createAutofillKey(
+      userId,
+      file.originalname,
+    );
+    const reference = await this.storageService.upload(TRANSIENT_BUCKET, key, file);
     const job = await this.ocrQueue.add(OCR_IDENTITY_EXTRACTION_JOB, {
-      filePath: `/app/uploads/${file.filename}`,
+      storageReference: reference,
+      deleteAfterProcessing: true,
       documentType,
     });
 
     return { jobId: job.id };
   }
 
-  async extractImageText(filePath: string): Promise<string> {
+  async extractImageText(
+    storageReference: string,
+    deleteAfterProcessing = false,
+  ): Promise<string> {
     const job = await this.ocrQueue.add(OCR_IMAGE_TEXT_EXTRACTION_JOB, {
-      filePath,
+      storageReference,
+      deleteAfterProcessing,
     });
     
     const result = await this.bullQueueEventsService.waitForJob<{ text?: string }>(

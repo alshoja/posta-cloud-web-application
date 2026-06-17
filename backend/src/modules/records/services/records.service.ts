@@ -27,6 +27,13 @@ import { Document } from '../entities/document.entity';
 import { Policy } from '../entities/policy.entity';
 import { RecordStatus } from '../enums/record-status.enum';
 import { Record as RecordEntity } from '../entities/record.entity';
+import { StorageService } from 'src/shared/services/storage.service';
+import {
+  PROFILE_IMAGES_BUCKET,
+  RECORD_DOCUMENTS_BUCKET,
+  TRANSIENT_BUCKET,
+} from 'src/shared/constants/storage.constants';
+import { StoredObjectStream } from 'src/shared/interfaces/stored-object.interface';
 
 
 @Injectable({ scope: Scope.REQUEST })
@@ -38,6 +45,7 @@ export class RecordsService {
     private readonly recordRepository: Repository<RecordEntity>,
     private dataSource: DataSource,
     private readonly documentIngestionQueueService: DocumentIngestionQueueService,
+    private readonly storageService: StorageService,
   ) {}
 
   async createStepOne(
@@ -48,14 +56,22 @@ export class RecordsService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
+    let createdProfileReference: string | undefined;
+    let stagingProfileReference: string | undefined;
+    let previousProfileReference: string | undefined;
     try {
       let recordId: number;
       const userId = this.request.user.sub;
       const recordRepository = queryRunner.manager.getRepository(RecordEntity);
       const action = this.determineStepSubmissionAction(stepOneDto.status, 1);
-      const { status: _status, ...stepOnePayload } = stepOneDto;
+      const {
+        status: _status,
+        profileImage: submittedProfileImage,
+        ...stepOnePayload
+      } = stepOneDto;
       const createPayload = {
         ...stepOnePayload,
+        profileImage: null,
         userId,
         createdBy: userId,
         updatedBy: userId,
@@ -69,9 +85,22 @@ export class RecordsService {
 
       if (existingRecord) {
         this.ensureRecordEditable(existingRecord);
+        previousProfileReference = existingRecord.profileImage;
+        const promoted = await this.promoteProfileImage(
+          submittedProfileImage,
+          userId,
+          existingRecord.id,
+          existingRecord.profileImage,
+        );
+        createdProfileReference = promoted.createdReference;
+        stagingProfileReference = promoted.stagingReference;
         await recordRepository.update(
           { id: stepOneDto.id, userId },
-          { ...stepOnePayload, updatedBy: userId },
+          {
+            ...stepOnePayload,
+            profileImage: promoted.reference,
+            updatedBy: userId,
+          },
         );
         recordId = existingRecord.id;
       } else if (stepOneDto.id) {
@@ -81,11 +110,29 @@ export class RecordsService {
       } else {
         const newRecord = await recordRepository.insert(createPayload);
         recordId = newRecord.identifiers[0].id;
+        const promoted = await this.promoteProfileImage(
+          submittedProfileImage,
+          userId,
+          recordId,
+        );
+        createdProfileReference = promoted.createdReference;
+        stagingProfileReference = promoted.stagingReference;
+        await recordRepository.update(
+          { id: recordId, userId },
+          { profileImage: promoted.reference },
+        );
       }
 
       await this.applyStepAction(recordRepository, recordId, 1, action, userId);
       const record = await recordRepository.findOneOrFail({ where: { id: recordId } });
       await queryRunner.commitTransaction();
+      await this.storageService.delete(stagingProfileReference).catch(() => undefined);
+      if (
+        previousProfileReference &&
+        previousProfileReference !== record.profileImage
+      ) {
+        await this.storageService.delete(previousProfileReference).catch(() => undefined);
+      }
       return {
         id: recordId,
         status: record.status,
@@ -94,6 +141,7 @@ export class RecordsService {
     } catch (err) {
       console.log('Rolling Back ', err);
       await queryRunner.rollbackTransaction();
+      await this.storageService.delete(createdProfileReference).catch(() => undefined);
       throw err;
     } finally {
       await queryRunner.release();
@@ -319,17 +367,33 @@ export class RecordsService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
+    let removedDocumentReferences: string[] = [];
     try {
       const existingRecord = await this.findOne(recordsId);
       this.ensureRecordEditable(existingRecord);
       const userId = this.request.user.sub;
       const action = this.determineStepSubmissionAction(stepSixDto.status, 6);
-      const _document = stepSixDto.documents.map((document) => ({
-        name: document.name?.trim() ? document.name : null,
-        file: document.file?.trim() ? document.file : null,
-        mimeType: this.getDocumentMimeType(document.file),
-        recordsId,
-      }));
+      const existingDocuments = existingRecord.documents ?? [];
+      const _document = await Promise.all(
+        stepSixDto.documents.map(async (document) => {
+          const file = await this.normalizeDocumentReference(
+            document.file,
+            existingRecord.userId,
+            recordsId,
+            existingDocuments,
+          );
+          return {
+            name: document.name?.trim() ? document.name : null,
+            file,
+            mimeType: this.getDocumentMimeType(file),
+            recordsId,
+          };
+        }),
+      );
+      const retainedReferences = new Set(_document.map((document) => document.file));
+      removedDocumentReferences = existingDocuments
+        .map((document) => document.file)
+        .filter((file) => file && !retainedReferences.has(file));
       const documentRepository = queryRunner.manager.getRepository(Document);
       const recordRepository = queryRunner.manager.getRepository(RecordEntity);
       await documentRepository.delete({ recordsId });
@@ -341,6 +405,7 @@ export class RecordsService {
       const record = await recordRepository.findOneOrFail({ where: { id: recordsId } });
 
       await queryRunner.commitTransaction();
+      await this.storageService.deleteMany(removedDocumentReferences);
       await this.documentIngestionQueueService
         .queueDocuments(
           insertedDocuments.identifiers.map((identifier) => identifier.id),
@@ -434,7 +499,8 @@ export class RecordsService {
         query.andWhere('record.status = :status', { status });
       }
 
-      const [data, total] = await query.getManyAndCount();
+      const [records, total] = await query.getManyAndCount();
+      const data = records.map((record) => this.toPublicRecord(record));
 
       return { data, total };
     } catch (err) {
@@ -460,6 +526,10 @@ export class RecordsService {
     return record;
   }
 
+  async findOnePublic(id: number): Promise<RecordEntity> {
+    return this.toPublicRecord(await this.findOne(id));
+  }
+
   async findOneByEmail(email: string): Promise<RecordEntity> {
     try {
       const record = await this.recordRepository.findOne({ where: { email } });
@@ -479,10 +549,21 @@ export class RecordsService {
   async remove(id: number): Promise<void> {
     const userId = this.request.user.sub;
     try {
+      const record = await this.recordRepository.findOne({
+        where: { id, userId },
+        relations: ['documents'],
+      });
+      if (!record) {
+        throw new NotFoundException(`Record with ID ${id} not found`);
+      }
       const result = await this.recordRepository.delete({ id, userId });
       if (result.affected === 0) {
         throw new NotFoundException(`Record with ID ${id} not found`);
       }
+      await this.storageService.deleteMany([
+        record.profileImage,
+        ...(record.documents ?? []).map((document) => document.file),
+      ]);
     } catch (err) {
       if (err instanceof HttpException) {
         throw err;
@@ -524,6 +605,53 @@ export class RecordsService {
     const documentIds = (record.documents ?? []).map((document) => document.id);
     await this.documentIngestionQueueService.queueDocuments(documentIds);
     return { queued: documentIds.length };
+  }
+
+  async uploadDocument(
+    recordId: number,
+    file: Express.Multer.File,
+  ): Promise<{ url: string }> {
+    const record = await this.findOne(recordId);
+    this.ensureRecordEditable(record);
+    const key = this.storageService.createDocumentKey(
+      record.userId,
+      recordId,
+      file.originalname,
+    );
+    await this.storageService.upload(RECORD_DOCUMENTS_BUCKET, key, file);
+    return { url: `/api/records/${recordId}/document-uploads/${key.split('/').pop()}` };
+  }
+
+  async getProfileImage(recordId: number): Promise<StoredObjectStream> {
+    const record = await this.findOne(recordId);
+    if (!this.storageService.parseReference(record.profileImage)) {
+      throw new NotFoundException('Profile image not found');
+    }
+    return this.storageService.get(record.profileImage);
+  }
+
+  async getDocumentUpload(
+    recordId: number,
+    uploadId: string,
+  ): Promise<StoredObjectStream> {
+    const record = await this.findOne(recordId);
+    const reference = this.storageService.toReference(
+      RECORD_DOCUMENTS_BUCKET,
+      `users/${record.userId}/records/${recordId}/documents/${uploadId}`,
+    );
+    return this.storageService.get(reference);
+  }
+
+  async getDocumentFile(
+    recordId: number,
+    documentId: number,
+  ): Promise<StoredObjectStream> {
+    const record = await this.findOne(recordId);
+    const document = (record.documents ?? []).find((item) => item.id === documentId);
+    if (!document || !this.storageService.parseReference(document.file)) {
+      throw new NotFoundException('Document file not found');
+    }
+    return this.storageService.get(document.file);
   }
 
   private determineStepSubmissionAction(
@@ -580,6 +708,128 @@ export class RecordsService {
       '.tiff': 'image/tiff',
     };
     return mimeTypes[extension] ?? null;
+  }
+
+  private async promoteProfileImage(
+    submittedProfileImage: string | undefined,
+    userId: number,
+    recordId: number,
+    currentReference?: string,
+  ): Promise<{
+    reference: string | null;
+    createdReference?: string;
+    stagingReference?: string;
+  }> {
+    if (!submittedProfileImage) {
+      return { reference: null };
+    }
+    if (
+      submittedProfileImage === `/api/records/${recordId}/profile-image` ||
+      submittedProfileImage === currentReference
+    ) {
+      return { reference: currentReference ?? null };
+    }
+
+    const uploadId = submittedProfileImage
+      .split('?')[0]
+      .split('/')
+      .pop();
+    if (!uploadId) {
+      throw new BadRequestException('Invalid staged profile image');
+    }
+    const stagingKey = `profile-staging/users/${userId}/${uploadId}`;
+    const stagingReference = this.storageService.toReference(
+      TRANSIENT_BUCKET,
+      stagingKey,
+    );
+    this.storageService.assertReferencePrefix(
+      stagingReference,
+      TRANSIENT_BUCKET,
+      `profile-staging/users/${userId}/`,
+    );
+    if (!(await this.storageService.exists(stagingReference))) {
+      throw new BadRequestException('Staged profile image was not found');
+    }
+    const destinationKey = this.storageService.createProfileKey(
+      userId,
+      recordId,
+      uploadId,
+    );
+    const createdReference = await this.storageService.copy(
+      stagingReference,
+      PROFILE_IMAGES_BUCKET,
+      destinationKey,
+    );
+    return {
+      reference: createdReference,
+      createdReference,
+      stagingReference,
+    };
+  }
+
+  private async normalizeDocumentReference(
+    submittedReference: string | undefined,
+    userId: number,
+    recordId: number,
+    existingDocuments: Document[],
+  ): Promise<string | null> {
+    if (!submittedReference) {
+      return null;
+    }
+
+    const existingMatch = submittedReference.match(
+      new RegExp(`^/api/records/${recordId}/documents/(\\d+)/file$`),
+    );
+    if (existingMatch) {
+      const document = existingDocuments.find(
+        (item) => item.id === Number(existingMatch[1]),
+      );
+      if (!document?.file) {
+        throw new BadRequestException('Existing document was not found');
+      }
+      return document.file;
+    }
+
+    const uploadMatch = submittedReference.match(
+      new RegExp(`^/api/records/${recordId}/document-uploads/([^/?]+)$`),
+    );
+    const reference = uploadMatch
+      ? this.storageService.toReference(
+          RECORD_DOCUMENTS_BUCKET,
+          `users/${userId}/records/${recordId}/documents/${uploadMatch[1]}`,
+        )
+      : submittedReference;
+
+    try {
+      this.storageService.assertReferencePrefix(
+        reference,
+        RECORD_DOCUMENTS_BUCKET,
+        `users/${userId}/records/${recordId}/documents/`,
+      );
+    } catch {
+      throw new BadRequestException('Invalid document storage reference');
+    }
+    if (!(await this.storageService.exists(reference))) {
+      throw new BadRequestException('Uploaded document was not found');
+    }
+    return reference;
+  }
+
+  private toPublicRecord(record: RecordEntity): RecordEntity {
+    const publicRecord = Object.assign(
+      Object.create(Object.getPrototypeOf(record)),
+      record,
+    ) as RecordEntity;
+    publicRecord.profileImage = record.profileImage
+      ? `/api/records/${record.id}/profile-image`
+      : record.profileImage;
+    publicRecord.documents = (record.documents ?? []).map((document) => ({
+      ...document,
+      file: document.file
+        ? `/api/records/${record.id}/documents/${document.id}/file`
+        : document.file,
+    })) as typeof record.documents;
+    return publicRecord;
   }
 
   private async applyStepAction(

@@ -3,13 +3,15 @@ import { Job } from 'bullmq';
 import * as tesseract from 'tesseract.js';
 import { promises as fs } from 'node:fs';
 import { RedisService } from './redis.service';
+import { StorageService } from './storage.service';
 import {
   OCR_IDENTITY_EXTRACTION_JOB,
   OCR_IMAGE_TEXT_EXTRACTION_JOB,
 } from './queue.constants';
 
 type OcrJobData = {
-  filePath?: string;
+  storageReference?: string;
+  deleteAfterProcessing?: boolean;
   userId?: string;
   documentType?: IdentityDocumentType;
 };
@@ -39,20 +41,24 @@ type IdentityDocumentParseResult = {
 
 @Processor(process.env.OCR_QUEUE_NAME, { concurrency: 1 })
 export class OcrProcessor extends WorkerHost {
-  constructor(private redisService: RedisService) {
+  constructor(
+    private redisService: RedisService,
+    private readonly storageService: StorageService,
+  ) {
     super();
   }
 
   async process(job: Job<OcrJobData>): Promise<any> {
-    const { filePath, documentType } = job.data || {};
+    const { storageReference, deleteAfterProcessing, documentType } = job.data || {};
     const redis = this.redisService.getClient();
+    let filePath: string | undefined;
 
     try {
-      if (!filePath) {
-        throw new Error('Missing file path in OCR job payload');
+      if (!storageReference) {
+        throw new Error('Missing storage reference in OCR job payload');
       }
 
-      await fs.access(filePath);
+      filePath = await this.storageService.downloadToTempFile(storageReference);
 
       switch (job.name) {
         case OCR_IDENTITY_EXTRACTION_JOB: {
@@ -98,6 +104,15 @@ export class OcrProcessor extends WorkerHost {
         3600,
       );
       return null;
+    } finally {
+      if (filePath) {
+        await fs.unlink(filePath).catch(() => undefined);
+      }
+      if (deleteAfterProcessing && storageReference) {
+        await this.storageService.delete(storageReference).catch((error) => {
+          console.error(`Failed to delete transient OCR object for job ${job.id}:`, error);
+        });
+      }
     }
   }
 

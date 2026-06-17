@@ -61,18 +61,76 @@ services:
     networks:
       - common-net
 
+  minio:
+    image: ${MINIO_IMAGE:-quay.io/minio/aistor/minio:latest}
+    container_name: posta_cloud_minio
+    command: server /data --console-address ":9001" --license /minio.license
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio-data:/data
+      - ./secrets/minio.license:/minio.license:ro
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+    logging: *default-logging
+    networks:
+      - common-net
+
+  minio-init:
+    image: quay.io/minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    volumes:
+      - ./minio/policies:/policies:ro
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+      - S3_BACKEND_ACCESS_KEY=${S3_BACKEND_ACCESS_KEY}
+      - S3_BACKEND_SECRET_KEY=${S3_BACKEND_SECRET_KEY}
+      - S3_OCR_ACCESS_KEY=${S3_OCR_ACCESS_KEY}
+      - S3_OCR_SECRET_KEY=${S3_OCR_SECRET_KEY}
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        set -e
+        mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"
+        mc mb --ignore-existing local/posta-record-documents local/posta-profile-images local/posta-transient
+        mc anonymous set none local/posta-record-documents
+        mc anonymous set none local/posta-profile-images
+        mc anonymous set none local/posta-transient
+        mc admin accesskey create local/ "$$MINIO_ROOT_USER" --access-key "$$S3_BACKEND_ACCESS_KEY" --secret-key "$$S3_BACKEND_SECRET_KEY" --policy /policies/backend.json || true
+        mc admin accesskey create local/ "$$MINIO_ROOT_USER" --access-key "$$S3_OCR_ACCESS_KEY" --secret-key "$$S3_OCR_SECRET_KEY" --policy /policies/ocr-worker.json || true
+    networks:
+      - common-net
+
   ocr-worker:
     build: ./ocr-worker
     container_name: ocr_worker
     depends_on:
-      - redis
+      redis:
+        condition: service_started
+      minio-init:
+        condition: service_completed_successfully
     volumes:
       - ./ocr-worker:/app
-      - ./backend/uploads:/app/uploads
     environment:
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
       - OCR_QUEUE_NAME=${OCR_QUEUE_NAME}
+      - S3_ENDPOINT=http://minio:9000
+      - S3_REGION=${S3_REGION:-us-east-1}
+      - S3_OCR_ACCESS_KEY=${S3_OCR_ACCESS_KEY}
+      - S3_OCR_SECRET_KEY=${S3_OCR_SECRET_KEY}
     networks:
       - common-net
 
@@ -101,7 +159,6 @@ services:
       - "5001:5001"
     volumes:
       - ./backend:/app
-      - ./backend/uploads:/app/uploads
       - /app/node_modules
     environment:
       - BASE_URL=${VITE_ASSET_URL}
@@ -122,10 +179,19 @@ services:
       - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2:3b}
       - OLLAMA_EMBEDDING_MODEL=${OLLAMA_EMBEDDING_MODEL:-embeddinggemma}
       - AI_CHAT_ENABLED=${AI_CHAT_ENABLED:-true}
+      - S3_ENDPOINT=http://minio:9000
+      - S3_REGION=${S3_REGION:-us-east-1}
+      - S3_BACKEND_ACCESS_KEY=${S3_BACKEND_ACCESS_KEY}
+      - S3_BACKEND_SECRET_KEY=${S3_BACKEND_SECRET_KEY}
     depends_on:
-      - postgres_db
-      - redis
-      - ollama
+      postgres_db:
+        condition: service_started
+      redis:
+        condition: service_started
+      ollama:
+        condition: service_started
+      minio-init:
+        condition: service_completed_successfully
     networks:
       - common-net
 
@@ -134,3 +200,5 @@ volumes:
     name: posta_cloud_db_data
   pgadmin-data:
   ollama-data:
+  minio-data:
+    name: posta_cloud_minio_data

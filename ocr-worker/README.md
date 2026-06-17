@@ -1,6 +1,6 @@
 # OCR Worker
 
-The OCR worker is a containerized NestJS-style service that consumes Redis OCR jobs and reads uploaded files from the backend uploads volume.
+The OCR worker is a containerized NestJS-style service that consumes Redis OCR jobs and downloads files from private MinIO buckets.
 
 ## Docker Workflow
 
@@ -12,12 +12,8 @@ docker compose logs -f ocr-worker
 docker compose exec ocr-worker sh
 ```
 
-The development compose file mounts:
-
-- `./ocr-worker:/app`
-- `./backend/uploads:/app/uploads`
-
-This lets the worker process files uploaded by the backend while keeping code changes visible in the repository.
+The development compose file mounts `./ocr-worker:/app`. MinIO access uses the
+restricted `S3_OCR_ACCESS_KEY` and `S3_OCR_SECRET_KEY` credentials.
 
 ## Key Paths
 

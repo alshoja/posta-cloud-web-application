@@ -1,16 +1,15 @@
 import axiosInstance from '@/axiosInstance.interceptor'
 import { defineStore } from 'pinia'
 
-const baseUrl = `${import.meta.env.VITE_API_URL}/upload`
 const ocrBaseUrl = `${import.meta.env.VITE_API_URL}/extract/text`
 export const useFileStore = defineStore('File', {
   state: () => ({
     fileUrl: ''
   }),
   actions: {
-    async uploadFile(formData: FormData) {
+    async uploadFile(formData: FormData, uploadPath: string) {
       try {
-        const response = await axiosInstance.post(baseUrl, formData, {
+        const response = await axiosInstance.post(uploadPath, formData, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }

@@ -640,6 +640,7 @@ const viewDocument = (index: number) => {
 
 const getDocumentAssetUrl = (file: string) => {
     if (file.startsWith('blob:') || file.startsWith('data:')) return file;
+    if (file.startsWith('/api/')) return file.replace(/^\/api/, '');
 
     const assetBaseUrl = import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '');
     try {
@@ -704,7 +705,7 @@ const downloadDocument = async (index: number) => {
                                 </v-col>
                                 <v-col cols="12" sm class="step-one-profile-upload">
                                     <FileUpload :label="`Upload Profile Image`" :accept="'image/jpeg, image/png'"
-                                        :rules="[]" @uploaded="setUploadUrl" />
+                                        :rules="[]" upload-path="/uploads/profile-staging" @uploaded="setUploadUrl" />
                                 </v-col>
                             </v-row>
                         </v-card-text>
@@ -1304,6 +1305,7 @@ const downloadDocument = async (index: number) => {
                                                 <v-col cols="12">
                                                     <FileUpload label="Upload Document"
                                                         :rules="[validationRules.required]"
+                                                        :upload-path="`/records/${route.params.recordId}/documents/upload`"
                                                         :existing-file-url="document.file"
                                                         @uploaded="(fileUrl, fileName) => setUploadUrlForDoc(fileUrl, fileName, index)"
                                                         @cleared="clearUploadForDoc(index)" />

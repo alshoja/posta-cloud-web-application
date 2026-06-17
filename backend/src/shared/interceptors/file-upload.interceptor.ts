@@ -1,16 +1,10 @@
 import {
   FileInterceptor,
 } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
+import { memoryStorage } from 'multer';
 
-export function UploadInterceptor(fieldName: string, destination = './uploads') {
+export function UploadInterceptor(fieldName: string) {
   return FileInterceptor(fieldName, {
-    storage: diskStorage({
-      destination,
-      filename: (req, file, callback) => {
-        const uniqueName = `${Date.now()}-${file.originalname}`;
-        callback(null, uniqueName);
-      },
-    }),
+    storage: memoryStorage(),
   });
 }

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { OcrProcessor } from './ocr.processor';
 import { RedisModule } from './redis.module';
+import { StorageService } from './storage.service';
 
 @Module({
   imports: [
@@ -26,6 +27,6 @@ import { RedisModule } from './redis.module';
     }),
   ],
   exports: [],
-  providers: [OcrProcessor],
+  providers: [OcrProcessor, StorageService],
 })
 export class WorkerModule {}

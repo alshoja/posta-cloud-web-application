@@ -28,6 +28,7 @@
     "migration:show": "npm run typeorm -- migration:show -d ./database/typeorm.config.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1064.0",
     "@faker-js/faker": "^9.4.0",
     "@napi-rs/canvas": "^0.1.100",
     "@nestjs/bullmq": "^11.0.4",
@@ -37,7 +38,6 @@
     "@nestjs/jwt": "^11.0.0",
     "@nestjs/mapped-types": "*",
     "@nestjs/platform-express": "^11.0.6",
-    "@nestjs/serve-static": "^5.0.1",
     "@nestjs/throttler": "^6.5.0",
     "@nestjs/typeorm": "^11.0.0",
     "bcrypt": "^5.1.1",
