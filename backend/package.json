@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1064.0",
+    "@elastic/elasticsearch": "^8.17.0",
     "@faker-js/faker": "^9.4.0",
     "@napi-rs/canvas": "^0.1.100",
     "@nestjs/bullmq": "^11.0.4",

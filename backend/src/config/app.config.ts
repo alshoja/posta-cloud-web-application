@@ -24,4 +24,11 @@ export default registerAs('config', () => ({
   ollamaModel: process.env.OLLAMA_MODEL || 'llama3.2:3b',
   ollamaEmbeddingModel: process.env.OLLAMA_EMBEDDING_MODEL || 'embeddinggemma',
   aiChatEnabled: readBooleanEnv(process.env.AI_CHAT_ENABLED, true),
+  documentSearchBm25Enabled: readBooleanEnv(
+    process.env.DOCUMENT_SEARCH_BM25_ENABLED,
+    false,
+  ),
+  elasticsearchNode:
+    process.env.ELASTICSEARCH_NODE || 'http://elasticsearch:9200',
+  elasticsearchIndex: process.env.ELASTICSEARCH_INDEX || 'document_chunks',
 }));

@@ -29,6 +29,19 @@ services:
     networks:
       - common-net
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
+    restart: always
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    logging: *default-logging
+    networks:
+      - common-net
+
   ollama:
     image: ollama/ollama:latest
     restart: always
@@ -114,6 +127,9 @@ services:
       - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2:3b}
       - OLLAMA_EMBEDDING_MODEL=${OLLAMA_EMBEDDING_MODEL:-embeddinggemma}
       - AI_CHAT_ENABLED=${AI_CHAT_ENABLED:-true}
+      - DOCUMENT_SEARCH_BM25_ENABLED=${DOCUMENT_SEARCH_BM25_ENABLED:-false}
+      - ELASTICSEARCH_NODE=${ELASTICSEARCH_NODE:-http://elasticsearch:9200}
+      - ELASTICSEARCH_INDEX=${ELASTICSEARCH_INDEX:-document_chunks}
       - S3_ENDPOINT=http://minio:9000
       - S3_REGION=${S3_REGION:-us-east-1}
       - S3_BACKEND_ACCESS_KEY=${S3_BACKEND_ACCESS_KEY}
@@ -122,6 +138,8 @@ services:
       postgres_db:
         condition: service_started
       redis:
+        condition: service_started
+      elasticsearch:
         condition: service_started
       ollama:
         condition: service_started
@@ -173,5 +191,7 @@ volumes:
   db-data:
     name: posta_cloud_prod_db_data
   ollama-data:
+  elasticsearch-data:
+    name: posta_cloud_prod_elasticsearch_data
   minio-data:
     name: posta_cloud_prod_minio_data
