@@ -37,8 +37,21 @@ export class EncryptionUtility {
     return `${iv.toString('base64')}:${encrypted}`;
   }
 
+  static isEncrypted(value: string): boolean {
+    const [iv, data, ...extraParts] = value.split(':');
+    if (!iv || !data || extraParts.length > 0) {
+      return false;
+    }
+
+    return Buffer.from(iv, 'base64').length === EncryptionUtility.IV_LENGTH;
+  }
+
   // Decrypt text using AES-256-CBC
   static decrypt(encrypted: string): string {
+    if (!EncryptionUtility.isEncrypted(encrypted)) {
+      return encrypted;
+    }
+
     const [iv, data] = encrypted.split(':');
     const decipher = crypto.createDecipheriv(
       'aes-256-cbc',

@@ -169,11 +169,11 @@ export class RecordsService {
       );
 
       if (hasStepTwoValues) {
-        const newRecord = recordRepository.create(stepTwoPayload);
-        await recordRepository.update(
-          { id: recordsId },
-          { ...newRecord, updatedBy: userId },
-        );
+        const recordToUpdate = await recordRepository.findOneOrFail({
+          where: { id: recordsId },
+        });
+        Object.assign(recordToUpdate, stepTwoPayload, { updatedBy: userId });
+        await recordRepository.save(recordToUpdate);
       }
       await this.applyStepAction(recordRepository, recordsId, 2, action, userId);
       const record = await recordRepository.findOneOrFail({ where: { id: recordsId } });

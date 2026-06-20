@@ -206,16 +206,25 @@ export class Record {
   @BeforeInsert()
   @BeforeUpdate()
   async encryptSensitiveInformation() {
-    if (this.aadhaarNumber && !this.aadhaarNumber.startsWith('iv:')) {
+    if (
+      this.aadhaarNumber &&
+      !EncryptionUtility.isEncrypted(this.aadhaarNumber)
+    ) {
       this.aadhaarNumber = EncryptionUtility.encrypt(this.aadhaarNumber);
     }
-    if (this.electionID && !this.electionID.startsWith('iv:')) {
+    if (this.electionID && !EncryptionUtility.isEncrypted(this.electionID)) {
       this.electionID = EncryptionUtility.encrypt(this.electionID);
     }
-    if (this.passportNumber && !this.passportNumber.startsWith('iv:')) {
+    if (
+      this.passportNumber &&
+      !EncryptionUtility.isEncrypted(this.passportNumber)
+    ) {
       this.passportNumber = EncryptionUtility.encrypt(this.passportNumber);
     }
-    if (this.drivingLicense && !this.drivingLicense.startsWith('iv:')) {
+    if (
+      this.drivingLicense &&
+      !EncryptionUtility.isEncrypted(this.drivingLicense)
+    ) {
       this.drivingLicense = EncryptionUtility.encrypt(this.drivingLicense);
     }
   }
