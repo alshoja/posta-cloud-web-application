@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Client } from '@elastic/elasticsearch';
+import { Client, estypes } from '@elastic/elasticsearch';
 
 @Injectable()
 export class ElasticsearchService implements OnModuleInit {
@@ -30,7 +30,9 @@ export class ElasticsearchService implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     if (!this.enabled) {
-      this.logger.log('BM25 search is disabled; Elasticsearch client is not active.');
+      this.logger.log(
+        'BM25 search is disabled; Elasticsearch client is not active.',
+      );
       return;
     }
 
@@ -39,6 +41,7 @@ export class ElasticsearchService implements OnModuleInit {
       this.logger.log(
         `Elasticsearch is reachable at ${this.node}; using index "${this.indexName}".`,
       );
+      await this.ensureDocumentChunkIndex();
       return;
     }
 
@@ -55,6 +58,28 @@ export class ElasticsearchService implements OnModuleInit {
     return this.indexName;
   }
 
+  async ensureDocumentChunkIndex(): Promise<void> {
+    if (!this.client) {
+      return;
+    }
+
+    const exists = await this.client.indices.exists({
+      index: this.indexName,
+    });
+
+    if (exists) {
+      this.logger.log(`Elasticsearch index "${this.indexName}" already exists.`);
+      return;
+    }
+
+    await this.client.indices.create({
+      index: this.indexName,
+      mappings: this.getDocumentChunkIndexMapping(),
+    });
+
+    this.logger.log(`Elasticsearch index "${this.indexName}" created.`);
+  }
+
   async ping(): Promise<boolean> {
     if (!this.client) {
       return false;
@@ -65,5 +90,38 @@ export class ElasticsearchService implements OnModuleInit {
     } catch {
       return false;
     }
+  }
+
+  private getDocumentChunkIndexMapping(): estypes.MappingTypeMapping {
+    const searchableTextField: estypes.MappingProperty = {
+      type: 'text',
+      fields: {
+        keyword: {
+          type: 'keyword',
+          ignore_above: 256,
+        },
+      },
+    };
+
+    return {
+      properties: {
+        chunkId: { type: 'integer' },
+        documentId: { type: 'integer' },
+        recordId: { type: 'integer' },
+        chunkIndex: { type: 'integer' },
+        pageNumber: { type: 'integer' },
+        content: { type: 'text' },
+        documentName: searchableTextField,
+        recordStatus: { type: 'keyword' },
+        firstName: searchableTextField,
+        lastName: searchableTextField,
+        email: { type: 'keyword' },
+        mobileNumber: { type: 'keyword' },
+        village: searchableTextField,
+        panchayat: searchableTextField,
+        district: searchableTextField,
+        createdAt: { type: 'date' },
+      },
+    };
   }
 }

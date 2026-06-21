@@ -1,4 +1,9 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import Redis from 'ioredis';
 
 const OCR_WORKER_HEARTBEAT_KEY = 'ocr_worker:heartbeat';
@@ -7,21 +12,33 @@ const HEARTBEAT_TTL_SECONDS = 15;
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(RedisService.name);
   private client: Redis;
   private heartbeatTimer?: ReturnType<typeof setInterval>;
 
   onModuleInit() {
+    const host = process.env.REDIS_HOST || 'redis';
+    const port = Number(process.env.REDIS_PORT) || 6379;
+
     this.client = new Redis({
-      host: process.env.REDIS_HOST || 'redis',
-      port: Number(process.env.REDIS_PORT) || 6379,
+      host,
+      port,
     });
 
-    this.client.on('connect', () => {
-      console.log('✅ Redis connected');
+    this.client.on('ready', () => {
+      this.logger.log(`Redis connection ready at ${host}:${port}.`);
     });
 
-    this.client.on('error', (err) => {
-      console.error('❌ Redis error:', err);
+    this.client.on('reconnecting', (delay) => {
+      this.logger.warn(`Redis reconnecting in ${delay}ms.`);
+    });
+
+    this.client.on('close', () => {
+      this.logger.warn('Redis connection closed.');
+    });
+
+    this.client.on('error', (error: Error) => {
+      this.logger.error(`Redis connection error: ${error.message}`);
     });
 
     this.startHeartbeat();
@@ -32,7 +49,12 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       clearInterval(this.heartbeatTimer);
     }
 
-    await this.client?.del(OCR_WORKER_HEARTBEAT_KEY);
+    if (!this.client) {
+      return;
+    }
+
+    await this.client.del(OCR_WORKER_HEARTBEAT_KEY);
+    await this.client.quit();
   }
 
   getClient(): Redis {
@@ -55,7 +77,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         HEARTBEAT_TTL_SECONDS,
       );
     } catch (error) {
-      console.error('Failed to publish OCR worker heartbeat:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to publish OCR worker heartbeat: ${message}`);
     }
   }
 }
