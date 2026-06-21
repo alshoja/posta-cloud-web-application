@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Client, estypes } from '@elastic/elasticsearch';
+import { DocumentChunkIndexPayload } from '../interfaces/document-chunk-index.interface';
 
 @Injectable()
 export class ElasticsearchService implements OnModuleInit {
@@ -56,6 +57,36 @@ export class ElasticsearchService implements OnModuleInit {
 
   getIndexName(): string {
     return this.indexName;
+  }
+
+  async indexDocumentChunk(payload: DocumentChunkIndexPayload): Promise<void> {
+    if (!this.client) {
+      return;
+    }
+
+    await this.client.index({
+      index: this.indexName,
+      id: String(payload.chunkId),
+      document: payload,
+      refresh: false,
+    });
+  }
+
+  async deleteDocumentChunksForDocument(documentId: number): Promise<void> {
+    if (!this.client) {
+      return;
+    }
+
+    await this.client.deleteByQuery({
+      index: this.indexName,
+      conflicts: 'proceed',
+      query: {
+        term: {
+          documentId,
+        },
+      },
+      refresh: true,
+    });
   }
 
   async ensureDocumentChunkIndex(): Promise<void> {

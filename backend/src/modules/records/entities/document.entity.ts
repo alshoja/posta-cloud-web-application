@@ -10,6 +10,7 @@ import {
 import { Record } from './record.entity';
 import { DocumentExtractionStatus } from '../enums/document-extraction-status.enum';
 import { DocumentChunk } from './document-chunk.entity';
+import { DocumentSearchIndexStatus } from '../enums/document-search-index-status.enum';
 
 @Entity('documents')
 export class Document {
@@ -40,6 +41,19 @@ export class Document {
 
   @Column({ type: 'timestamp', nullable: true })
   indexedAt?: Date;
+
+  @Column({
+    type: 'enum',
+    enum: DocumentSearchIndexStatus,
+    default: DocumentSearchIndexStatus.NOT_INDEXED,
+  })
+  searchIndexStatus: DocumentSearchIndexStatus;
+
+  @Column({ type: 'timestamp', nullable: true })
+  searchIndexedAt?: Date;
+
+  @Column({ type: 'text', nullable: true })
+  searchIndexError?: string;
 
   @OneToMany(() => DocumentChunk, (chunk) => chunk.document, {
     cascade: true,
