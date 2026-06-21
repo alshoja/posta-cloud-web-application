@@ -10,7 +10,9 @@ import { OllamaModule } from '../ollama/ollama.module';
 import { DocumentIngestionProcessor } from './document-ingestion.processor';
 import { DocumentChunkingService } from './services/document-chunking.service';
 import { DocumentIngestionQueueService } from './services/document-ingestion-queue.service';
+import { DocumentIngestionService } from './services/document-ingestion.service';
 import { DocumentParserService } from './services/document-parser.service';
+import { DocumentSearchIndexingService } from './services/document-search-indexing.service';
 
 @Module({
   imports: [
@@ -25,6 +27,8 @@ import { DocumentParserService } from './services/document-parser.service';
     DocumentIngestionProcessor,
     DocumentParserService,
     DocumentChunkingService,
+    DocumentIngestionService,
+    DocumentSearchIndexingService,
   ],
   exports: [DocumentIngestionQueueService],
 })

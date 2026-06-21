@@ -7,5 +7,7 @@ Converts uploaded record documents into redacted, embedded chunks for RAG.
 - Scanned PDFs are processed sequentially at scale `2` and limited to 10 pages.
 - Temporary rendered pages must always be deleted.
 - `DocumentChunkingService` owns redaction, chunking, and content hashes.
-- `DocumentIngestionProcessor` owns status changes and embedding persistence.
+- `DocumentIngestionProcessor` runs the background ingestion pipeline.
+- `DocumentIngestionService` owns document status changes and embedding persistence.
+- `DocumentSearchIndexingService` owns Elasticsearch indexing behavior.
 - Validate embeddings with `shared/utilities/vector.utility.ts`.

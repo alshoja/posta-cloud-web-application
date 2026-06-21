@@ -46,6 +46,9 @@ export interface Document {
   extractionStatus?: 'PENDING' | 'PROCESSING' | 'READY' | 'UNSUPPORTED' | 'FAILED'
   extractionError?: string
   indexedAt?: Date
+  searchIndexStatus?: 'NOT_INDEXED' | 'INDEXING' | 'INDEXED' | 'FAILED' | 'DISABLED'
+  searchIndexedAt?: Date
+  searchIndexError?: string
 }
 
 export interface Policy {

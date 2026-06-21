@@ -21,6 +21,7 @@ import { StepOneDto } from './dto/step-one.dto';
 import { StepSixDto } from './dto/step-six.dto';
 import { StepThreeDto } from './dto/step-three.dto';
 import { StepTwoDto } from './dto/step-two.dto';
+import { RetryDocumentSearchIndexDto } from './dto/retry-document-search-index.dto';
 import { RecordsService } from './services/records.service';
 import { Roles } from '../auth/roles.decorator';
 import { UserRole } from '../users/enums/user-role.enum';
@@ -147,6 +148,17 @@ export class RecordsController {
   @Post(':id/documents/reembed')
   reembedDocuments(@Param('id', ParseIntPipe) id: number) {
     return this.recordsService.reembedDocuments(id);
+  }
+
+  @Post(':id/documents/search-index/retry')
+  retryDocumentSearchIndex(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() retryDto: RetryDocumentSearchIndexDto,
+  ) {
+    return this.recordsService.retryDocumentSearchIndex(
+      id,
+      retryDto.documentIds,
+    );
   }
 
   @Get()

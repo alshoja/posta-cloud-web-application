@@ -607,6 +607,33 @@ export class RecordsService {
     return { queued: documentIds.length };
   }
 
+  async retryDocumentSearchIndex(
+    recordId: number,
+    documentIds: number[],
+  ): Promise<{
+    documentIds: number[];
+    queued: number;
+  }> {
+    const record = await this.findOne(recordId);
+    const uniqueDocumentIds = [...new Set(documentIds)];
+    const recordDocumentIds = new Set(
+      (record.documents ?? []).map((document) => document.id),
+    );
+    const missingDocumentId = uniqueDocumentIds.find(
+      (documentId) => !recordDocumentIds.has(documentId),
+    );
+
+    if (missingDocumentId) {
+      throw new NotFoundException('Document not found');
+    }
+
+    await this.documentIngestionQueueService.queueDocuments(uniqueDocumentIds);
+    return {
+      documentIds: uniqueDocumentIds,
+      queued: uniqueDocumentIds.length,
+    };
+  }
+
   async uploadDocument(
     recordId: number,
     file: Express.Multer.File,

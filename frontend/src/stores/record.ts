@@ -237,6 +237,24 @@ export const useRecordStore = defineStore('Record', {
         throw err
       }
     },
+    async retryDocumentSearchIndex(
+      recordId: string,
+      documentIds: Array<string | number>
+    ) {
+      try {
+        const response = await axios.post(
+          `${baseUrl}/${recordId}/documents/search-index/retry`,
+          { documentIds },
+          {
+            headers: { 'Content-Type': 'application/json' }
+          }
+        )
+        return response.data
+      } catch (err) {
+        console.error('Error retrying document search indexing:', err)
+        throw err
+      }
+    },
     addRecord(newRecord: StepOne) {
       this.records.data = [...this.records.data, newRecord] // ✅ Replacing state reactively
     }

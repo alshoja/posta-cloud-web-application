@@ -9,9 +9,12 @@ import {
     MapPinIcon,
     ShieldCheckIcon,
     UserIcon,
+    WandIcon,
 } from 'vue-tabler-icons';
 import DefaultImage from '@/assets/images/profile/profile.png';
 import type { RecordDetail } from '@/interfaces/record.interface';
+import { useRecordStore } from '@/stores/record';
+import { useSnackbarStore } from '@/stores/snackbar.store';
 import DetailField from './DetailField.vue';
 import DetailSection from './DetailSection.vue';
 import FileViewer from './FileViewer.vue';
@@ -39,6 +42,9 @@ const isDocumentVisible = ref(false);
 const currentDocumentUrl = ref('');
 const activeSection = ref('personal');
 const profileImage = ref(props.form.profileImage || DefaultImage);
+const indexingDocumentId = ref<string>();
+const recordStore = useRecordStore();
+const snackbar = useSnackbarStore();
 
 const navigationItems: NavigationItem[] = [
     { id: 'personal', title: 'Personal', icon: UserIcon },
@@ -69,6 +75,47 @@ const scrollToSection = (sectionId: string) => {
 const viewDocument = (file: string) => {
     currentDocumentUrl.value = file;
     isDocumentVisible.value = true;
+};
+
+const formatStatus = (status?: string) => {
+    if (!status) return 'Not indexed';
+    return status
+        .toLowerCase()
+        .split('_')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+};
+
+const searchIndexStatusColor = (status?: string) => {
+    if (status === 'INDEXED') return 'success';
+    if (status === 'INDEXING') return 'info';
+    if (status === 'FAILED') return 'error';
+    if (status === 'DISABLED') return 'grey';
+    return 'warning';
+};
+
+const canRetrySearchIndex = (document: NonNullable<RecordDetail['documents']>[number]) =>
+    Boolean(
+        props.form.id &&
+        document.id &&
+        document.extractionStatus === 'READY' &&
+        ['NOT_INDEXED', 'FAILED', 'DISABLED', undefined].includes(document.searchIndexStatus)
+    );
+
+const retrySearchIndex = async (document: NonNullable<RecordDetail['documents']>[number]) => {
+    if (!props.form.id || !document.id || !canRetrySearchIndex(document)) return;
+
+    indexingDocumentId.value = document.id;
+    try {
+        await recordStore.retryDocumentSearchIndex(props.form.id, [document.id]);
+        document.extractionStatus = 'PROCESSING';
+        document.searchIndexStatus = 'INDEXING';
+        document.searchIndexedAt = undefined;
+        document.searchIndexError = undefined;
+        snackbar.showSnackbar('Document AI indexing queued.', 'success', []);
+    } finally {
+        indexingDocumentId.value = undefined;
+    }
 };
 
 const useDefaultProfileImage = () => {
@@ -237,7 +284,7 @@ const useDefaultProfileImage = () => {
 
                 <DetailSection id="documents" title="Documents" :icon="FileTextIcon">
                     <v-table v-if="form.documents?.length" density="compact" class="detail-table">
-                        <thead><tr><th>Document Name</th><th>AI Index</th><th class="text-right">Actions</th></tr></thead>
+                        <thead><tr><th>Document Name</th><th>Text Extraction</th><th>AI Search</th><th class="text-right">Actions</th></tr></thead>
                         <tbody>
                             <tr v-for="(document, index) in form.documents" :key="document.id || index">
                                 <td>{{ document.name || 'Unnamed document' }}</td>
@@ -246,8 +293,32 @@ const useDefaultProfileImage = () => {
                                         {{ document.extractionStatus || 'PENDING' }}
                                     </v-chip>
                                 </td>
+                                <td>
+                                    <v-chip size="x-small" :color="searchIndexStatusColor(document.searchIndexStatus)" variant="tonal">
+                                        {{ formatStatus(document.searchIndexStatus) }}
+                                    </v-chip>
+                                </td>
                                 <td class="text-right">
-                                    <v-btn color="secondary" variant="outlined" size="x-small" @click="viewDocument(document.file)">View</v-btn>
+                                    <div class="d-inline-flex flex-wrap justify-end ga-2">
+                                        <v-btn color="secondary" variant="outlined" size="x-small" @click="viewDocument(document.file)">View</v-btn>
+                                        <v-tooltip text="Let AI search include this document when answering questions.">
+                                            <template #activator="{ props: tooltipProps }">
+                                                <span v-bind="tooltipProps">
+                                                    <v-btn
+                                                        v-if="canRetrySearchIndex(document)"
+                                                        class="ai-search-action"
+                                                        color="primary"
+                                                        variant="outlined"
+                                                        size="x-small"
+                                                        :loading="indexingDocumentId === document.id"
+                                                        @click="retrySearchIndex(document)"
+                                                    >
+                                                        <WandIcon size="16" />
+                                                    </v-btn>
+                                                </span>
+                                            </template>
+                                        </v-tooltip>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>
@@ -337,6 +408,12 @@ const useDefaultProfileImage = () => {
     padding: 10px 12px 4px;
     font-size: 0.78rem;
     font-weight: 600;
+}
+
+.ai-search-action {
+    min-width: 36px;
+    padding: 0 8px;
+    border-radius: 4px;
 }
 
 .detail-table {
