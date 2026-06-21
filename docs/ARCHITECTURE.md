@@ -1,6 +1,6 @@
 # Architecture
 
-Posta Cloud is a Docker Compose application made of a Vue frontend, NestJS backend, OCR worker, PostgreSQL with pgvector, Redis, Ollama, and pgAdmin.
+Posta Cloud is a Docker Compose application made of a Vue frontend, NestJS backend, OCR worker, PostgreSQL with pgvector, optional Elasticsearch BM25 search, Redis, Ollama, and pgAdmin.
 
 ## Service Layout
 
@@ -8,6 +8,7 @@ Posta Cloud is a Docker Compose application made of a Vue frontend, NestJS backe
 - `backend`: NestJS API served on port `5001`.
 - `ocr-worker`: background worker that consumes OCR jobs from Redis.
 - `postgres_db`: PostgreSQL with pgvector and persistent Docker volume storage.
+- `elasticsearch`: optional BM25 keyword index for uploaded document chunks.
 - `redis`: queue backend used for OCR, document embedding, and temporary AI search context.
 - `ollama`: local chat and embedding model server.
 - `pgadmin`: database administration UI for local development.
@@ -22,6 +23,7 @@ The frontend calls the backend API using `VITE_API_URL`. The backend owns authen
 Frontend
   -> NestJS backend
       -> PostgreSQL/pgvector
+      -> Elasticsearch BM25 index
       -> Redis queues
           -> OCR worker
       -> Ollama chat and embedding APIs
@@ -30,7 +32,7 @@ Frontend
 Uploaded files live in private MinIO buckets. Permanent documents and profile
 images use separate buckets, while autofill uploads and rendered scanned-PDF
 pages use a transient bucket with application-managed 24-hour cleanup. The
-backend queues document embedding after a document is saved. Images are sent to
+backend queues document ingestion after a document is saved. Images are sent to
 the OCR worker by private object reference. PDFs are first checked for embedded
 text; scanned PDFs are rendered page by page in the backend and their temporary
 images are sent sequentially to the OCR worker.
@@ -47,14 +49,15 @@ The parent `backend/src/modules/ai` area separates AI behavior by responsibility
 
 - `ai-chat`: public endpoint, intent classification, normalization, and routing.
 - `structured-retrieval`: record search, pagination context, and safe record summaries.
-- `rag`: semantic retrieval and document-grounded answers.
-- `document-embedding`: extraction, redaction, chunking, embeddings, and vector persistence.
+- `rag`: vector/BM25 hybrid retrieval and document-grounded answers.
+- `document-embedding`: extraction, redaction, chunking, embeddings, vector persistence, and optional BM25 indexing.
+- `search`: optional Elasticsearch adapter and document chunk index mapping.
 - `ollama`: generic `chat()` and `embed()` integration only.
 - `prompts`, `dto`, and `enums`: shared AI contracts.
 
 `RecordQueryService` remains in the records module and owns authorized record queries. Both structured retrieval and RAG use it so permission rules are enforced by backend TypeORM queries.
 
-### Document Indexing
+### Document Ingestion And Indexing
 
 ```text
 Document saved
@@ -69,9 +72,10 @@ Document saved
   -> validate 768-dimension vector
   -> document_chunks table
   -> HNSW cosine index
+  -> optional Elasticsearch document_chunks BM25 index
 ```
 
-Only redacted chunks are persisted for RAG. Temporary scanned-PDF page images are deleted immediately after OCR. Documents track extraction states including `PENDING`, `PROCESSING`, `READY`, `UNSUPPORTED`, and `FAILED`.
+Only redacted chunks are persisted for RAG. Embeddings stay in PostgreSQL/pgvector; Elasticsearch stores text and metadata only. Temporary scanned-PDF page images are deleted immediately after OCR. Documents track extraction states including `PENDING`, `PROCESSING`, `READY`, `UNSUPPORTED`, and `FAILED`, plus search index states including `NOT_INDEXED`, `INDEXING`, `INDEXED`, `FAILED`, and `DISABLED`.
 
 ### AI Request Flow
 
@@ -85,7 +89,7 @@ POST /api/ai-chat/message
   -> backend returns compact records and optional document/page citations
 ```
 
-For RAG, the backend embeds the question, applies record access rules inside the vector query, and sends only retrieved redacted chunks to Ollama. The model cannot bypass these query restrictions.
+For RAG, the backend embeds the question and always applies record access rules in PostgreSQL before returning chunks to Ollama. When BM25 is disabled, retrieval is vector-only through pgvector. When BM25 is enabled, Elasticsearch returns candidate chunk IDs, the backend merges vector and BM25 ranks with configured weights, and the final authorized chunks are fetched from PostgreSQL. The model cannot bypass these query restrictions.
 
 ## Frontend Structure
 

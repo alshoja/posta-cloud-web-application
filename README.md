@@ -1,5 +1,5 @@
 # Posta Cloud
-Posta Cloud is a full-stack, Docker-managed record collection platform built with Vue 3, Vuetify, NestJS, PostgreSQL, Redis, OCR processing, and a local Ollama-powered AI assistant.
+Posta Cloud is a full-stack, Docker-managed record collection platform built with Vue 3, Vuetify, NestJS, PostgreSQL/pgvector, optional Elasticsearch BM25 search, Redis, OCR processing, and a local Ollama-powered AI assistant.
 
 I built this as a practical sample project for field-data workflows: users can store structured records for people in a local area, manage address and personal details, upload documents, use OCR support to reduce manual typing, and ask a local AI assistant to find records using natural language.
 
@@ -14,10 +14,11 @@ I built this as a practical sample project for field-data workflows: users can s
 ## Highlights
 
 - Full-stack TypeScript-style architecture with a Vue frontend and NestJS backend.
-- Docker Compose orchestration for frontend, backend, database, Redis, OCR worker, and pgAdmin.
+- Docker Compose orchestration for frontend, backend, database, Elasticsearch, Redis, OCR worker, and pgAdmin.
 - PostgreSQL persistence with TypeORM, pgvector, and a migration workflow.
 - Redis-backed background processing for OCR tasks.
 - Document upload support with PDF text extraction and OCR for images and scanned PDFs.
+- Optional Elasticsearch BM25 indexing for uploaded document chunks.
 - Posta Mitra, a floating AI assistant for natural-language record search, summaries, and document RAG.
 - Local Ollama integration where the backend validates intents, performs authorized retrieval, and sends only controlled context to the model.
 - Environment-driven configuration for local and production deployments.
@@ -31,6 +32,7 @@ I built this as a practical sample project for field-data workflows: users can s
 | Backend | NestJS, TypeORM, class-validator |
 | Database | PostgreSQL with pgvector |
 | Queue / Worker | Redis, OCR worker service |
+| Search | pgvector, optional Elasticsearch BM25 |
 | AI | Ollama, local chat and embedding models |
 | Infrastructure | Docker, Docker Compose, pgAdmin |
 
@@ -40,9 +42,9 @@ I built this as a practical sample project for field-data workflows: users can s
 - **Document support**: upload files, extract embedded PDF text, and OCR images or scanned PDFs.
 - **OCR auto-fill**: send supported identity documents to the OCR worker and use extracted details to reduce manual entry.
 - **Posta Mitra AI assistant**: search and summarize records or ask questions about accessible uploaded documents.
-- **Document RAG**: redact and embed document chunks, retrieve them with pgvector, and return document and page citations.
+- **Document RAG**: redact and embed document chunks, retrieve them with pgvector plus optional BM25 hybrid search, and return document and page citations.
 - **Role-aware access**: regular users see their own records; admins follow the backend’s broader record visibility rules.
-- **Docker-first operation**: frontend, backend, PostgreSQL, Redis, OCR worker, Ollama, and pgAdmin run through Compose.
+- **Docker-first operation**: frontend, backend, PostgreSQL, Elasticsearch, Redis, OCR worker, Ollama, and pgAdmin run through Compose.
 
 ## Architecture
 
@@ -78,12 +80,13 @@ Backend API (`backend`, NestJS)
        |     -> redact and chunk text
        |     -> Ollama (`ollama`) creates embeddings
        |     -> PostgreSQL/pgvector (`postgres_db`) stores searchable chunks
+       |     -> Elasticsearch (`elasticsearch`) optionally stores BM25 text index
        |
        +-- Posta Mitra chat
              -> Ollama classifies the user intent
              -> backend validates the intent
              -> authorized record query
-                OR authorized pgvector document retrieval
+                OR authorized vector/BM25 hybrid document retrieval
              -> Ollama writes summaries or document-grounded answers
              -> frontend receives records and optional citations
 
@@ -118,8 +121,9 @@ Open:
 ## AI Assistant
 
 Posta Mitra supports natural-language record search, safe record summaries, and
-questions grounded in uploaded documents. The backend owns permissions and
-database queries; Ollama never receives direct database access. See the
+questions grounded in uploaded documents. Document answers use pgvector semantic
+retrieval and can optionally add Elasticsearch BM25 keyword retrieval. The
+backend owns permissions and database queries; Ollama never receives direct database access. See the
 [AI module](backend/src/modules/ai/README.md) when changing AI behavior.
 
 ## Documentation
