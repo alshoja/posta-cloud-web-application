@@ -8,6 +8,28 @@ const readBooleanEnv = (value: string | undefined, fallback: boolean) => {
   return value.toLowerCase() === 'true';
 };
 
+const readNumberEnv = (
+  value: string | undefined,
+  fallback: number,
+  min?: number,
+  max?: number,
+) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+
+  if (min !== undefined && parsed < min) {
+    return min;
+  }
+
+  if (max !== undefined && parsed > max) {
+    return max;
+  }
+
+  return parsed;
+};
+
 export default registerAs('config', () => ({
   port: parseInt(process.env.PORT ?? '5001', 10),
   nodeEnv: process.env.NODE_ENV ?? 'development',
@@ -31,4 +53,19 @@ export default registerAs('config', () => ({
   elasticsearchNode:
     process.env.ELASTICSEARCH_NODE || 'http://elasticsearch:9200',
   elasticsearchIndex: process.env.ELASTICSEARCH_INDEX || 'document_chunks',
+  documentSearchVectorWeight: readNumberEnv(
+    process.env.DOCUMENT_SEARCH_VECTOR_WEIGHT,
+    0.6,
+    0,
+    1,
+  ),
+  documentSearchBm25Weight: readNumberEnv(
+    process.env.DOCUMENT_SEARCH_BM25_WEIGHT,
+    0.4,
+    0,
+    1,
+  ),
+  documentSearchBm25ResultLimit: Math.round(
+    readNumberEnv(process.env.DOCUMENT_SEARCH_BM25_RESULT_LIMIT, 20, 1),
+  ),
 }));

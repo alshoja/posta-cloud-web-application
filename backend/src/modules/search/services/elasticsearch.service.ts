@@ -3,6 +3,11 @@ import { ConfigService } from '@nestjs/config';
 import { Client, estypes } from '@elastic/elasticsearch';
 import { DocumentChunkIndexPayload } from '../interfaces/document-chunk-index.interface';
 
+export interface DocumentChunkBm25SearchResult {
+  chunkId: number;
+  score: number;
+}
+
 @Injectable()
 export class ElasticsearchService implements OnModuleInit {
   private readonly logger = new Logger(ElasticsearchService.name);
@@ -87,6 +92,57 @@ export class ElasticsearchService implements OnModuleInit {
       },
       refresh: true,
     });
+  }
+
+  async searchDocumentChunks(
+    query: string,
+    limit: number,
+    recordId?: number,
+  ): Promise<DocumentChunkBm25SearchResult[]> {
+    if (!this.client) {
+      return [];
+    }
+
+    const filter: estypes.QueryDslQueryContainer[] = [];
+    if (recordId) {
+      filter.push({ term: { recordId } });
+    }
+
+    const response = await this.client.search<DocumentChunkIndexPayload>({
+      index: this.indexName,
+      size: limit,
+      query: {
+        bool: {
+          must: [
+            {
+              multi_match: {
+                query,
+                fields: [
+                  'content^4',
+                  'documentName^2',
+                  'firstName',
+                  'lastName',
+                  'village',
+                  'panchayat',
+                  'district',
+                ],
+              },
+            },
+          ],
+          filter,
+        },
+      },
+    });
+
+    return response.hits.hits
+      .map((hit) => ({
+        chunkId: hit._source?.chunkId,
+        score: hit._score ?? 0,
+      }))
+      .filter(
+        (result): result is DocumentChunkBm25SearchResult =>
+          typeof result.chunkId === 'number',
+      );
   }
 
   async ensureDocumentChunkIndex(): Promise<void> {
