@@ -25,6 +25,7 @@ const snackbar = useSnackbarStore();
 const router = useRouter()
 const validationRules = useValidation();
 const identityDocumentTypes = ['Passport', 'National ID', "Driver's License", 'Voter/Election Card', 'Other'];
+const financialAccountTypes = ['Bank Account', 'Insurance Policy', 'Government ID Linked Account', 'Other'];
 const mobileNumberInvalid = ref(false);
 const whatsappNumberInvalid = ref(false);
 const onMobileNumberValidate = (phoneObject: { isValid: boolean; number: string }) => {
@@ -55,7 +56,7 @@ const stepper = reactive({
     edit: false,
     show1: false,
     show2: true,
-    items: ['Personal Details', 'Sensitive Details', 'Occupation & Address', 'Family Details', 'Policies', 'Documents', 'Review & Submit'],
+    items: ['Personal Details', 'Sensitive Details', 'Occupation & Address', 'Family Details', 'Financial Accounts', 'Documents', 'Review & Submit'],
 });
 const stepOne = reactive({ ...stepOneInitialState });
 const stepTwo = reactive({ ...stepTwoInitialState });
@@ -172,22 +173,22 @@ const removeDocument = (index: number) => {
     stepSix.documents.splice(index, 1);
 };
 
-const addPolicy = () => {
-    stepFive.policies.push({
+const addFinancialAccount = () => {
+    stepFive.financialAccounts.push({
         type: '',
         number: '',
     });
 };
 
-const removePolicy = (index: number) => {
-    if (stepFive.policies.length === 1) {
-        stepFive.policies[0] = {
+const removeFinancialAccount = (index: number) => {
+    if (stepFive.financialAccounts.length === 1) {
+        stepFive.financialAccounts[0] = {
             type: '',
             number: '',
         };
         return;
     }
-    stepFive.policies.splice(index, 1);
+    stepFive.financialAccounts.splice(index, 1);
 }
 
 const addIdentityDocument = () => {
@@ -266,8 +267,8 @@ const setFormFields = (record: RecordDetail) => {
     const steps = [stepOne, stepTwo, stepThree, stepFour, stepFive, stepSix];
     steps.forEach(step => Object.assign(step, record));
 
-    if (!stepFive.policies?.length) {
-        stepFive.policies = [{
+    if (!stepFive.financialAccounts?.length) {
+        stepFive.financialAccounts = [{
             type: '',
             number: '',
         }];
@@ -360,8 +361,8 @@ const submitStepData = async (status: RecordStatus = 'DRAFT', shouldContinue = t
             successMessage: 'Family Data submitted successfully',
         },
         5: {
-            method: () => recordStore.createPolicyData(stepFive, recordId, status),
-            successMessage: 'Policy Data submitted successfully',
+            method: () => recordStore.createFinancialAccountData(stepFive, recordId, status),
+            successMessage: 'Financial account data submitted successfully',
         },
         6: {
             method: () => recordStore.createDocumentsData(stepSix, recordId, status),
@@ -1170,7 +1171,7 @@ const downloadDocument = async (index: number) => {
                 </v-form>
             </template>
 
-            <!-- Step 5: Policy -->
+            <!-- Step 5: Financial Accounts -->
             <template v-slot:item.5>
                 <v-form v-model="stepFive.valid" class="step-five-form">
                     <v-card variant="outlined" class="step-five-card">
@@ -1180,45 +1181,56 @@ const downloadDocument = async (index: number) => {
                                     <ShieldCheckIcon class="text-secondary" size="20" />
                                 </v-avatar>
                                 <div>
-                                    <div class="text-h5">Policy Details</div>
-                                    <div class="text-caption text-lightText">Add account and policy numbers</div>
+                                    <div class="text-h5">Financial Accounts</div>
+                                    <div class="text-caption text-lightText">Add bank, insurance, or other account references</div>
                                 </div>
                             </div>
-                            <v-btn color="secondary" variant="outlined" @click="addPolicy">
-                                <PlusIcon size="18" class="mr-1" />
-                                Add Policy
-                            </v-btn>
+                            <div class="d-flex align-center ga-2">
+                                <v-btn color="secondary" variant="text" size="small"
+                                    :prepend-icon="showSensitiveData ? '$eyeOff' : '$eye'"
+                                    @click="toggleSensitiveDataVisibility">
+                                    {{ showSensitiveData ? 'Hide details' : 'Show details' }}
+                                </v-btn>
+                                <v-btn color="secondary" variant="outlined" @click="addFinancialAccount">
+                                    <PlusIcon size="18" class="mr-1" />
+                                    Add Account
+                                </v-btn>
+                            </div>
                         </v-card-title>
                         <v-card-text>
                             <v-row>
-                                <v-col cols="12" md="6" v-for="(policy, index) in stepFive.policies" :key="index">
-                                    <v-card variant="outlined" class="step-five-policy-card">
-                                        <v-card-title class="step-five-policy-header">
-                                            <span class="text-subtitle-1 font-weight-bold">Policy {{ index + 1 }}</span>
+                                <v-col cols="12" md="6" v-for="(financialAccount, index) in stepFive.financialAccounts"
+                                    :key="index">
+                                    <v-card variant="outlined" class="step-five-account-card">
+                                        <v-card-title class="step-five-account-header">
+                                            <span class="text-subtitle-1 font-weight-bold">Account {{ index + 1 }}</span>
                                             <v-btn color="error" variant="text" icon size="small"
-                                                :aria-label="`Remove policy ${index + 1}`" @click="removePolicy(index)">
+                                                :aria-label="`Remove account ${index + 1}`"
+                                                @click="removeFinancialAccount(index)">
                                                 <TrashIcon size="18" />
                                             </v-btn>
                                         </v-card-title>
                                         <v-card-text>
                                             <v-row>
                                                 <v-col cols="12">
-                                                    <v-select variant="outlined" v-model="policy.type"
-                                                        :items="['Account Number', 'PLI Number', 'RPLI Number', 'IPPB Number', 'Savings Bank Number', 'Other Account Numbers']"
-                                                        label="Policy Type" required />
+                                                    <v-combobox variant="outlined" v-model="financialAccount.type"
+                                                        :items="financialAccountTypes" label="Account Type" required />
                                                 </v-col>
                                                 <v-col cols="12">
-                                                    <v-text-field variant="outlined" v-model="policy.number"
-                                                        label="Policy Number" required />
+                                                    <v-text-field class="sensitive-visibility-field" variant="outlined"
+                                                        v-model="financialAccount.number" label="Account Number"
+                                                        :type="sensitiveFieldType" :append-inner-icon="sensitiveFieldIcon"
+                                                        @click:append-inner="toggleSensitiveDataVisibility" required />
                                                 </v-col>
                                             </v-row>
                                         </v-card-text>
                                     </v-card>
                                 </v-col>
                             </v-row>
-                            <v-btn color="secondary" variant="outlined" block class="d-sm-none mt-2" @click="addPolicy">
+                            <v-btn color="secondary" variant="outlined" block class="d-sm-none mt-2"
+                                @click="addFinancialAccount">
                                 <PlusIcon size="18" class="mr-1" />
-                                Add Another Policy
+                                Add Another Account
                             </v-btn>
                         </v-card-text>
                     </v-card>
@@ -1475,7 +1487,7 @@ const downloadDocument = async (index: number) => {
 }
 
 .step-five-header,
-.step-five-policy-header {
+.step-five-account-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1486,11 +1498,11 @@ const downloadDocument = async (index: number) => {
     padding: 16px 20px;
 }
 
-.step-five-policy-card {
+.step-five-account-card {
     height: 100%;
 }
 
-.step-five-policy-header {
+.step-five-account-header {
     padding: 12px 16px;
 }
 

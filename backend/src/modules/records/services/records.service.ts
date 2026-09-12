@@ -25,7 +25,7 @@ import { Address } from '../entities/address.entity';
 import { Child } from '../entities/child.entity';
 import { Document } from '../entities/document.entity';
 import { IdentityDocument } from '../entities/identity-document.entity';
-import { Policy } from '../entities/policy.entity';
+import { FinancialAccount } from '../entities/financial-account.entity';
 import { RecordStatus } from '../enums/record-status.enum';
 import { Record as RecordEntity } from '../entities/record.entity';
 import { StorageService } from 'src/shared/services/storage.service';
@@ -170,7 +170,7 @@ export class RecordsService {
       const normalizedIdentityDocuments = identityDocuments ?? [];
       const _identityDocuments = normalizedIdentityDocuments.map((document) => ({
         type: document.type?.trim() ? document.type : null,
-        number: this.encryptIdentityDocumentNumber(document.number),
+        number: EncryptionUtility.encryptIfNeeded(document.number),
         recordsId,
       }));
 
@@ -334,16 +334,16 @@ export class RecordsService {
       this.ensureRecordEditable(existingRecord);
       const userId = this.request.user.sub;
       const action = this.determineStepSubmissionAction(stepFiveDto.status, 5);
-      const policies = stepFiveDto.policies.map((policy) => ({
-        type: policy.type?.trim() ? policy.type : null,
-        number: policy.number?.trim() ? policy.number : null,
+      const financialAccounts = stepFiveDto.financialAccounts.map((financialAccount) => ({
+        type: financialAccount.type?.trim() ? financialAccount.type : null,
+        number: EncryptionUtility.encryptIfNeeded(financialAccount.number),
         recordsId,
       }));
 
-      const policyRepository = queryRunner.manager.getRepository(Policy);
+      const financialAccountRepository = queryRunner.manager.getRepository(FinancialAccount);
       const recordRepository = queryRunner.manager.getRepository(RecordEntity);
-      await policyRepository.delete({ recordsId });
-      await policyRepository.insert(policies);
+      await financialAccountRepository.delete({ recordsId });
+      await financialAccountRepository.insert(financialAccounts);
       await this.applyStepAction(recordRepository, recordsId, 5, action, userId);
       const record = await recordRepository.findOneOrFail({ where: { id: recordsId } });
 
@@ -459,7 +459,7 @@ export class RecordsService {
         .createQueryBuilder('record')
         .leftJoinAndSelect('record.addresses', 'addresses')
         .leftJoinAndSelect('record.children', 'children')
-        .leftJoinAndSelect('record.policies', 'policies')
+        .leftJoinAndSelect('record.financialAccounts', 'financialAccounts')
         .leftJoinAndSelect('record.documents', 'documents')
         .leftJoinAndSelect('record.identityDocuments', 'identityDocuments')
         .leftJoinAndSelect('record.user', 'user')
@@ -522,7 +522,7 @@ export class RecordsService {
       relations: [
         'addresses',
         'children',
-        'policies',
+        'financialAccounts',
         'documents',
         'identityDocuments',
         'user',
@@ -908,23 +908,13 @@ export class RecordsService {
     await recordRepository.save(record);
   }
 
-  private encryptIdentityDocumentNumber(number?: string): string | null {
-    if (!number?.trim()) {
-      return null;
-    }
-    if (EncryptionUtility.isEncrypted(number)) {
-      return number;
-    }
-    return EncryptionUtility.encrypt(number);
-  }
-
   private async validateFinalSubmission(
     recordRepository: Repository<RecordEntity>,
     recordsId: number,
   ) {
     const record = await recordRepository.findOne({
       where: { id: recordsId },
-      relations: ['documents', 'policies'],
+      relations: ['documents', 'financialAccounts'],
     });
 
     if (!record) {

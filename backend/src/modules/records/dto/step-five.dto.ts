@@ -1,7 +1,7 @@
 import { Type } from 'class-transformer';
 import { IsArray, IsEnum, IsOptional, ValidateNested } from 'class-validator';
 import { RecordStatus } from '../enums/record-status.enum';
-import { UpdatePolicyDto } from './base/policy.dto';
+import { UpdateFinancialAccountDto } from './base/financial-account.dto';
 
 
 export class StepFiveDto {
@@ -12,8 +12,8 @@ export class StepFiveDto {
   status?: RecordStatus;
 
   @IsOptional()
-  @IsArray({ message: 'Policies must be an array.' })
+  @IsArray({ message: 'Financial accounts must be an array.' })
   @ValidateNested({ each: true })
-  @Type(() => UpdatePolicyDto)
-  policies: UpdatePolicyDto[] = [];
+  @Type(() => UpdateFinancialAccountDto)
+  financialAccounts: UpdateFinancialAccountDto[] = [];
 }

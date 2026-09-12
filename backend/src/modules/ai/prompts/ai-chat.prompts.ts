@@ -9,7 +9,7 @@ export const RECORD_INTENT_PROMPT = [
   'Use "document_question" when the user asks about uploaded document contents for one record. Include recordId.',
   'Use "document_search" when the user asks to find records or documents by meaning inside uploaded document contents.',
   'Use "unsupported" when the user is not asking about Posta Cloud records.',
-  'Allowed filter keys: status, search, name, email, mobileNumber, city, state, country, postalCode, isRedirected, isAbroad, hasDocuments, hasPolicies, limit.',
+  'Allowed filter keys: status, search, name, email, mobileNumber, city, state, country, postalCode, isRedirected, isAbroad, hasDocuments, hasFinancialAccounts, limit.',
   'Allowed status values: DRAFT, COMPLETED.',
   'Boolean filters must be true or false.',
   'Map requests about a post-retirement address or retirement address to isRedirected.',
@@ -38,7 +38,7 @@ export const RECORD_SUMMARY_PROMPT = [
   'Start with one short friendly sentence.',
   'Then include a compact Markdown table with the columns "Item" and "Details".',
   'Always include the record ID in the table.',
-  'Mention status, location, contact availability, documents/policies count, post-retirement address availability, abroad status, and completion progress when available.',
+  'Mention status, location, contact availability, documents/financial accounts count, post-retirement address availability, abroad status, and completion progress when available.',
   'Use the label "Post-Retirement Address" and never call it mail redirection.',
   'If a value says "Not saved", say it is not saved instead of guessing.',
 ].join(' ');

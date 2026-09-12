@@ -57,7 +57,7 @@ export class RecordQueryService {
       const query = this.recordRepository
         .createQueryBuilder('record')
         .leftJoin('record.documents', 'documents')
-        .leftJoin('record.policies', 'policies')
+        .leftJoin('record.financialAccounts', 'financialAccounts')
         .select([
           'record.id',
           'record.firstName',
@@ -191,9 +191,11 @@ export class RecordQueryService {
       );
     }
 
-    if (typeof filters.hasPolicies === 'boolean') {
+    if (typeof filters.hasFinancialAccounts === 'boolean') {
       query.andWhere(
-        filters.hasPolicies ? 'policies.id IS NOT NULL' : 'policies.id IS NULL',
+        filters.hasFinancialAccounts
+          ? 'financialAccounts.id IS NOT NULL'
+          : 'financialAccounts.id IS NULL',
       );
     }
   }

@@ -13,8 +13,8 @@ import { RecordStatus } from '../enums/record-status.enum';
 import { Address } from './address.entity';
 import { Child } from './child.entity';
 import { Document } from './document.entity';
+import { FinancialAccount } from './financial-account.entity';
 import { IdentityDocument } from './identity-document.entity';
-import { Policy } from './policy.entity';
 import { User } from 'src/modules/users/entities/user.entity';
 
 @Entity('records')
@@ -124,11 +124,11 @@ export class Record {
   @JoinColumn()
   documents:  Relation<Document>[];
 
-  @OneToMany(() => Policy, (policy) => policy.records, {
+  @OneToMany(() => FinancialAccount, (financialAccount) => financialAccount.records, {
     cascade: true,
   })
   @JoinColumn()
-  policies:  Relation<Policy>[];
+  financialAccounts:  Relation<FinancialAccount>[];
 
   @OneToMany(() => IdentityDocument, (identityDocument) => identityDocument.records, {
     cascade: true,

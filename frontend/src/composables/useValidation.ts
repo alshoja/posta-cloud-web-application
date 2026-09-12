@@ -58,11 +58,11 @@ export function useValidation() {
       ['male', 'female', 'other'].includes(value) ||
       'Gender must be Male, Female, or Other.',
 
-    // Policies
-    policyNumber: (value: string) =>
+    // Financial Accounts
+    financialAccountNumber: (value: string) =>
       isEmpty(value) ||
-      /^[A-Z0-9]{8,12}$/.test(value) ||
-      'Policy number must be 8-12 alphanumeric characters.',
+      /^[A-Za-z0-9\- ]{4,32}$/.test(value) ||
+      'Account number must be 4-32 characters (letters, numbers, spaces, or dashes).',
 
     // Dynamic rules for children or arrays
     childName: (value: string) => isEmpty(value) || true,

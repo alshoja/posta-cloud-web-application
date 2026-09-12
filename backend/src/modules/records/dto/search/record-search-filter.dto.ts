@@ -13,6 +13,6 @@ export class RecordSearchFilterDto {
   isRedirected?: boolean;
   isAbroad?: boolean;
   hasDocuments?: boolean;
-  hasPolicies?: boolean;
+  hasFinancialAccounts?: boolean;
   limit?: number;
 }

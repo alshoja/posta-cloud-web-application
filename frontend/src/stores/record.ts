@@ -137,15 +137,15 @@ export const useRecordStore = defineStore('Record', {
         throw err
       }
     },
-    async createPolicyData({ policies }: StepFive, id: string, status: RecordStatus) {
+    async createFinancialAccountData({ financialAccounts }: StepFive, id: string, status: RecordStatus) {
       try {
         const response = await axios.post(
           `${baseUrl}/step/five/${id}`,
           {
             status,
-            policies: (policies || []).map((policy) => ({
-              type: policy.type || undefined,
-              number: policy.number || undefined
+            financialAccounts: (financialAccounts || []).map((financialAccount) => ({
+              type: financialAccount.type || undefined,
+              number: financialAccount.number || undefined
             }))
           },
           {

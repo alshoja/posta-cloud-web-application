@@ -46,6 +46,17 @@ export class EncryptionUtility {
     return Buffer.from(iv, 'base64').length === EncryptionUtility.IV_LENGTH;
   }
 
+  // Encrypt a sensitive value if it has content and is not already encrypted.
+  static encryptIfNeeded(value?: string): string | null {
+    if (!value?.trim()) {
+      return null;
+    }
+    if (EncryptionUtility.isEncrypted(value)) {
+      return value;
+    }
+    return EncryptionUtility.encrypt(value);
+  }
+
   // Decrypt text using AES-256-CBC
   static decrypt(encrypted: string): string {
     if (!EncryptionUtility.isEncrypted(encrypted)) {

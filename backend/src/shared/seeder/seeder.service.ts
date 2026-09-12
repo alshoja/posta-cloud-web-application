@@ -12,7 +12,7 @@ import { Address } from '../../modules/records/entities/address.entity';
 import { Child } from '../../modules/records/entities/child.entity';
 import { Document } from '../../modules/records/entities/document.entity';
 import { IdentityDocument } from '../../modules/records/entities/identity-document.entity';
-import { Policy } from '../../modules/records/entities/policy.entity';
+import { FinancialAccount } from '../../modules/records/entities/financial-account.entity';
 import { EncryptionUtility } from '../../utilities/encryption.utility';
 import * as bcrypt from 'bcrypt';
 
@@ -125,7 +125,7 @@ export class SeederService {
         const addressRepository = manager.getRepository(Address);
         const childRepository = manager.getRepository(Child);
         const documentRepository = manager.getRepository(Document);
-        const policyRepository = manager.getRepository(Policy);
+        const financialAccountRepository = manager.getRepository(FinancialAccount);
         const identityDocumentRepository = manager.getRepository(IdentityDocument);
 
         for (let i = 0; i < numRecords; i++) {
@@ -200,8 +200,8 @@ export class SeederService {
             );
           }
           if (i % 3 !== 0) {
-            await policyRepository.insert(
-              this.createSeedPolicies(savedRecord.id, i),
+            await financialAccountRepository.insert(
+              this.createSeedFinancialAccounts(savedRecord.id, i),
             );
           }
           if (i % 6 !== 0) {
@@ -343,14 +343,21 @@ export class SeederService {
     })) as Child[];
   }
 
-  private createSeedPolicies(recordsId: number, index: number): Policy[] {
+  private createSeedFinancialAccounts(
+    recordsId: number,
+    index: number,
+  ): FinancialAccount[] {
     return [
       {
-        type: faker.helpers.arrayElement(['Life', 'Health', 'Vehicle']),
-        number: `POL-${String(index + 1).padStart(5, '0')}`,
+        type: faker.helpers.arrayElement([
+          'Bank Account',
+          'Insurance Policy',
+          'Government ID Linked Account',
+        ]),
+        number: `ACC-${String(index + 1).padStart(5, '0')}`,
         recordsId,
       },
-    ] as Policy[];
+    ] as FinancialAccount[];
   }
 
   private createSeedIdentityDocuments(

@@ -129,7 +129,7 @@ export class AiChatService {
       'isRedirected',
       'isAbroad',
       'hasDocuments',
-      'hasPolicies',
+      'hasFinancialAccounts',
     ] as const) {
       if (typeof value[key] === 'boolean') {
         filters[key] = value[key];

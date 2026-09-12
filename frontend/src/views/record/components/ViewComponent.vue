@@ -51,7 +51,7 @@ const navigationItems: NavigationItem[] = [
     { id: 'identity', title: 'Identity', icon: IdIcon },
     { id: 'occupation', title: 'Occupation & Addresses', icon: BriefcaseIcon },
     { id: 'family', title: 'Family', icon: HeartIcon },
-    { id: 'policies', title: 'Policies', icon: ShieldCheckIcon },
+    { id: 'financial-accounts', title: 'Financial Accounts', icon: ShieldCheckIcon },
     { id: 'documents', title: 'Documents', icon: FileTextIcon },
 ];
 
@@ -279,16 +279,27 @@ const useDefaultProfileImage = () => {
                     <v-alert v-else type="info" color="secondary" variant="tonal">No children available.</v-alert>
                 </DetailSection>
 
-                <DetailSection id="policies" title="Policy Details" :icon="ShieldCheckIcon">
-                    <v-table v-if="form.policies?.length" density="compact" class="detail-table">
-                        <thead><tr><th>Policy Number</th><th>Policy Type</th></tr></thead>
+                <DetailSection id="financial-accounts" title="Financial Accounts" :icon="ShieldCheckIcon">
+                    <template #action>
+                        <v-btn
+                            size="small"
+                            variant="text"
+                            color="secondary"
+                            :prepend-icon="showSensitiveDetails ? '$eyeOff' : '$eye'"
+                            @click="showSensitiveDetails = !showSensitiveDetails"
+                        >
+                            {{ showSensitiveDetails ? 'Hide details' : 'Show details' }}
+                        </v-btn>
+                    </template>
+                    <v-table v-if="form.financialAccounts?.length" density="compact" class="detail-table">
+                        <thead><tr><th>Account Number</th><th>Account Type</th></tr></thead>
                         <tbody>
-                            <tr v-for="(policy, index) in form.policies" :key="policy.id || index">
-                                <td>{{ policy.number || '—' }}</td><td>{{ policy.type || '—' }}</td>
+                            <tr v-for="(financialAccount, index) in form.financialAccounts" :key="financialAccount.id || index">
+                                <td>{{ displaySensitiveValue(financialAccount.number) }}</td><td>{{ financialAccount.type || '—' }}</td>
                             </tr>
                         </tbody>
                     </v-table>
-                    <v-alert v-else type="info" color="secondary" variant="tonal">No policies available.</v-alert>
+                    <v-alert v-else type="info" color="secondary" variant="tonal">No financial accounts available.</v-alert>
                 </DetailSection>
 
                 <DetailSection id="documents" title="Documents" :icon="FileTextIcon">

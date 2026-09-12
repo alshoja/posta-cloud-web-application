@@ -53,7 +53,7 @@ export interface Document {
   searchIndexError?: string
 }
 
-export interface Policy {
+export interface FinancialAccount {
   id?: string
   type: string
   number: string
@@ -74,7 +74,7 @@ export interface RecordDetail
   postalCode: string
   country: string
   addresses?: Address[]
-  policies?: Policy[]
+  financialAccounts?: FinancialAccount[]
   documents?: Document[]
   user?: {
     id: number
@@ -130,7 +130,7 @@ export interface StepFour extends MarriageInfo {
 export interface StepFive {
   valid: boolean
   status?: RecordStatus
-  policies: Policy[]
+  financialAccounts: FinancialAccount[]
 }
 
 export interface StepSix {

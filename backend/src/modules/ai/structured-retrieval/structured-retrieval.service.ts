@@ -104,7 +104,7 @@ export class StructuredRetrievalService {
 
     const record = await this.recordQueryService.findAccessibleRecord(recordId, [
       'documents',
-      'policies',
+      'financialAccounts',
       'addresses',
       'children',
     ]);
@@ -155,9 +155,9 @@ export class StructuredRetrievalService {
       documentNames: (record.documents ?? [])
         .map((document) => document.name)
         .filter(Boolean),
-      policiesCount: record.policies?.length ?? 0,
-      policyTypes: (record.policies ?? [])
-        .map((policy) => policy.type)
+      financialAccountsCount: record.financialAccounts?.length ?? 0,
+      financialAccountTypes: (record.financialAccounts ?? [])
+        .map((financialAccount) => financialAccount.type)
         .filter(Boolean),
       addressesCount: record.addresses?.length ?? 0,
       childrenCount: record.children?.length ?? 0,

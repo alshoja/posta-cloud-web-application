@@ -1,8 +1,8 @@
 import type {
   Address,
   Child,
+  FinancialAccount,
   IdentityDocument,
-  Policy,
   Document,
   StepOne,
   StepTwo,
@@ -34,7 +34,7 @@ export function useForm() {
     file: ''
   })
 
-  const createPolicy = (): Policy => ({
+  const createFinancialAccount = (): FinancialAccount => ({
     type: '',
     number: ''
   })
@@ -94,7 +94,7 @@ export function useForm() {
 
   const stepFiveInitialState: StepFive = {
     valid: true,
-    policies: [createPolicy()]
+    financialAccounts: [createFinancialAccount()]
   }
 
   const stepSixInitialState: StepSix = {

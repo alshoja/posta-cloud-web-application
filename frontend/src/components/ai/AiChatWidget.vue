@@ -37,7 +37,7 @@ const starterPromptGroups = [
       'Find people living abroad',
       'Show records with a post-retirement address',
       'Show records with documents',
-      'Show records without policies'
+      'Show records without financial accounts'
     ]
   },
   {
