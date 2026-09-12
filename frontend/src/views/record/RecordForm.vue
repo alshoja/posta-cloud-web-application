@@ -25,6 +25,7 @@ const snackbar = useSnackbarStore();
 const router = useRouter()
 const validationRules = useValidation();
 const countryNames = COUNTRY_NAMES;
+const identityDocumentTypes = ['Passport', 'National ID', "Driver's License", 'Voter/Election Card', 'Other'];
 const mobileNumberInvalid = ref(false);
 const whatsappNumberInvalid = ref(false);
 const onMobileNumberValidate = (phoneObject: { isValid: boolean; number: string }) => {
@@ -189,6 +190,37 @@ const removePolicy = (index: number) => {
     }
     stepFive.policies.splice(index, 1);
 }
+
+const addIdentityDocument = () => {
+    stepTwo.identityDocuments.push({
+        type: '',
+        number: '',
+    });
+};
+
+const removeIdentityDocument = (index: number) => {
+    if (stepTwo.identityDocuments.length === 1) {
+        stepTwo.identityDocuments[0] = {
+            type: '',
+            number: '',
+        };
+        return;
+    }
+    stepTwo.identityDocuments.splice(index, 1);
+};
+
+const fillIdentityDocumentNumber = (type: string, number: string) => {
+    const emptyIndex = stepTwo.identityDocuments.findIndex((document) => !document.number);
+    if (emptyIndex === -1) {
+        stepTwo.identityDocuments.push({ type, number });
+        return;
+    }
+    if (!stepTwo.identityDocuments[emptyIndex].type) {
+        stepTwo.identityDocuments[emptyIndex].type = type;
+    }
+    stepTwo.identityDocuments[emptyIndex].number = number;
+};
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const resetForm = (form: any, initialState: object) => Object.assign(form, initialState);
 watch(
@@ -232,20 +264,18 @@ watch(
 
 
 const setFormFields = (record: RecordDetail) => {
-    const scannedIdentityFields = {
-        aadhaarNumber: stepTwo.aadhaarNumber,
-        drivingLicense: stepTwo.drivingLicense,
-        electionID: stepTwo.electionID,
-    };
     const steps = [stepOne, stepTwo, stepThree, stepFour, stepFive, stepSix];
     steps.forEach(step => Object.assign(step, record));
 
-    stepTwo.aadhaarNumber = record.aadhaarNumber || scannedIdentityFields.aadhaarNumber || '';
-    stepTwo.drivingLicense = record.drivingLicense || scannedIdentityFields.drivingLicense || '';
-    stepTwo.electionID = record.electionID || scannedIdentityFields.electionID || '';
-
     if (!stepFive.policies?.length) {
         stepFive.policies = [{
+            type: '',
+            number: '',
+        }];
+    }
+
+    if (!stepTwo.identityDocuments?.length) {
+        stepTwo.identityDocuments = [{
             type: '',
             number: '',
         }];
@@ -519,20 +549,22 @@ const applyOcrResultToForm = (result: IdentityDocumentParseResult): boolean => {
         return false;
     }
 
+    let scannedDocumentType = '';
+    let scannedDocumentNumber = '';
     if (fields.aadhaarNumber) {
-        stepTwo.aadhaarNumber = fields.aadhaarNumber;
-        filledAnyField = true;
-        filledFields.push('Aadhaar number');
+        scannedDocumentType = 'Aadhaar Number';
+        scannedDocumentNumber = fields.aadhaarNumber;
+    } else if (fields.drivingLicense) {
+        scannedDocumentType = 'Driving License';
+        scannedDocumentNumber = fields.drivingLicense;
+    } else if (fields.electionID) {
+        scannedDocumentType = 'Election ID';
+        scannedDocumentNumber = fields.electionID;
     }
-    if (fields.drivingLicense) {
-        stepTwo.drivingLicense = fields.drivingLicense;
+    if (scannedDocumentNumber) {
+        fillIdentityDocumentNumber(scannedDocumentType, scannedDocumentNumber);
         filledAnyField = true;
-        filledFields.push('Driving licence');
-    }
-    if (fields.electionID) {
-        stepTwo.electionID = fields.electionID;
-        filledAnyField = true;
-        filledFields.push('Election ID');
+        filledFields.push('Identity document number');
     }
     if (fields.dateOfBirth) {
         const dob = formatOcrDate(fields.dateOfBirth);
@@ -902,11 +934,17 @@ const downloadDocument = async (index: number) => {
                                     <div class="text-caption text-lightText">Secure identity and postal reference numbers</div>
                                 </div>
                             </div>
-                            <v-btn color="secondary" variant="text" size="small"
-                                :prepend-icon="showSensitiveData ? '$eyeOff' : '$eye'"
-                                @click="toggleSensitiveDataVisibility">
-                                {{ showSensitiveData ? 'Hide details' : 'Show details' }}
-                            </v-btn>
+                            <div class="d-flex align-center ga-2">
+                                <v-btn color="secondary" variant="text" size="small"
+                                    :prepend-icon="showSensitiveData ? '$eyeOff' : '$eye'"
+                                    @click="toggleSensitiveDataVisibility">
+                                    {{ showSensitiveData ? 'Hide details' : 'Show details' }}
+                                </v-btn>
+                                <v-btn color="secondary" variant="outlined" @click="addIdentityDocument">
+                                    <PlusIcon size="18" class="mr-1" />
+                                    Add Document
+                                </v-btn>
+                            </div>
                         </v-card-title>
                         <v-card-text>
                             <v-alert type="info" color="secondary" variant="tonal" density="compact"
@@ -915,41 +953,39 @@ const downloadDocument = async (index: number) => {
                             </v-alert>
 
                             <v-row>
-                            <v-col cols="12" md="6">
-                                <v-text-field class="sensitive-visibility-field" variant="outlined"
-                                    v-model="stepTwo.aadhaarNumber" label="Aadhaar Number" :type="sensitiveFieldType"
-                                    :append-inner-icon="sensitiveFieldIcon"
-                                    @click:append-inner="toggleSensitiveDataVisibility"
-                                    :rules="[validationRules.maxLength(12), validationRules.minLength(12)]" />
-                            </v-col>
-                            <v-col cols="12" md="6">
-                                <v-text-field class="sensitive-visibility-field" variant="outlined"
-                                    v-model="stepTwo.drivingLicense" label="Driving License" :type="sensitiveFieldType"
-                                    :append-inner-icon="sensitiveFieldIcon"
-                                    @click:append-inner="toggleSensitiveDataVisibility"
-                                    :rules="[validationRules.maxLength(15), validationRules.minLength(15)]" />
-                            </v-col>
-                            <v-col cols="12" md="6">
-                                <v-text-field class="sensitive-visibility-field" variant="outlined"
-                                    v-model="stepTwo.electionID" label="Election ID" :type="sensitiveFieldType"
-                                    :append-inner-icon="sensitiveFieldIcon"
-                                    @click:append-inner="toggleSensitiveDataVisibility"
-                                    :rules="[validationRules.maxLength(10), validationRules.minLength(10)]" />
-                            </v-col>
-                            <v-col cols="12" md="6">
-                                <v-text-field class="sensitive-visibility-field" variant="outlined"
-                                    v-model="stepTwo.passportNumber" label="Passport Number" :type="sensitiveFieldType"
-                                    :append-inner-icon="sensitiveFieldIcon"
-                                    @click:append-inner="toggleSensitiveDataVisibility"
-                                    :rules="[validationRules.maxLength(8), validationRules.minLength(8)]" />
-                            </v-col>
-                            <v-col cols="12" md="6">
-                                <v-text-field class="sensitive-visibility-field" variant="outlined"
-                                    v-model="stepTwo.postBoxNumber" label="Post Box Number" :type="sensitiveFieldType"
-                                    :append-inner-icon="sensitiveFieldIcon"
-                                    @click:append-inner="toggleSensitiveDataVisibility" />
-                            </v-col>
+                                <v-col cols="12" md="6" v-for="(document, index) in stepTwo.identityDocuments"
+                                    :key="index">
+                                    <v-card variant="outlined" class="step-two-document-card">
+                                        <v-card-title class="step-two-document-header">
+                                            <span class="text-subtitle-1 font-weight-bold">Document {{ index + 1 }}</span>
+                                            <v-btn color="error" variant="text" icon size="small"
+                                                :aria-label="`Remove document ${index + 1}`"
+                                                @click="removeIdentityDocument(index)">
+                                                <TrashIcon size="18" />
+                                            </v-btn>
+                                        </v-card-title>
+                                        <v-card-text>
+                                            <v-row>
+                                                <v-col cols="12">
+                                                    <v-combobox variant="outlined" v-model="document.type"
+                                                        :items="identityDocumentTypes" label="Document Type" />
+                                                </v-col>
+                                                <v-col cols="12">
+                                                    <v-text-field class="sensitive-visibility-field" variant="outlined"
+                                                        v-model="document.number" label="Document Number"
+                                                        :type="sensitiveFieldType" :append-inner-icon="sensitiveFieldIcon"
+                                                        @click:append-inner="toggleSensitiveDataVisibility" />
+                                                </v-col>
+                                            </v-row>
+                                        </v-card-text>
+                                    </v-card>
+                                </v-col>
                             </v-row>
+                            <v-btn color="secondary" variant="outlined" block class="d-sm-none mt-2"
+                                @click="addIdentityDocument">
+                                <PlusIcon size="18" class="mr-1" />
+                                Add Another Document
+                            </v-btn>
                         </v-card-text>
                     </v-card>
                 </v-form>

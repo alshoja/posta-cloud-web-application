@@ -32,7 +32,7 @@ export const RECORD_SUMMARY_PROMPT = [
   'Write a short, clear summary of one person record for a post office or field-data user.',
   'Use only the JSON context provided by the backend.',
   'Do not invent facts, do not mention missing sensitive identity numbers, and do not expose internal implementation details.',
-  'Do not mention Aadhaar, passport, driving license, election ID, or encrypted fields.',
+  'Do not mention identity document numbers or any encrypted fields.',
   'Use simple language and a helpful tone.',
   'Use Markdown only. Do not use HTML.',
   'Start with one short friendly sentence.',

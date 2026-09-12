@@ -1,7 +1,4 @@
-import { Transform } from 'class-transformer';
 import {
-  BeforeInsert,
-  BeforeUpdate,
   Column,
   Entity,
   JoinColumn,
@@ -16,8 +13,8 @@ import { RecordStatus } from '../enums/record-status.enum';
 import { Address } from './address.entity';
 import { Child } from './child.entity';
 import { Document } from './document.entity';
+import { IdentityDocument } from './identity-document.entity';
 import { Policy } from './policy.entity';
-import { EncryptionUtility } from '../../../utilities/encryption.utility';
 import { User } from 'src/modules/users/entities/user.entity';
 
 @Entity('records')
@@ -27,9 +24,6 @@ export class Record {
 
   @Column({ nullable: true })
   profileImage: string;
-
-  @Column({ nullable: true })
-  postBoxNumber: number;
 
   @Column({ unique: true })
   email: string;
@@ -70,42 +64,6 @@ export class Record {
 
   @Column({ nullable: true })
   country: string;
-
-  @Column({ nullable: true })
-  @Transform(
-    ({ value }) => (value ? EncryptionUtility.decrypt(value) : value),
-    {
-      toPlainOnly: true,
-    },
-  )
-  aadhaarNumber: string;
-
-  @Column({ nullable: true })
-  @Transform(
-    ({ value }) => (value ? EncryptionUtility.decrypt(value) : value),
-    {
-      toPlainOnly: true,
-    },
-  )
-  drivingLicense: string;
-
-  @Column({ nullable: true })
-  @Transform(
-    ({ value }) => (value ? EncryptionUtility.decrypt(value) : value),
-    {
-      toPlainOnly: true,
-    },
-  )
-  electionID: string;
-
-  @Column({ nullable: true })
-  @Transform(
-    ({ value }) => (value ? EncryptionUtility.decrypt(value) : value),
-    {
-      toPlainOnly: true,
-    },
-  )
-  passportNumber: string;
 
   @Column({ default: false })
   redirectionAddress: boolean;
@@ -172,6 +130,12 @@ export class Record {
   @JoinColumn()
   policies:  Relation<Policy>[];
 
+  @OneToMany(() => IdentityDocument, (identityDocument) => identityDocument.records, {
+    cascade: true,
+  })
+  @JoinColumn()
+  identityDocuments:  Relation<IdentityDocument>[];
+
   @ManyToOne(() => User, (user) => user.records, {
     onDelete: 'CASCADE',
     nullable: false,
@@ -196,30 +160,4 @@ export class Record {
     onUpdate: 'CURRENT_TIMESTAMP',
   })
   updatedAt: Date;
-
-  @BeforeInsert()
-  @BeforeUpdate()
-  async encryptSensitiveInformation() {
-    if (
-      this.aadhaarNumber &&
-      !EncryptionUtility.isEncrypted(this.aadhaarNumber)
-    ) {
-      this.aadhaarNumber = EncryptionUtility.encrypt(this.aadhaarNumber);
-    }
-    if (this.electionID && !EncryptionUtility.isEncrypted(this.electionID)) {
-      this.electionID = EncryptionUtility.encrypt(this.electionID);
-    }
-    if (
-      this.passportNumber &&
-      !EncryptionUtility.isEncrypted(this.passportNumber)
-    ) {
-      this.passportNumber = EncryptionUtility.encrypt(this.passportNumber);
-    }
-    if (
-      this.drivingLicense &&
-      !EncryptionUtility.isEncrypted(this.drivingLicense)
-    ) {
-      this.drivingLicense = EncryptionUtility.encrypt(this.drivingLicense);
-    }
-  }
 }

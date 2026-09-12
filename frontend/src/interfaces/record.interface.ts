@@ -24,12 +24,14 @@ export interface Contact {
   whatsappNumber: string
 }
 
+export interface IdentityDocument {
+  id?: string
+  type: string
+  number: string
+}
+
 export interface IdentityDocuments {
-  aadhaarNumber?: string
-  drivingLicense?: string
-  electionID?: string
-  passportNumber?: string
-  postBoxNumber?: string
+  identityDocuments?: IdentityDocument[]
 }
 
 export interface Child {
@@ -90,10 +92,11 @@ export interface StepOne extends RecordDetail {
   status?: RecordStatus
 }
 
-export interface StepTwo extends IdentityDocuments {
+export interface StepTwo {
   valid: boolean
   password?: string
   status?: RecordStatus
+  identityDocuments: IdentityDocument[]
 }
 
 export interface RedirectionAddress {

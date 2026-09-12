@@ -11,7 +11,9 @@ import { RecordStatus } from '../../modules/records/enums/record-status.enum';
 import { Address } from '../../modules/records/entities/address.entity';
 import { Child } from '../../modules/records/entities/child.entity';
 import { Document } from '../../modules/records/entities/document.entity';
+import { IdentityDocument } from '../../modules/records/entities/identity-document.entity';
 import { Policy } from '../../modules/records/entities/policy.entity';
+import { EncryptionUtility } from '../../utilities/encryption.utility';
 import * as bcrypt from 'bcrypt';
 
 interface SeedUserDefinition {
@@ -124,6 +126,7 @@ export class SeederService {
         const childRepository = manager.getRepository(Child);
         const documentRepository = manager.getRepository(Document);
         const policyRepository = manager.getRepository(Policy);
+        const identityDocumentRepository = manager.getRepository(IdentityDocument);
 
         for (let i = 0; i < numRecords; i++) {
           const seedUser = seedUsers[i % seedUsers.length];
@@ -136,7 +139,6 @@ export class SeederService {
             isCompleted && adminUser ? adminUser.id : seedUser.id;
           const record = recordRepository.create({
             profileImage: `-User${i + 1}.jpg`,
-            postBoxNumber: i + 1,
             email: `record${i + 1}@gmail.com`,
             firstName: faker.person.firstName(),
             lastName: faker.person.lastName(),
@@ -154,12 +156,6 @@ export class SeederService {
             city: faker.location.city(),
             state: faker.location.state(),
             country: faker.location.country(),
-            aadhaarNumber: faker.string.numeric(16),
-            drivingLicense:
-              i % 3 === 0 ? faker.string.alphanumeric(12) : undefined,
-            electionID: i % 4 === 0 ? faker.string.alphanumeric(10) : undefined,
-            passportNumber:
-              i % 5 === 0 ? faker.string.alphanumeric(9) : undefined,
             redirectionAddress: i % 6 === 0,
             isAbroad: i % 7 === 0,
             redirectedHouseName:
@@ -206,6 +202,11 @@ export class SeederService {
           if (i % 3 !== 0) {
             await policyRepository.insert(
               this.createSeedPolicies(savedRecord.id, i),
+            );
+          }
+          if (i % 6 !== 0) {
+            await identityDocumentRepository.insert(
+              this.createSeedIdentityDocuments(savedRecord.id, i),
             );
           }
           if (lastCompletedStep >= 6 || isCompleted) {
@@ -352,11 +353,48 @@ export class SeederService {
     ] as Policy[];
   }
 
+  private createSeedIdentityDocuments(
+    recordsId: number,
+    index: number,
+  ): IdentityDocument[] {
+    const documents: IdentityDocument[] = [
+      {
+        type: 'Passport',
+        number: EncryptionUtility.encrypt(
+          faker.string.alphanumeric(9).toUpperCase(),
+        ),
+        recordsId,
+      } as IdentityDocument,
+    ];
+
+    if (index % 3 === 0) {
+      documents.push({
+        type: "Driver's License",
+        number: EncryptionUtility.encrypt(
+          faker.string.alphanumeric(12).toUpperCase(),
+        ),
+        recordsId,
+      } as IdentityDocument);
+    }
+
+    if (index % 4 === 0) {
+      documents.push({
+        type: 'National ID',
+        number: EncryptionUtility.encrypt(
+          faker.string.alphanumeric(10).toUpperCase(),
+        ),
+        recordsId,
+      } as IdentityDocument);
+    }
+
+    return documents;
+  }
+
   private createSeedDocuments(recordsId: number, index: number): Document[] {
     return [
       {
-        name: 'Aadhaar',
-        file: `seed-documents/aadhaar-${index + 1}.pdf`,
+        name: 'ID Document',
+        file: `seed-documents/id-document-${index + 1}.pdf`,
         recordsId,
       },
       {

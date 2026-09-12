@@ -24,10 +24,12 @@ import { StepTwoDto } from '../dto/step-two.dto';
 import { Address } from '../entities/address.entity';
 import { Child } from '../entities/child.entity';
 import { Document } from '../entities/document.entity';
+import { IdentityDocument } from '../entities/identity-document.entity';
 import { Policy } from '../entities/policy.entity';
 import { RecordStatus } from '../enums/record-status.enum';
 import { Record as RecordEntity } from '../entities/record.entity';
 import { StorageService } from 'src/shared/services/storage.service';
+import { EncryptionUtility } from 'src/utilities/encryption.utility';
 import {
   PROFILE_IMAGES_BUCKET,
   RECORD_DOCUMENTS_BUCKET,
@@ -149,7 +151,7 @@ export class RecordsService {
   }
 
   async createStepTwo(
-    stepTwoDto: StepTwoDto,
+    { identityDocuments, status }: StepTwoDto,
     recordsId: number,
   ): Promise<{ id: number; status: RecordStatus; lastCompletedStep: number }> {
     const queryRunner = this.dataSource.createQueryRunner();
@@ -162,19 +164,21 @@ export class RecordsService {
       this.ensureRecordEditable(existingRecord);
       const userId = this.request.user.sub;
       const recordRepository = queryRunner.manager.getRepository(RecordEntity);
-      const action = this.determineStepSubmissionAction(stepTwoDto.status, 2);
-      const { status: _status, ...stepTwoPayload } = stepTwoDto;
-      const hasStepTwoValues = Object.values(stepTwoPayload).some(
-        (value) => value !== undefined && value !== null && value !== '',
-      );
+      const identityDocumentRepository =
+        queryRunner.manager.getRepository(IdentityDocument);
+      const action = this.determineStepSubmissionAction(status, 2);
+      const normalizedIdentityDocuments = identityDocuments ?? [];
+      const _identityDocuments = normalizedIdentityDocuments.map((document) => ({
+        type: document.type?.trim() ? document.type : null,
+        number: this.encryptIdentityDocumentNumber(document.number),
+        recordsId,
+      }));
 
-      if (hasStepTwoValues) {
-        const recordToUpdate = await recordRepository.findOneOrFail({
-          where: { id: recordsId },
-        });
-        Object.assign(recordToUpdate, stepTwoPayload, { updatedBy: userId });
-        await recordRepository.save(recordToUpdate);
+      await identityDocumentRepository.delete({ recordsId });
+      if (_identityDocuments.length > 0) {
+        await identityDocumentRepository.insert(_identityDocuments);
       }
+
       await this.applyStepAction(recordRepository, recordsId, 2, action, userId);
       const record = await recordRepository.findOneOrFail({ where: { id: recordsId } });
       await queryRunner.commitTransaction();
@@ -457,6 +461,7 @@ export class RecordsService {
         .leftJoinAndSelect('record.children', 'children')
         .leftJoinAndSelect('record.policies', 'policies')
         .leftJoinAndSelect('record.documents', 'documents')
+        .leftJoinAndSelect('record.identityDocuments', 'identityDocuments')
         .leftJoinAndSelect('record.user', 'user')
         .skip((page - 1) * limit)
         .take(limit);
@@ -514,7 +519,14 @@ export class RecordsService {
     const isAdmin = this.request.user.role === UserRole.ADMIN;
 
     const record = await this.recordRepository.findOne({
-      relations: ['addresses', 'children', 'policies', 'documents', 'user'],
+      relations: [
+        'addresses',
+        'children',
+        'policies',
+        'documents',
+        'identityDocuments',
+        'user',
+      ],
       where: isAdmin ? { id } : { id, userId },
     });
     if (!record) {
@@ -894,6 +906,16 @@ export class RecordsService {
     record.completedAt = null;
     record.updatedBy = actorUserId;
     await recordRepository.save(record);
+  }
+
+  private encryptIdentityDocumentNumber(number?: string): string | null {
+    if (!number?.trim()) {
+      return null;
+    }
+    if (EncryptionUtility.isEncrypted(number)) {
+      return number;
+    }
+    return EncryptionUtility.encrypt(number);
   }
 
   private async validateFinalSubmission(

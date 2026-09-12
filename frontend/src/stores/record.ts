@@ -69,11 +69,10 @@ export const useRecordStore = defineStore('Record', {
     async createIdentificationData(formData: StepTwo, id: string, status: RecordStatus) {
       try {
         const payload = {
-          aadhaarNumber: formData.aadhaarNumber || undefined,
-          drivingLicense: formData.drivingLicense || undefined,
-          electionID: formData.electionID || undefined,
-          passportNumber: formData.passportNumber || undefined,
-          postBoxNumber: formData.postBoxNumber || undefined,
+          identityDocuments: (formData.identityDocuments || []).map((document) => ({
+            type: document.type || undefined,
+            number: document.number || undefined
+          })),
           status
         }
         const response = await axios.post(`${baseUrl}/step/two/${id}`, payload, {

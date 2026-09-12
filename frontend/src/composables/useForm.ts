@@ -1,6 +1,7 @@
 import type {
   Address,
   Child,
+  IdentityDocument,
   Policy,
   Document,
   StepOne,
@@ -38,6 +39,11 @@ export function useForm() {
     number: ''
   })
 
+  const createIdentityDocument = (): IdentityDocument => ({
+    type: '',
+    number: ''
+  })
+
   const stepOneInitialState: StepOne = {
     valid: false,
     id: '',
@@ -64,11 +70,7 @@ export function useForm() {
   const stepTwoInitialState: StepTwo = {
     valid: false,
     password: '',
-    aadhaarNumber: '',
-    drivingLicense: '',
-    electionID: '',
-    passportNumber: '',
-    postBoxNumber: ''
+    identityDocuments: [createIdentityDocument()]
   }
 
   const stepThreeInitialState: StepThree = {

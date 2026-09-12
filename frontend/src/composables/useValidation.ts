@@ -30,9 +30,11 @@ export function useValidation() {
       /^\+?[0-9]{7,15}$/.test(value) ||
       'Mobile number must be 7-15 digits, with an optional leading +.',
 
-    // Aadhaar Number
-    aadhaarNumber: (value: string) =>
-      isEmpty(value) || /^\d{12}$/.test(value) || 'Aadhaar number must be 12 digits.',
+    // Identity Documents
+    identityDocumentNumber: (value: string) =>
+      isEmpty(value) ||
+      /^[A-Za-z0-9\- ]{4,32}$/.test(value) ||
+      'Document number must be 4-32 characters (letters, numbers, spaces, or dashes).',
 
     // Postal Code
     postalCode: (value: string) =>

@@ -219,12 +219,16 @@ const useDefaultProfileImage = () => {
                             {{ showSensitiveDetails ? 'Hide details' : 'Show details' }}
                         </v-btn>
                     </template>
-                    <v-row dense>
-                        <v-col cols="12" sm="6"><DetailField label="Aadhaar Number" :value="displaySensitiveValue(form.aadhaarNumber)" /></v-col>
-                        <v-col cols="12" sm="6"><DetailField label="Driving License" :value="displaySensitiveValue(form.drivingLicense)" /></v-col>
-                        <v-col cols="12" sm="6"><DetailField label="Election ID" :value="displaySensitiveValue(form.electionID)" /></v-col>
-                        <v-col cols="12" sm="6"><DetailField label="Passport Number" :value="displaySensitiveValue(form.passportNumber)" /></v-col>
-                    </v-row>
+                    <v-table v-if="form.identityDocuments?.length" density="compact" class="detail-table mb-3">
+                        <thead><tr><th>Document Type</th><th>Document Number</th></tr></thead>
+                        <tbody>
+                            <tr v-for="(document, index) in form.identityDocuments" :key="document.id || index">
+                                <td>{{ document.type || '—' }}</td>
+                                <td>{{ displaySensitiveValue(document.number) }}</td>
+                            </tr>
+                        </tbody>
+                    </v-table>
+                    <v-alert v-else type="info" color="secondary" variant="tonal" class="mb-3">No identity documents available.</v-alert>
                 </DetailSection>
 
                 <DetailSection id="occupation" title="Occupation & Addresses" :icon="BriefcaseIcon">
