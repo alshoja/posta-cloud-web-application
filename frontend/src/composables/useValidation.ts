@@ -1,4 +1,5 @@
 import { reactive } from 'vue'
+import { COUNTRY_NAMES } from '@/utils/countries'
 
 export function useValidation() {
   const isEmpty = (value: unknown) => value === null || value === undefined || String(value).trim() === ''
@@ -25,11 +26,21 @@ export function useValidation() {
 
     // Mobile Number
     mobileNumber: (value: string) =>
-      isEmpty(value) || /^\d{10}$/.test(value) || 'Mobile number must be 10 digits.',
+      isEmpty(value) ||
+      /^\+?[0-9]{7,15}$/.test(value) ||
+      'Mobile number must be 7-15 digits, with an optional leading +.',
 
     // Aadhaar Number
     aadhaarNumber: (value: string) =>
       isEmpty(value) || /^\d{12}$/.test(value) || 'Aadhaar number must be 12 digits.',
+
+    // Postal Code
+    postalCode: (value: string) =>
+      isEmpty(value) || /^[0-9]{3,10}$/.test(value) || 'Postal code must be 3-10 digits.',
+
+    // Country
+    country: (value: string) =>
+      isEmpty(value) || COUNTRY_NAMES.includes(value) || 'Please select a valid country.',
 
     // Date of Birth
     dateOfBirth: (value: string) => {

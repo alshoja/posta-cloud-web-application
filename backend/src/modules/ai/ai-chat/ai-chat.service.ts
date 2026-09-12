@@ -107,20 +107,14 @@ export class AiChatService {
       'name',
       'email',
       'mobileNumber',
-      'village',
-      'panchayat',
-      'district',
+      'city',
+      'state',
+      'country',
+      'postalCode',
     ] as const) {
       if (typeof value[key] === 'string' && value[key].trim()) {
         filters[key] = value[key].trim();
       }
-    }
-
-    if (
-      typeof value.postOffice === 'number' &&
-      Number.isFinite(value.postOffice)
-    ) {
-      filters.postOffice = value.postOffice;
     }
 
     if (

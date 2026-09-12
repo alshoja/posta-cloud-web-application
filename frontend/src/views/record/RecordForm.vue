@@ -8,6 +8,9 @@ import { useValidation } from '@/composables/useValidation';
 import type { RecordDetail, RecordStatus } from '@/interfaces/record.interface';
 import { useRecordStore } from '@/stores/record';
 import { useSnackbarStore } from '@/stores/snackbar.store';
+import { COUNTRY_NAMES } from '@/utils/countries';
+import { VueTelInput } from 'vue-tel-input';
+import 'vue-tel-input/vue-tel-input.css';
 import FileUpload from '@/views/record/components/FileUpload.vue';
 import FileViewer from '@/views/record/components/FileViewer.vue';
 import ProfileImage from '@/views/record/components/ProfileImage.vue';
@@ -21,6 +24,15 @@ const loading = ref(false);
 const snackbar = useSnackbarStore();
 const router = useRouter()
 const validationRules = useValidation();
+const countryNames = COUNTRY_NAMES;
+const mobileNumberInvalid = ref(false);
+const whatsappNumberInvalid = ref(false);
+const onMobileNumberValidate = (phoneObject: { isValid: boolean; number: string }) => {
+    mobileNumberInvalid.value = Boolean(phoneObject.number) && !phoneObject.isValid;
+};
+const onWhatsappNumberValidate = (phoneObject: { isValid: boolean; number: string }) => {
+    whatsappNumberInvalid.value = Boolean(phoneObject.number) && !phoneObject.isValid;
+};
 const recordStore = useRecordStore();
 const {
     stepOneInitialState,
@@ -551,10 +563,10 @@ const applyOcrResultToForm = (result: IdentityDocumentParseResult): boolean => {
             filledFields.push('Last name');
         }
     }
-    if (fields.pin && !stepOne.postOffice) {
-        stepOne.postOffice = fields.pin;
+    if (fields.pin && !stepOne.postalCode) {
+        stepOne.postalCode = fields.pin;
         filledAnyField = true;
-        filledFields.push('Post office / PIN');
+        filledFields.push('Postal code');
     }
 
     ocrFilledFields.value = filledFields;
@@ -812,12 +824,24 @@ const downloadDocument = async (index: number) => {
                         <v-card-text>
                             <v-row>
                                 <v-col cols="12" md="6">
-                                    <v-text-field variant="outlined" v-model="stepOne.mobileNumber"
-                                        label="Mobile Number(+91)" />
+                                    <div class="phone-input-field" :class="{ 'phone-input-field--error': mobileNumberInvalid }">
+                                        <span class="phone-input-field__label">Mobile Number</span>
+                                        <VueTelInput v-model="stepOne.mobileNumber" mode="international"
+                                            :auto-default-country="false" @validate="onMobileNumberValidate" />
+                                    </div>
+                                    <div v-if="mobileNumberInvalid" class="phone-input-field__error">
+                                        Please enter a valid mobile number.
+                                    </div>
                                 </v-col>
                                 <v-col cols="12" md="6">
-                                    <v-text-field variant="outlined" v-model="stepOne.whatsappNumber"
-                                        label="WhatsApp Number(+91)" />
+                                    <div class="phone-input-field" :class="{ 'phone-input-field--error': whatsappNumberInvalid }">
+                                        <span class="phone-input-field__label">WhatsApp Number</span>
+                                        <VueTelInput v-model="stepOne.whatsappNumber" mode="international"
+                                            :auto-default-country="false" @validate="onWhatsappNumberValidate" />
+                                    </div>
+                                    <div v-if="whatsappNumberInvalid" class="phone-input-field__error">
+                                        Please enter a valid WhatsApp number.
+                                    </div>
                                 </v-col>
                             </v-row>
                         </v-card-text>
@@ -836,31 +860,27 @@ const downloadDocument = async (index: number) => {
                         <v-card-text>
                             <v-row>
                                 <v-col cols="12" sm="6">
-                                    <v-text-field variant="outlined" v-model="stepOne.houseName" label="House Name" />
+                                    <v-text-field variant="outlined" v-model="stepOne.addressLine1"
+                                        label="Address Line 1" />
                                 </v-col>
                                 <v-col cols="12" sm="6">
-                                    <v-text-field variant="outlined" v-model="stepOne.houseNumber"
-                                        label="House Number" />
-                                </v-col>
-                                <v-col cols="12" sm="6">
-                                    <v-text-field variant="outlined" v-model="stepOne.streetName" label="Street Name" />
-                                </v-col>
-                                <v-col cols="12" sm="6">
-                                    <v-text-field variant="outlined" v-model="stepOne.streetNumber"
-                                        label="Street Number" />
+                                    <v-text-field variant="outlined" v-model="stepOne.addressLine2"
+                                        label="Address Line 2" />
                                 </v-col>
                                 <v-col cols="12" md="6">
-                                    <v-text-field variant="outlined" v-model="stepOne.village" label="Village" />
+                                    <v-text-field variant="outlined" v-model="stepOne.city" label="City" />
                                 </v-col>
                                 <v-col cols="12" md="6">
-                                    <v-text-field type="number" variant="outlined" v-model="stepOne.postOffice"
-                                        label="Post Office" />
+                                    <v-text-field variant="outlined" v-model="stepOne.state" label="State / Region" />
                                 </v-col>
                                 <v-col cols="12" md="6">
-                                    <v-text-field variant="outlined" v-model="stepOne.panchayat" label="Panchayat" />
+                                    <v-text-field variant="outlined" v-model="stepOne.postalCode" label="Postal Code"
+                                        :rules="[validationRules.postalCode]" />
                                 </v-col>
                                 <v-col cols="12" md="6">
-                                    <v-text-field variant="outlined" v-model="stepOne.district" label="District" />
+                                    <v-autocomplete variant="outlined" v-model="stepOne.country"
+                                        :items="countryNames" label="Country" clearable
+                                        :rules="[validationRules.country]" />
                                 </v-col>
                             </v-row>
                         </v-card-text>
@@ -1379,6 +1399,71 @@ const downloadDocument = async (index: number) => {
 </template>
 
 <style scoped>
+.step-one-card {
+    position: relative;
+}
+
+.step-one-card:focus-within {
+    z-index: 10;
+}
+
+.phone-input-field {
+    position: relative;
+    margin-top: 10px;
+}
+
+.phone-input-field__label {
+    position: absolute;
+    top: -8px;
+    left: 12px;
+    padding: 0 4px;
+    font-size: 0.75rem;
+    line-height: 1;
+    background: rgb(var(--v-theme-surface));
+    color: rgba(var(--v-theme-on-surface), 0.6);
+    z-index: 1;
+}
+
+.phone-input-field--error .phone-input-field__label {
+    color: rgb(var(--v-theme-error));
+}
+
+.phone-input-field__error {
+    color: rgb(var(--v-theme-error));
+    font-size: 0.75rem;
+    margin-top: 4px;
+    padding-left: 12px;
+}
+
+:deep(.vue-tel-input) {
+    box-sizing: border-box;
+    border-radius: 8px;
+    border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    height: 45px;
+    background: rgb(var(--v-theme-surface));
+}
+
+:deep(.vti__input) {
+    box-sizing: border-box;
+    height: 100%;
+}
+
+.phone-input-field:focus-within :deep(.vue-tel-input) {
+    border-color: rgba(var(--v-theme-on-surface), 0.87);
+    border-width: 2px;
+}
+
+.phone-input-field--error :deep(.vue-tel-input) {
+    border-color: rgb(var(--v-theme-error));
+}
+
+:deep(.vti__dropdown-list) {
+    z-index: 20;
+    border-radius: 8px;
+    margin-top: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
 :deep(.sensitive-visibility-field .v-field__append-inner .v-icon) {
     color: rgb(var(--v-theme-secondary));
     opacity: 1;

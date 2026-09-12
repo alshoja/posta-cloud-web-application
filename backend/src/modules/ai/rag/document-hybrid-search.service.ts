@@ -115,9 +115,9 @@ export class DocumentHybridSearchService {
       .addSelect('record.email', 'email')
       .addSelect('record.mobileNumber', 'mobileNumber')
       .addSelect('record.status', 'status')
-      .addSelect('record.village', 'village')
-      .addSelect('record.panchayat', 'panchayat')
-      .addSelect('record.district', 'district')
+      .addSelect('record.city', 'city')
+      .addSelect('record.state', 'state')
+      .addSelect('record.country', 'country')
       .andWhere('chunk.id IN (:...chunkIds)', { chunkIds: uniqueChunkIds });
 
     const rows = await query.getRawMany<Record<string, unknown>>();
@@ -196,9 +196,9 @@ export class DocumentHybridSearchService {
       email: this.getString(row.email),
       mobileNumber: this.getString(row.mobileNumber),
       status: this.getStatus(row.status),
-      village: this.getString(row.village),
-      panchayat: this.getString(row.panchayat),
-      district: this.getString(row.district),
+      city: this.getString(row.city),
+      state: this.getString(row.state),
+      country: this.getString(row.country),
     };
   }
 

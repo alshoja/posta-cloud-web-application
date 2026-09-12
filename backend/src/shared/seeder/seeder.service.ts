@@ -149,12 +149,11 @@ export class SeederService {
               .toISOString()
               .split('T')[0],
             gender: faker.helpers.arrayElement(Object.values(Gender)),
-            houseName: faker.location.secondaryAddress(),
-            houseNumber: faker.string.numeric(2),
-            streetName: faker.location.street(),
-            streetNumber: faker.string.numeric(3),
-            panchayat: faker.location.city(),
-            district: faker.location.state(),
+            addressLine1: faker.location.streetAddress(),
+            addressLine2: faker.location.secondaryAddress(),
+            city: faker.location.city(),
+            state: faker.location.state(),
+            country: faker.location.country(),
             aadhaarNumber: faker.string.numeric(16),
             drivingLicense:
               i % 3 === 0 ? faker.string.alphanumeric(12) : undefined,
@@ -179,7 +178,7 @@ export class SeederService {
                 ? faker.date.future().toISOString().split('T')[0]
                 : undefined,
             isRedirected: i % 6 === 0,
-            postOffice: parseInt(faker.string.numeric(6), 10),
+            postalCode: faker.location.zipCode(),
             status: isCompleted ? RecordStatus.COMPLETED : RecordStatus.DRAFT,
             lastCompletedStep,
             completedAt: isCompleted ? faker.date.recent({ days: 30 }) : null,
@@ -187,7 +186,6 @@ export class SeederService {
               i % 2 === 0
                 ? faker.date.past({ years: 20 }).toISOString().split('T')[0]
                 : undefined,
-            village: faker.location.city(),
             previousAddress:
               i % 3 === 0 ? faker.location.streetAddress() : undefined,
             userId: seedUser.id,

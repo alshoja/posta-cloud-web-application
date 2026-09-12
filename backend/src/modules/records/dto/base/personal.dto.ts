@@ -3,17 +3,18 @@ import {
   IsDateString,
   IsEmail,
   IsEnum,
+  IsIn,
   IsNotEmpty,
   IsNumber,
   IsOptional,
+  IsPhoneNumber,
   IsString,
   Matches,
-  Max,
-  Min,
   Validate,
   ValidateIf,
 } from 'class-validator';
 import { ExistsRule } from 'src/shared/validators/exist-rule.validator';
+import { COUNTRY_NAMES } from 'src/shared/constants/country.constant';
 import { Gender } from '../../enums/gender.enum';
 import { RecordStatus } from '../../enums/record-status.enum';
 
@@ -50,54 +51,50 @@ export class CreateProfileDto {
 
   @ValidateIf((_, value) => value !== '' && value !== null && value !== undefined)
   @IsOptional()
-  @IsString({ message: 'House name must be a string.' })
-  houseName?: string;
-
-  @IsOptional()
-  @IsString({ message: 'House number must be a string.' })
-  houseNumber?: string;
+  @IsString({ message: 'Address line 1 must be a string.' })
+  addressLine1?: string;
 
   @ValidateIf((_, value) => value !== '' && value !== null && value !== undefined)
   @IsOptional()
-  @IsString({ message: 'Street name must be a string.' })
-  streetName?: string;
+  @IsString({ message: 'Address line 2 must be a string.' })
+  addressLine2?: string;
 
   @ValidateIf((_, value) => value !== '' && value !== null && value !== undefined)
   @IsOptional()
-  @IsString({ message: 'Street number must be a string.' })
-  streetNumber?: string;
+  @IsString({ message: 'City must be a string.' })
+  city?: string;
 
   @ValidateIf((_, value) => value !== '' && value !== null && value !== undefined)
   @IsOptional()
-  @Min(100000, { message: 'PostOffice Number must be 6 digit ' })
-  @Max(999999, { message: 'PostOffice Number must be 6 digit ' })
-  @IsNumber()
-  postOffice?: number;
+  @IsString({ message: 'State must be a string.' })
+  state?: string;
 
   @ValidateIf((_, value) => value !== '' && value !== null && value !== undefined)
   @IsOptional()
-  @IsString({ message: 'Panchayath must be a string.' })
-  panchayat?: string;
+  @Matches(/^[0-9]{3,10}$/, {
+    message: 'Postal code must be 3-10 digits.',
+  })
+  postalCode?: string;
 
   @ValidateIf((_, value) => value !== '' && value !== null && value !== undefined)
   @IsOptional()
-  @IsString({ message: 'District must be a string.' })
-  district?: string;
+  @IsIn(COUNTRY_NAMES, { message: 'Country must be a valid country name.' })
+  country?: string;
 
   @ValidateIf((_, value) => value !== '' && value !== null && value !== undefined)
   @IsOptional()
   @Validate(ExistsRule, ['records:mobileNumber:id'])
-  @Matches(/^\d{10}$/, { message: 'Mobile number must be 10 digits.' })
+  @IsPhoneNumber(undefined, {
+    message: 'Mobile number must be a valid phone number, including country code.',
+  })
   mobileNumber?: string;
-
-  @ValidateIf((o) => o.whatsappNumber != '')
-  @IsOptional()
-  whatsappNumber?: string;
 
   @ValidateIf((_, value) => value !== '' && value !== null && value !== undefined)
   @IsOptional()
-  @IsString({ message: 'Village must be a string.' })
-  village?: string;
+  @IsPhoneNumber(undefined, {
+    message: 'WhatsApp number must be a valid phone number, including country code.',
+  })
+  whatsappNumber?: string;
 
   @ValidateIf((_, value) => value !== '' && value !== null && value !== undefined)
   @IsOptional()

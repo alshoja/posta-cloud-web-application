@@ -60,15 +60,17 @@ export interface Policy {
 export interface RecordDetail
   extends Person,
     Contact,
-    Address,
     IdentityDocuments,
     MarriageInfo,
     RedirectionAddress {
   id?: string
   profileImage?: string
-  address: Address
-  panchayat: string
-  district: string
+  addressLine1: string
+  addressLine2: string
+  city: string
+  state: string
+  postalCode: string
+  country: string
   addresses?: Address[]
   policies?: Policy[]
   documents?: Document[]

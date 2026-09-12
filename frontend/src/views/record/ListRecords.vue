@@ -221,7 +221,7 @@ const getProfileImageUrl = (profileImage?: string) => {
 };
 
 const getRecordLocation = (item: RecordDetail) =>
-    [item.village, item.panchayat, item.district].filter(Boolean).join(', ') || 'Location not saved';
+    [item.city, item.state, item.country].filter(Boolean).join(', ') || 'Location not saved';
 
 const formatEntryDate = (createdAt?: Date) =>
     createdAt ? new Date(createdAt).toLocaleDateString('en-GB') : 'Date not saved';

@@ -57,22 +57,19 @@ export class Record {
   gender: Gender;
 
   @Column({ nullable: true })
-  houseName: string;
+  addressLine1: string;
 
   @Column({ nullable: true })
-  houseNumber: string;
+  addressLine2: string;
 
   @Column({ nullable: true })
-  streetName: string;
+  city: string;
 
   @Column({ nullable: true })
-  streetNumber: string;
+  state: string;
 
   @Column({ nullable: true })
-  panchayat: string;
-
-  @Column({ nullable: true })
-  district: string;
+  country: string;
 
   @Column({ nullable: true })
   @Transform(
@@ -132,7 +129,7 @@ export class Record {
   isRedirected: boolean;
 
   @Column({ nullable: true })
-  postOffice: number;
+  postalCode: string;
 
   @Column({
     type: 'enum',
@@ -155,9 +152,6 @@ export class Record {
 
   @Column({ nullable: true })
   marriageDate: string;
-
-  @Column({ nullable: true })
-  village: string;
 
   @Column({ nullable: true })
   previousAddress: string;

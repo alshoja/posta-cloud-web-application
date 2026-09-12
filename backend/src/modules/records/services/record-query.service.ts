@@ -65,9 +65,9 @@ export class RecordQueryService {
           'record.email',
           'record.mobileNumber',
           'record.status',
-          'record.village',
-          'record.panchayat',
-          'record.district',
+          'record.city',
+          'record.state',
+          'record.country',
           'record.createdAt',
         ])
         .distinct(true)
@@ -117,9 +117,9 @@ export class RecordQueryService {
       email: record.email,
       mobileNumber: record.mobileNumber,
       status: record.status,
-      village: record.village,
-      panchayat: record.panchayat,
-      district: record.district,
+      city: record.city,
+      state: record.state,
+      country: record.country,
     };
   }
 
@@ -141,9 +141,9 @@ export class RecordQueryService {
             'lastName',
             'email',
             'mobileNumber',
-            'village',
-            'panchayat',
-            'district',
+            'city',
+            'state',
+            'country',
           ]) {
             qb.orWhere(`record.${field} ILIKE :search`, {
               search: `%${filters.search}%`,
@@ -165,7 +165,7 @@ export class RecordQueryService {
       );
     }
 
-    for (const key of ['email', 'mobileNumber', 'village', 'panchayat', 'district'] as const) {
+    for (const key of ['email', 'mobileNumber', 'city', 'state', 'country'] as const) {
       if (filters[key]) {
         query.andWhere(`record.${key} ILIKE :${key}`, {
           [key]: `%${filters[key]}%`,
@@ -173,9 +173,9 @@ export class RecordQueryService {
       }
     }
 
-    if (typeof filters.postOffice === 'number') {
-      query.andWhere('record.postOffice = :postOffice', {
-        postOffice: filters.postOffice,
+    if (filters.postalCode) {
+      query.andWhere('record.postalCode ILIKE :postalCode', {
+        postalCode: `%${filters.postalCode}%`,
       });
     }
 

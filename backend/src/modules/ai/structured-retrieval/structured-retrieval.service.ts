@@ -148,7 +148,7 @@ export class StructuredRetrievalService {
       status: record.status,
       contact: record.email || record.mobileNumber || 'Not saved',
       location:
-        [record.village, record.panchayat, record.district]
+        [record.city, record.state, record.country]
           .filter(Boolean)
           .join(', ') || 'Not saved',
       documentsCount: record.documents?.length ?? 0,

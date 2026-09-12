@@ -6,10 +6,10 @@ export class RecordSearchFilterDto {
   name?: string;
   email?: string;
   mobileNumber?: string;
-  village?: string;
-  panchayat?: string;
-  district?: string;
-  postOffice?: number;
+  city?: string;
+  state?: string;
+  country?: string;
+  postalCode?: string;
   isRedirected?: boolean;
   isAbroad?: boolean;
   hasDocuments?: boolean;

@@ -21,9 +21,9 @@ export type AiChatRecordResult = Pick<
     | 'email'
     | 'mobileNumber'
     | 'status'
-    | 'village'
-    | 'panchayat'
-    | 'district'
+    | 'city'
+    | 'state'
+    | 'country'
   >
 
 export interface AiChatMessage {

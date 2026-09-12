@@ -198,8 +198,12 @@ const useDefaultProfileImage = () => {
                         <v-col cols="12" sm="6" lg="4"><DetailField label="WhatsApp Number" :value="form.whatsappNumber" /></v-col>
                         <v-col cols="12" sm="6" lg="4"><DetailField label="Date of Birth" :value="form.dateOfBirth" /></v-col>
                         <v-col cols="12" sm="6" lg="4"><DetailField label="Gender" :value="form.gender" /></v-col>
-                        <v-col cols="12" sm="6" lg="4"><DetailField label="House Name" :value="form.houseName" /></v-col>
-                        <v-col cols="12" sm="6" lg="4"><DetailField label="House Number" :value="form.houseNumber" /></v-col>
+                        <v-col cols="12" sm="6" lg="4"><DetailField label="Address Line 1" :value="form.addressLine1" /></v-col>
+                        <v-col cols="12" sm="6" lg="4"><DetailField label="Address Line 2" :value="form.addressLine2" /></v-col>
+                        <v-col cols="12" sm="6" lg="4"><DetailField label="City" :value="form.city" /></v-col>
+                        <v-col cols="12" sm="6" lg="4"><DetailField label="State / Region" :value="form.state" /></v-col>
+                        <v-col cols="12" sm="6" lg="4"><DetailField label="Postal Code" :value="form.postalCode" /></v-col>
+                        <v-col cols="12" sm="6" lg="4"><DetailField label="Country" :value="form.country" /></v-col>
                     </v-row>
                 </DetailSection>
 

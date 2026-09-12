@@ -92,7 +92,7 @@ const getRecordName = (record: AiChatRecordResult) => {
 }
 
 const getRecordLocation = (record: AiChatRecordResult) =>
-  [record.village, record.panchayat, record.district].filter(Boolean).join(', ')
+  [record.city, record.state, record.country].filter(Boolean).join(', ')
 
 const renderAssistantMarkdown = (content: string) => markdownRenderer.render(content)
 

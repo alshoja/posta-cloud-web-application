@@ -172,7 +172,6 @@ services:
       - "3000:3000"
     volumes:
       - ./frontend:/app
-      - /app/node_modules
     environment:
       - VITE_API_URL=${VITE_API_URL}
       - VITE_ASSET_URL=${VITE_ASSET_URL}
@@ -190,7 +189,6 @@ services:
       - "5001:5001"
     volumes:
       - ./backend:/app
-      - /app/node_modules
     environment:
       - BASE_URL=${VITE_ASSET_URL}
       - NODE_ENV=${NODE_ENV}

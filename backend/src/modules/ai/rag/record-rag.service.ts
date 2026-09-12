@@ -125,9 +125,9 @@ export class RecordRagService {
           email: chunk.email,
           mobileNumber: chunk.mobileNumber,
           status: chunk.status,
-          village: chunk.village,
-          panchayat: chunk.panchayat,
-          district: chunk.district,
+          city: chunk.city,
+          state: chunk.state,
+          country: chunk.country,
         });
       }
     }

@@ -7,7 +7,7 @@ export class RetrievedDocumentChunkDto extends RagDocumentChunkDto {
   email?: string;
   mobileNumber?: string;
   status?: RecordStatus;
-  village?: string;
-  panchayat?: string;
-  district?: string;
+  city?: string;
+  state?: string;
+  country?: string;
 }
