@@ -89,19 +89,19 @@ export const useRecordStore = defineStore('Record', {
         const payload = {
           redirectionAddress: formData.redirectionAddress,
           isAbroad: formData.isAbroad,
-          redirectedHouseName: formData.redirectedHouseName || undefined,
-          redirectedHouseNumber: formData.redirectedHouseNumber || undefined,
+          redirectedAddressLine1: formData.redirectedAddressLine1 || undefined,
+          redirectedAddressLine2: formData.redirectedAddressLine2 || undefined,
           job: formData.job || undefined,
           retirementDate: formData.retirementDate || undefined,
           isRedirected: formData.isRedirected,
           addresses: (formData.addresses || []).map((address) => ({
             id: address.id || undefined,
-            houseName: address.houseName || undefined,
-            houseNumber: address.houseNumber || undefined,
-            streetName: address.streetName || undefined,
-            streetNumber: address.streetNumber || undefined,
-            village: address.village || undefined,
-            postOffice: address.postOffice || undefined,
+            addressLine1: address.addressLine1 || undefined,
+            addressLine2: address.addressLine2 || undefined,
+            city: address.city || undefined,
+            state: address.state || undefined,
+            postalCode: address.postalCode || undefined,
+            country: address.country || undefined,
             locationType: address.locationType || undefined
           })),
           status

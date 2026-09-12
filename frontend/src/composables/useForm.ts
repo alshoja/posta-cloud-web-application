@@ -14,12 +14,12 @@ import type {
 
 export function useForm() {
   const createAddress = (): Address => ({
-    houseName: '',
-    houseNumber: '',
-    streetName: '',
-    streetNumber: '',
-    village: '',
-    postOffice: '',
+    addressLine1: '',
+    addressLine2: '',
+    city: '',
+    state: '',
+    postalCode: '',
+    country: '',
     locationType: ''
   })
 
@@ -77,12 +77,11 @@ export function useForm() {
     valid: false,
     redirectionAddress: false,
     isAbroad: false,
-    ...createAddress(),
     job: '',
     retirementDate: '',
     isRedirected: false,
-    redirectedHouseName: '',
-    redirectedHouseNumber: '',
+    redirectedAddressLine1: '',
+    redirectedAddressLine2: '',
     addresses: [createAddress()]
   }
 

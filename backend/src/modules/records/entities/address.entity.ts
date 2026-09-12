@@ -14,22 +14,22 @@ export class Address {
   id: number;
 
   @Column({ nullable: true })
-  houseName: string;
+  addressLine1: string;
 
   @Column({ nullable: true })
-  houseNumber: string;
+  addressLine2: string;
 
   @Column({ nullable: true })
-  streetName: string;
+  city: string;
 
   @Column({ nullable: true })
-  streetNumber: string;
+  state: string;
 
   @Column({ nullable: true })
-  village: string;
+  postalCode: string;
 
   @Column({ nullable: true })
-  postOffice: string;
+  country: string;
 
   @Column({ nullable: true })
   locationType: string;

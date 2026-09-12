@@ -158,10 +158,10 @@ export class SeederService {
             country: faker.location.country(),
             redirectionAddress: i % 6 === 0,
             isAbroad: i % 7 === 0,
-            redirectedHouseName:
+            redirectedAddressLine1:
+              i % 6 === 0 ? faker.location.streetAddress() : undefined,
+            redirectedAddressLine2:
               i % 6 === 0 ? faker.location.secondaryAddress() : undefined,
-            redirectedHouseNumber:
-              i % 6 === 0 ? faker.string.numeric(2) : undefined,
             job: faker.helpers.arrayElement([
               'Engineer',
               'Doctor',
@@ -309,22 +309,22 @@ export class SeederService {
   private createSeedAddresses(recordsId: number, index: number): Address[] {
     return [
       {
-        houseName: faker.location.secondaryAddress(),
-        houseNumber: faker.string.numeric(2),
-        streetName: faker.location.street(),
-        streetNumber: faker.string.numeric(3),
-        village: faker.location.city(),
-        postOffice: faker.string.numeric(6),
+        addressLine1: faker.location.streetAddress(),
+        addressLine2: faker.location.secondaryAddress(),
+        city: faker.location.city(),
+        state: faker.location.state(),
+        postalCode: faker.location.zipCode(),
+        country: faker.location.country(),
         locationType: 'current',
         recordsId,
       },
       {
-        houseName: index % 2 === 0 ? faker.location.secondaryAddress() : '',
-        houseNumber: index % 2 === 0 ? faker.string.numeric(2) : '',
-        streetName: faker.location.street(),
-        streetNumber: faker.string.numeric(3),
-        village: faker.location.city(),
-        postOffice: faker.string.numeric(6),
+        addressLine1: index % 2 === 0 ? faker.location.streetAddress() : '',
+        addressLine2: index % 2 === 0 ? faker.location.secondaryAddress() : '',
+        city: faker.location.city(),
+        state: faker.location.state(),
+        postalCode: faker.location.zipCode(),
+        country: faker.location.country(),
         locationType: 'permanent',
         recordsId,
       },

@@ -8,9 +8,9 @@ import { useValidation } from '@/composables/useValidation';
 import type { RecordDetail, RecordStatus } from '@/interfaces/record.interface';
 import { useRecordStore } from '@/stores/record';
 import { useSnackbarStore } from '@/stores/snackbar.store';
-import { COUNTRY_NAMES } from '@/utils/countries';
 import { VueTelInput } from 'vue-tel-input';
 import 'vue-tel-input/vue-tel-input.css';
+import AddressFields from '@/views/record/components/AddressFields.vue';
 import FileUpload from '@/views/record/components/FileUpload.vue';
 import FileViewer from '@/views/record/components/FileViewer.vue';
 import ProfileImage from '@/views/record/components/ProfileImage.vue';
@@ -24,7 +24,6 @@ const loading = ref(false);
 const snackbar = useSnackbarStore();
 const router = useRouter()
 const validationRules = useValidation();
-const countryNames = COUNTRY_NAMES;
 const identityDocumentTypes = ['Passport', 'National ID', "Driver's License", 'Voter/Election Card', 'Other'];
 const mobileNumberInvalid = ref(false);
 const whatsappNumberInvalid = ref(false);
@@ -133,12 +132,12 @@ const syncStepState = async () => {
 
 const addAddress = () => {
     stepThree.addresses.push({
-        houseName: '',
-        houseNumber: '',
-        streetName: '',
-        streetNumber: '',
-        village: '',
-        postOffice: '',
+        addressLine1: '',
+        addressLine2: '',
+        city: '',
+        state: '',
+        postalCode: '',
+        country: '',
         locationType: '',
     });
 };
@@ -284,27 +283,6 @@ const setFormFields = (record: RecordDetail) => {
 
 onMounted(() => {
     void checkOcrServiceStatus();
-    // const One = {
-    //     "id": "",
-    //     "valid": true,
-    //     "profileImage": "http://localhost:5001/1738053289968-Screenshot from 2025-01-25 14-22-46.png",
-    //     "email": "asdfff@gmail.com",
-    //     "firstName": "Alshoja",
-    //     "lastName": "m ikbal",
-    //     "houseName": "Padannamakal",
-    //     "houseNumber": "123",
-    //     "streetName": "Street ",
-    //     "streetNumber": "132",
-    //     "postOffice": "652234",
-    //     "village": "Village",
-    //     "panchayat": "Panchayath",
-    //     "district": "District",
-    //     "mobileNumber": "9967521656",
-    //     "whatsappNumber": "",
-    //     "dateOfBirth": "2025-01-28",
-    //     "gender": "male"
-    // }
-    // Object.assign(stepOne, One);
 });
 
 const isCurrentStepValid = computed(() => {
@@ -890,31 +868,13 @@ const downloadDocument = async (index: number) => {
                             </div>
                         </v-card-title>
                         <v-card-text>
-                            <v-row>
-                                <v-col cols="12" sm="6">
-                                    <v-text-field variant="outlined" v-model="stepOne.addressLine1"
-                                        label="Address Line 1" />
-                                </v-col>
-                                <v-col cols="12" sm="6">
-                                    <v-text-field variant="outlined" v-model="stepOne.addressLine2"
-                                        label="Address Line 2" />
-                                </v-col>
-                                <v-col cols="12" md="6">
-                                    <v-text-field variant="outlined" v-model="stepOne.city" label="City" />
-                                </v-col>
-                                <v-col cols="12" md="6">
-                                    <v-text-field variant="outlined" v-model="stepOne.state" label="State / Region" />
-                                </v-col>
-                                <v-col cols="12" md="6">
-                                    <v-text-field variant="outlined" v-model="stepOne.postalCode" label="Postal Code"
-                                        :rules="[validationRules.postalCode]" />
-                                </v-col>
-                                <v-col cols="12" md="6">
-                                    <v-autocomplete variant="outlined" v-model="stepOne.country"
-                                        :items="countryNames" label="Country" clearable
-                                        :rules="[validationRules.country]" />
-                                </v-col>
-                            </v-row>
+                            <AddressFields
+                                v-model:address-line1="stepOne.addressLine1"
+                                v-model:address-line2="stepOne.addressLine2"
+                                v-model:city="stepOne.city"
+                                v-model:state="stepOne.state"
+                                v-model:postal-code="stepOne.postalCode"
+                                v-model:country="stepOne.country" />
                         </v-card-text>
                     </v-card>
                 </v-form>
@@ -1007,12 +967,12 @@ const downloadDocument = async (index: number) => {
                         <v-card-text>
                             <v-row>
                                 <v-col cols="12" md="6">
-                                    <v-text-field variant="outlined" v-model="stepThree.job" label="Occupation (ജോലി)"
+                                    <v-text-field variant="outlined" v-model="stepThree.job" label="Occupation"
                                         required />
                                 </v-col>
                                 <v-col cols="12" md="6">
                                     <v-text-field variant="outlined" v-model="stepThree.retirementDate"
-                                        label="Retirement Date (വിരമിക്കുന്ന തീയതി)" type="date" />
+                                        label="Retirement Date" type="date" />
                                 </v-col>
                             </v-row>
                         </v-card-text>
@@ -1044,7 +1004,7 @@ const downloadDocument = async (index: number) => {
                             <div class="step-three-setting"
                                 :class="{ 'step-three-setting--active': stepThree.isAbroad }">
                                 <div>
-                                    <div class="text-subtitle-1 font-weight-medium">Living Abroad (വിദേശത്ത്)</div>
+                                    <div class="text-subtitle-1 font-weight-medium">Living Abroad</div>
                                     <div class="text-caption text-lightText">Mark this person as living outside the
                                         country</div>
                                 </div>
@@ -1055,12 +1015,12 @@ const downloadDocument = async (index: number) => {
                             <v-expand-transition>
                                 <v-row v-if="stepThree.isRedirected" class="mt-2">
                                     <v-col cols="12" md="6">
-                                        <v-text-field variant="outlined" v-model="stepThree.redirectedHouseName"
-                                            label="Post-Retirement House Name" />
+                                        <v-text-field variant="outlined" v-model="stepThree.redirectedAddressLine1"
+                                            label="Post-Retirement Address Line 1" />
                                     </v-col>
                                     <v-col cols="12" md="6">
-                                        <v-text-field variant="outlined" v-model="stepThree.redirectedHouseNumber"
-                                            label="Post-Retirement House Number" />
+                                        <v-text-field variant="outlined" v-model="stepThree.redirectedAddressLine2"
+                                            label="Post-Retirement Address Line 2" />
                                     </v-col>
                                 </v-row>
                             </v-expand-transition>
@@ -1097,34 +1057,17 @@ const downloadDocument = async (index: number) => {
                                             </v-btn>
                                         </v-card-title>
                                         <v-card-text>
+                                            <AddressFields
+                                                v-model:address-line1="address.addressLine1"
+                                                v-model:address-line2="address.addressLine2"
+                                                v-model:city="address.city"
+                                                v-model:state="address.state"
+                                                v-model:postal-code="address.postalCode"
+                                                v-model:country="address.country" />
                                             <v-row>
-                                                <v-col cols="12" sm="6">
-                                                    <v-text-field variant="outlined" v-model="address.houseName"
-                                                        label="House Name" />
-                                                </v-col>
-                                                <v-col cols="12" sm="6">
-                                                    <v-text-field variant="outlined" v-model="address.houseNumber"
-                                                        label="House Number" />
-                                                </v-col>
-                                                <v-col cols="12" sm="6">
-                                                    <v-text-field variant="outlined" v-model="address.streetName"
-                                                        label="Street Name" />
-                                                </v-col>
-                                                <v-col cols="12" sm="6">
-                                                    <v-text-field variant="outlined" v-model="address.streetNumber"
-                                                        label="Street Number" />
-                                                </v-col>
-                                                <v-col cols="12" sm="6">
-                                                    <v-text-field variant="outlined" v-model="address.village"
-                                                        label="Village (വില്ലേജ്)" />
-                                                </v-col>
-                                                <v-col cols="12" sm="6">
-                                                    <v-text-field variant="outlined" v-model="address.postOffice"
-                                                        label="Post Office (പോസ്റ്റ് ഓഫീസ്)" />
-                                                </v-col>
                                                 <v-col cols="12">
                                                     <v-select variant="outlined" v-model="address.locationType"
-                                                        :items="['Domestic (സ്വദേശത്ത്)', 'Abroad (വിദേശത്ത്)']"
+                                                        :items="['Domestic', 'Abroad']"
                                                         label="Location Type" />
                                                 </v-col>
                                             </v-row>
@@ -1160,11 +1103,11 @@ const downloadDocument = async (index: number) => {
                             <v-row>
                                 <v-col cols="12" md="4">
                                     <v-text-field variant="outlined" v-model="stepFour.marriageDate"
-                                        label="Marriage Date (വിവാഹം നടന്ന തീയതി, മാസം, വർഷം)" type="date" />
+                                        label="Marriage Date" type="date" />
                                 </v-col>
                                 <v-col cols="12" md="8">
                                     <v-text-field variant="outlined" v-model="stepFour.previousAddress"
-                                        label="Previous Address (മുമ്പത്തെ മേൽവിലാസം)" />
+                                        label="Previous Address" />
                                 </v-col>
                             </v-row>
                         </v-card-text>
@@ -1205,7 +1148,7 @@ const downloadDocument = async (index: number) => {
                                                 </v-col>
                                                 <v-col cols="12" sm="6">
                                                     <v-text-field variant="outlined" v-model="child.dateOfBirth"
-                                                        label="Child's Date of Birth (കുട്ടി ജനിച്ച തീയതി)" type="date"
+                                                        label="Child's Date of Birth" type="date"
                                                         required />
                                                 </v-col>
                                                 <v-col cols="12" sm="6">

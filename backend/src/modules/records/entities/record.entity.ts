@@ -72,10 +72,10 @@ export class Record {
   isAbroad: boolean;
 
   @Column({ nullable: true })
-  redirectedHouseName: string;
+  redirectedAddressLine1: string;
 
   @Column({ nullable: true })
-  redirectedHouseNumber: string;
+  redirectedAddressLine2: string;
 
   @Column({ nullable: true })
   job: string;

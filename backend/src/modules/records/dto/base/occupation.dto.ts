@@ -5,11 +5,14 @@ import {
   IsBoolean,
   IsDateString,
   IsEnum,
+  IsIn,
   IsOptional,
   IsString,
+  Matches,
   ValidateIf,
   ValidateNested,
 } from 'class-validator';
+import { COUNTRY_NAMES } from 'src/shared/constants/country.constant';
 import { RecordStatus } from '../../enums/record-status.enum';
 
 export class CreateOccupationDto {
@@ -28,12 +31,12 @@ export class CreateOccupationDto {
   isAbroad: boolean;
 
   @IsOptional()
-  @IsString({ message: 'Redirected house name must be a string.' })
-  redirectedHouseName: string;
+  @IsString({ message: 'Redirected address line 1 must be a string.' })
+  redirectedAddressLine1: string;
 
   @IsOptional()
-  @IsString({ message: 'Redirected house number must be a string.' })
-  redirectedHouseNumber: string;
+  @IsString({ message: 'Redirected address line 2 must be a string.' })
+  redirectedAddressLine2: string;
 
   @IsOptional()
   @IsString({ message: 'Job must be a string.' })
@@ -60,28 +63,32 @@ export class AddressDto {
   id: number;
 
   @IsOptional()
-  @IsString({ message: 'House name must be a string.' })
-  houseName?: string;
+  @IsString({ message: 'Address line 1 must be a string.' })
+  addressLine1?: string;
 
   @IsOptional()
-  @IsString({ message: 'House number must be a string.' })
-  houseNumber?: string;
+  @IsString({ message: 'Address line 2 must be a string.' })
+  addressLine2?: string;
 
   @IsOptional()
-  @IsString({ message: 'Street name must be a string.' })
-  streetName?: string;
+  @IsString({ message: 'City must be a string.' })
+  city?: string;
 
   @IsOptional()
-  @IsString({ message: 'Street number must be a string.' })
-  streetNumber?: string;
+  @IsString({ message: 'State must be a string.' })
+  state?: string;
 
+  @ValidateIf((_, value) => value !== '' && value !== null && value !== undefined)
   @IsOptional()
-  @IsString({ message: 'Village must be a string.' })
-  village?: string;
+  @Matches(/^[0-9]{3,10}$/, {
+    message: 'Postal code must be 3-10 digits.',
+  })
+  postalCode?: string;
 
+  @ValidateIf((_, value) => value !== '' && value !== null && value !== undefined)
   @IsOptional()
-  @IsString({ message: 'Post office must be a string.' })
-  postOffice?: string;
+  @IsIn(COUNTRY_NAMES, { message: 'Country must be a valid country name.' })
+  country?: string;
 
   @IsOptional()
   @IsString({ message: 'Location type must be a string.' })

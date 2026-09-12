@@ -1,11 +1,11 @@
 export interface Address {
   id?: string
-  houseName: string
-  houseNumber: string
-  streetName: string
-  streetNumber: string
-  village: string
-  postOffice: string
+  addressLine1: string
+  addressLine2: string
+  city: string
+  state: string
+  postalCode: string
+  country: string
   locationType: string
 }
 
@@ -103,8 +103,8 @@ export interface RedirectionAddress {
   valid: boolean
   redirectionAddress: boolean
   isAbroad: boolean
-  redirectedHouseName?: string
-  redirectedHouseNumber?: string
+  redirectedAddressLine1?: string
+  redirectedAddressLine2?: string
   redirectedAddress?: Address
   job?: string
   retirementDate?: string

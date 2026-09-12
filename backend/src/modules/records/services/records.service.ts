@@ -209,12 +209,12 @@ export class RecordsService {
       const userId = this.request.user.sub;
       const normalizedAddresses = addresses ?? [];
       const _addresses = normalizedAddresses.map((address) => ({
-        houseName: this.normalizeNullableString(address.houseName),
-        houseNumber: this.normalizeNullableString(address.houseNumber),
-        streetName: this.normalizeNullableString(address.streetName),
-        streetNumber: this.normalizeNullableString(address.streetNumber),
-        village: this.normalizeNullableString(address.village),
-        postOffice: this.normalizeNullableString(address.postOffice),
+        addressLine1: this.normalizeNullableString(address.addressLine1),
+        addressLine2: this.normalizeNullableString(address.addressLine2),
+        city: this.normalizeNullableString(address.city),
+        state: this.normalizeNullableString(address.state),
+        postalCode: this.normalizeNullableString(address.postalCode),
+        country: this.normalizeNullableString(address.country),
         locationType: this.normalizeNullableString(address.locationType),
         recordsId,
       }));

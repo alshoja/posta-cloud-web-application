@@ -244,11 +244,12 @@ const useDefaultProfileImage = () => {
                                 </v-card-title>
                                 <v-card-text class="pt-1">
                                     <v-row dense>
-                                        <v-col cols="12" sm="6"><DetailField label="House" :value="address.houseName" /></v-col>
-                                        <v-col cols="12" sm="6"><DetailField label="House Number" :value="address.houseNumber" /></v-col>
-                                        <v-col cols="12" sm="6"><DetailField label="Street" :value="address.streetName" /></v-col>
-                                        <v-col cols="12" sm="6"><DetailField label="Village" :value="address.village" /></v-col>
-                                        <v-col cols="12" sm="6"><DetailField label="Post Office" :value="address.postOffice" /></v-col>
+                                        <v-col cols="12" sm="6"><DetailField label="Address Line 1" :value="address.addressLine1" /></v-col>
+                                        <v-col cols="12" sm="6"><DetailField label="Address Line 2" :value="address.addressLine2" /></v-col>
+                                        <v-col cols="12" sm="6"><DetailField label="City" :value="address.city" /></v-col>
+                                        <v-col cols="12" sm="6"><DetailField label="State / Region" :value="address.state" /></v-col>
+                                        <v-col cols="12" sm="6"><DetailField label="Postal Code" :value="address.postalCode" /></v-col>
+                                        <v-col cols="12" sm="6"><DetailField label="Country" :value="address.country" /></v-col>
                                         <v-col cols="12" sm="6"><DetailField label="Location Type" :value="address.locationType" /></v-col>
                                     </v-row>
                                 </v-card-text>
