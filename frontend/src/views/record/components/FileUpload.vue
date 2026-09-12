@@ -1,8 +1,8 @@
 <template>
     <v-input :model-value="validationValue" :rules="rules" hide-details="auto">
         <div class="w-100">
-            <VFileUpload v-model="files" :accept="accept" :disabled="loading" clearable show-size
-                density="compact" variant="outlined" class="file-upload"
+            <VFileUpload v-if="!(existingFileUrl && !files.length)" v-model="files" :accept="accept"
+                :disabled="loading" clearable show-size density="compact" variant="outlined" class="file-upload"
                 @update:model-value="handleFileChange">
                 <template #icon>
                     <v-avatar color="grey-lighten-4" size="44">
@@ -13,7 +13,7 @@
                     <div class="file-upload__copy">
                         <div class="text-subtitle-1 font-weight-medium">{{ label }}</div>
                         <div class="text-caption text-medium-emphasis">
-                            Click to choose a file or drag and drop it here
+                            Click to choose a file or drag and drop it here (max {{ maxSizeMb }} MB)
                         </div>
                     </div>
                 </template>
@@ -51,6 +51,8 @@
                         @click="clearExistingFile" />
                 </template>
             </v-list-item>
+
+            <div v-if="oversizedFileError" class="text-error text-caption mt-1">{{ oversizedFileError }}</div>
 
             <v-progress-linear v-if="loading" indeterminate color="grey-darken-1" class="mt-2" />
         </div>
@@ -99,6 +101,10 @@ const props = defineProps({
         type: String,
         required: true,
     },
+    maxSizeMb: {
+        type: Number,
+        default: 2,
+    },
 });
 const fileStore = useFileStore();
 const emit = defineEmits<{
@@ -108,6 +114,7 @@ const emit = defineEmits<{
 
 const files = ref<File[]>([]);
 const loading = ref(false);
+const oversizedFileError = ref('');
 const selectedFilePreviewUrls = new Map<File, string>();
 const validationValue = computed(() => files.value.length ? files.value : props.existingFileUrl);
 const displayedExistingFileName = computed(() => {
@@ -117,6 +124,16 @@ const displayedExistingFileName = computed(() => {
 });
 
 const handleFileChange = (selectedFiles: File[]) => {
+    oversizedFileError.value = '';
+    const file = selectedFiles[0];
+
+    if (file && file.size > props.maxSizeMb * 1024 * 1024) {
+        oversizedFileError.value = `"${file.name}" is too large. Maximum file size is ${props.maxSizeMb} MB.`;
+        files.value = [];
+        emit('cleared');
+        return;
+    }
+
     files.value = selectedFiles;
     if (files.value.length) {
         uploadFile();

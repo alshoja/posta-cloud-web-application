@@ -6,6 +6,7 @@ import UiParentCard from '@/components/shared/UiParentCard.vue';
 import { useForm } from '@/composables/useForm';
 import { useValidation } from '@/composables/useValidation';
 import type { RecordDetail, RecordStatus } from '@/interfaces/record.interface';
+import { useFileStore } from '@/stores/file.store';
 import { useRecordStore } from '@/stores/record';
 import { useSnackbarStore } from '@/stores/snackbar.store';
 import { VueTelInput } from 'vue-tel-input';
@@ -15,7 +16,7 @@ import FileUpload from '@/views/record/components/FileUpload.vue';
 import FileViewer from '@/views/record/components/FileViewer.vue';
 import ProfileImage from '@/views/record/components/ProfileImage.vue';
 import ViewComponent from '@/views/record/components/ViewComponent.vue';
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref, watch, watchEffect } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { BriefcaseIcon, CameraIcon, HeartIcon, HomeIcon, IdIcon, MapPinIcon, PhoneIcon, PlusIcon, ScanIcon, ShieldCheckIcon, TrashIcon, UserIcon, UsersIcon } from 'vue-tabler-icons';
 
@@ -35,6 +36,7 @@ const onWhatsappNumberValidate = (phoneObject: { isValid: boolean; number: strin
     whatsappNumberInvalid.value = Boolean(phoneObject.number) && !phoneObject.isValid;
 };
 const recordStore = useRecordStore();
+const fileStore = useFileStore();
 const {
     stepOneInitialState,
     stepTwoInitialState,
@@ -162,7 +164,9 @@ const removeChild = (index: number) => {
     }
 };
 
-const uploadDocument = () => {
+const DOCUMENT_MAX_SIZE_MB = 2;
+
+const addBlankDocument = () => {
     stepSix.documents.push({
         name: '',
         file: ''
@@ -172,6 +176,102 @@ const uploadDocument = () => {
 const removeDocument = (index: number) => {
     stepSix.documents.splice(index, 1);
 };
+
+const completedDocumentCount = computed(() =>
+    stepSix.documents.filter((document) => document.file).length
+);
+
+const incompleteDocumentCount = computed(() =>
+    stepSix.documents.filter((document) => !document.file).length
+);
+
+const documentProgressPercent = computed(() => {
+    if (!stepSix.documents.length) return 100;
+    return (completedDocumentCount.value / stepSix.documents.length) * 100;
+});
+
+const DOCUMENT_BADGES: Record<string, { label: string; color: string }> = {
+    pdf: { label: 'PDF', color: 'red' },
+    jpg: { label: 'JPG', color: 'blue' },
+    jpeg: { label: 'JPG', color: 'blue' },
+    png: { label: 'PNG', color: 'blue' },
+    doc: { label: 'DOC', color: 'indigo' },
+    docx: { label: 'DOC', color: 'indigo' },
+};
+
+const getDocumentBadge = (document: { name: string; file: string }) => {
+    const source = document.name || document.file || '';
+    const extension = source.split('?')[0].split('.').pop()?.toLowerCase() || '';
+    return DOCUMENT_BADGES[extension] || { label: '—', color: 'grey' };
+};
+
+const bulkFileInputRef = ref<HTMLInputElement | null>(null);
+const rowFileInputRef = ref<HTMLInputElement | null>(null);
+const rowUploadTargetIndex = ref<number | null>(null);
+
+const triggerBulkFilePicker = () => {
+    bulkFileInputRef.value?.click();
+};
+
+const triggerRowFilePicker = (index: number) => {
+    rowUploadTargetIndex.value = index;
+    rowFileInputRef.value?.click();
+};
+
+const uploadFileForDocument = async (file: File, index: number) => {
+    if (file.size > DOCUMENT_MAX_SIZE_MB * 1024 * 1024) {
+        snackbar.showSnackbar(
+            `"${file.name}" is too large. Maximum file size is ${DOCUMENT_MAX_SIZE_MB} MB.`,
+            'warning',
+            []
+        );
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    const uploadPath = `/records/${route.params.recordId}/documents/upload`;
+
+    try {
+        await fileStore.uploadFile(formData, uploadPath);
+        setUploadUrlForDoc(fileStore.fileUrl, file.name, index);
+    } catch {
+        snackbar.showSnackbar(`Failed to upload "${file.name}".`, 'error', []);
+    }
+};
+
+const addAndUploadDocuments = async (files: File[]) => {
+    for (const file of files) {
+        stepSix.documents.push({ name: '', file: '' });
+        const index = stepSix.documents.length - 1;
+        await uploadFileForDocument(file, index);
+    }
+};
+
+const handleBulkFileInputChange = (event: Event) => {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files || []);
+    if (files.length) void addAndUploadDocuments(files);
+    input.value = '';
+};
+
+const handleBulkDrop = (event: DragEvent) => {
+    const files = Array.from(event.dataTransfer?.files || []);
+    if (files.length) void addAndUploadDocuments(files);
+};
+
+const handleRowFileInputChange = (event: Event) => {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file && rowUploadTargetIndex.value !== null) {
+        void uploadFileForDocument(file, rowUploadTargetIndex.value);
+    }
+    input.value = '';
+};
+
+watchEffect(() => {
+    stepSix.valid = stepSix.documents.every((document) => Boolean(document.file) && Boolean(document.name?.trim()));
+});
 
 const addFinancialAccount = () => {
     stepFive.financialAccounts.push({
@@ -450,11 +550,9 @@ function setUploadUrl(url: string) {
 
 function setUploadUrlForDoc(fileUrl: string, fileName: string, index: number) {
     stepSix.documents[index].file = fileUrl;
-    stepSix.documents[index].name = fileName;
-}
-
-function clearUploadForDoc(index: number) {
-    stepSix.documents[index].file = '';
+    if (!stepSix.documents[index].name) {
+        stepSix.documents[index].name = fileName;
+    }
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -1240,7 +1338,7 @@ const downloadDocument = async (index: number) => {
 
             <!-- Step 6: Documents -->
             <template v-slot:item.6>
-                <v-form v-model="stepSix.valid" class="step-six-form">
+                <v-form class="step-six-form">
                     <v-card variant="outlined" class="step-six-card">
                         <v-card-title class="step-six-header">
                             <div class="d-flex align-center ga-3">
@@ -1251,87 +1349,98 @@ const downloadDocument = async (index: number) => {
                                 <div>
                                     <div class="text-h5">Supporting Documents</div>
                                     <div class="text-caption text-lightText">
-                                        Upload Aadhaar, address proof, or other documents
+                                        Identity, address, or other supporting documents — PDF, JPG, or PNG, up to
+                                        {{ DOCUMENT_MAX_SIZE_MB }} MB each.
                                     </div>
                                 </div>
                             </div>
 
-                            <v-btn color="secondary" variant="outlined" @click="uploadDocument"
-                                class="d-none d-sm-flex">
-                                <PlusIcon size="18" class="mr-1" />
-                                Add Document
-                            </v-btn>
+                            <div class="step-six-header__actions">
+                                <div v-if="stepSix.documents.length" class="step-six-progress">
+                                    <v-progress-linear :model-value="documentProgressPercent" color="secondary"
+                                        bg-color="grey-lighten-2" height="6" rounded class="step-six-progress__bar" />
+                                    <span class="text-caption text-lightText">
+                                        {{ completedDocumentCount }}/{{ stepSix.documents.length }}
+                                    </span>
+                                </div>
+                                <v-btn color="secondary" variant="outlined" @click="addBlankDocument">
+                                    <PlusIcon size="18" class="mr-1" />
+                                    Add Document
+                                </v-btn>
+                            </div>
                         </v-card-title>
 
                         <v-card-text>
-                            <v-row>
-                                <v-col cols="12" md="6" v-for="(document, index) in stepSix.documents" :key="index">
-                                    <v-card variant="outlined" class="step-six-document-card">
-                                        <v-card-title class="step-six-document-header">
-                                            <span class="text-subtitle-1 font-weight-bold">
-                                                Document {{ index + 1 }}
-                                            </span>
+                            <div class="documents-dropzone" @click="triggerBulkFilePicker" @dragover.prevent
+                                @drop.prevent="handleBulkDrop">
+                                <UploadIcon size="20" class="text-secondary" />
+                                <span>
+                                    <strong class="text-secondary">Choose files</strong>
+                                    or drag them here — we'll create a row for each
+                                </span>
+                            </div>
+                            <input ref="bulkFileInputRef" type="file" multiple hidden accept=".pdf,.jpg,.jpeg,.png"
+                                @change="handleBulkFileInputChange" />
+                            <input ref="rowFileInputRef" type="file" hidden accept=".pdf,.jpg,.jpeg,.png"
+                                @change="handleRowFileInputChange" />
 
-                                            <div class="d-flex align-center ga-1">
-                                                <template v-if="document.file">
-                                                    <v-tooltip text="Preview Document">
-                                                        <template #activator="{ props }">
-                                                            <v-btn v-bind="props" icon variant="text" color="secondary"
-                                                                @click="viewDocument(index)">
-                                                                <EyeIcon size="18" />
-                                                            </v-btn>
-                                                        </template>
-                                                    </v-tooltip>
-
-                                                    <v-tooltip text="Download Document">
-                                                        <template #activator="{ props }">
-                                                            <v-btn v-bind="props" icon variant="text" color="secondary"
-                                                                @click="downloadDocument(index)">
-                                                                <DownloadIcon size="18" />
-                                                            </v-btn>
-                                                        </template>
-                                                    </v-tooltip>
+                            <div v-if="stepSix.documents.length" class="documents-list">
+                                <div class="documents-list__label">Document</div>
+                                <div v-for="(document, index) in stepSix.documents" :key="index" class="document-row">
+                                    <div class="document-row__badge"
+                                        :class="`document-row__badge--${getDocumentBadge(document).color}`">
+                                        {{ getDocumentBadge(document).label }}
+                                    </div>
+                                    <div class="document-row__info">
+                                        <input v-model="document.name" class="document-row__name"
+                                            placeholder="e.g., ID Copy, Address Proof" />
+                                        <div v-if="!document.file" class="document-row__meta document-row__meta--error">
+                                            No file attached — required
+                                        </div>
+                                    </div>
+                                    <v-chip :color="document.file ? 'success' : 'warning'" size="small" variant="tonal"
+                                        class="document-row__status">
+                                        {{ document.file ? 'Uploaded' : 'Needs file' }}
+                                    </v-chip>
+                                    <div class="document-row__actions">
+                                        <template v-if="document.file">
+                                            <v-tooltip text="Preview Document">
+                                                <template #activator="{ props }">
+                                                    <v-btn v-bind="props" icon variant="text" color="secondary"
+                                                        size="small" @click="viewDocument(index)">
+                                                        <EyeIcon size="18" />
+                                                    </v-btn>
                                                 </template>
+                                            </v-tooltip>
+                                            <v-tooltip text="Download Document">
+                                                <template #activator="{ props }">
+                                                    <v-btn v-bind="props" icon variant="text" color="secondary"
+                                                        size="small" @click="downloadDocument(index)">
+                                                        <DownloadIcon size="18" />
+                                                    </v-btn>
+                                                </template>
+                                            </v-tooltip>
+                                        </template>
+                                        <v-btn v-else variant="outlined" color="secondary" size="small"
+                                            @click="triggerRowFilePicker(index)">
+                                            Upload
+                                        </v-btn>
+                                        <v-btn icon variant="text" color="error" size="small"
+                                            :aria-label="`Remove document ${index + 1}`"
+                                            @click="removeDocument(index)">
+                                            <TrashIcon size="18" />
+                                        </v-btn>
+                                    </div>
+                                </div>
+                            </div>
+                            <v-alert v-else type="info" color="secondary" variant="tonal" class="mt-3">
+                                No documents added yet.
+                            </v-alert>
 
-                                                <v-tooltip text="Remove Document">
-                                                    <template #activator="{ props }">
-                                                        <v-btn v-bind="props" icon variant="text" color="error"
-                                                            @click="removeDocument(index)">
-                                                            <TrashIcon size="18" />
-                                                        </v-btn>
-                                                    </template>
-                                                </v-tooltip>
-                                            </div>
-                                        </v-card-title>
-
-                                        <v-card-text class="pt-0">
-                                            <v-row>
-                                                <v-col cols="12">
-                                                    <v-text-field variant="outlined" v-model="document.name"
-                                                        label="Document Name"
-                                                        placeholder="e.g., Aadhaar Copy, Address Proof"
-                                                        :rules="[validationRules.required]" />
-                                                </v-col>
-
-                                                <v-col cols="12">
-                                                    <FileUpload label="Upload Document"
-                                                        :rules="[validationRules.required]"
-                                                        :upload-path="`/records/${route.params.recordId}/documents/upload`"
-                                                        :existing-file-url="document.file"
-                                                        @uploaded="(fileUrl, fileName) => setUploadUrlForDoc(fileUrl, fileName, index)"
-                                                        @cleared="clearUploadForDoc(index)" />
-                                                </v-col>
-                                            </v-row>
-                                        </v-card-text>
-                                    </v-card>
-                                </v-col>
-                            </v-row>
-
-                            <v-btn color="secondary" variant="outlined" block class="d-sm-none mt-2"
-                                @click="uploadDocument">
-                                <PlusIcon size="18" class="mr-1" />
-                                Add Another Document
-                            </v-btn>
+                            <div v-if="incompleteDocumentCount > 0" class="text-error text-caption mt-3">
+                                {{ incompleteDocumentCount }} document{{ incompleteDocumentCount > 1 ? 's' : '' }}
+                                still need{{ incompleteDocumentCount > 1 ? '' : 's' }} a file.
+                            </div>
                         </v-card-text>
                     </v-card>
                 </v-form>
@@ -1733,19 +1842,135 @@ const downloadDocument = async (index: number) => {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
     padding: 20px 24px;
 }
 
-.step-six-document-card {
-    border-radius: 12px;
-    height: 100%;
-}
-
-.step-six-document-header {
+.step-six-header__actions {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 16px 20px 8px;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.step-six-progress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 96px;
+}
+
+.step-six-progress__bar {
+    width: 72px;
+}
+
+.documents-dropzone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 24px 16px;
+    border: 1px dashed rgba(var(--v-border-color), 0.4);
+    border-radius: 12px;
+    background: rgba(var(--v-theme-on-surface), 0.02);
+    cursor: pointer;
+    text-align: center;
+    color: rgba(var(--v-theme-on-surface), 0.7);
+    font-size: 0.875rem;
+}
+
+.documents-dropzone:hover {
+    background: rgba(var(--v-theme-on-surface), 0.035);
+    border-color: rgba(var(--v-theme-on-surface), 0.5);
+}
+
+.documents-list {
+    margin-top: 20px;
+}
+
+.documents-list__label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: rgba(var(--v-theme-on-surface), 0.5);
+    padding: 0 4px 8px;
+}
+
+.document-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 4px;
+    border-top: 1px solid rgba(var(--v-border-color), 0.15);
+    flex-wrap: wrap;
+}
+
+.document-row__badge {
+    flex: 0 0 auto;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 700;
+    background: rgba(var(--v-theme-on-surface), 0.06);
+    color: rgba(var(--v-theme-on-surface), 0.6);
+}
+
+.document-row__badge--red {
+    background: rgba(var(--v-theme-error), 0.12);
+    color: rgb(var(--v-theme-error));
+}
+
+.document-row__badge--blue,
+.document-row__badge--indigo {
+    background: rgba(var(--v-theme-secondary), 0.12);
+    color: rgb(var(--v-theme-secondary));
+}
+
+.document-row__info {
+    flex: 1 1 200px;
+    min-width: 0;
+}
+
+.document-row__name {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: rgb(var(--v-theme-on-surface));
+    padding: 2px 0;
+}
+
+.document-row__name::placeholder {
+    font-weight: 400;
+    color: rgba(var(--v-theme-on-surface), 0.4);
+}
+
+.document-row__meta {
+    font-size: 0.75rem;
+    color: rgba(var(--v-theme-on-surface), 0.5);
+}
+
+.document-row__meta--error {
+    color: rgb(var(--v-theme-error));
+}
+
+.document-row__status {
+    flex: 0 0 auto;
+}
+
+.document-row__actions {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 2px;
 }
 
 @media (max-width: 600px) {
@@ -1753,6 +1978,26 @@ const downloadDocument = async (index: number) => {
         flex-direction: column;
         align-items: flex-start;
         gap: 12px;
+    }
+
+    .step-six-header__actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .document-row {
+        position: relative;
+        padding-right: 40px;
+    }
+
+    .document-row__status {
+        order: 1;
+    }
+
+    .document-row__actions {
+        position: absolute;
+        top: 12px;
+        right: 4px;
     }
 }
 
