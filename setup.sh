@@ -56,6 +56,59 @@ if [ ! -f "$ROOT_DIR/.env" ]; then
   cp "$ROOT_DIR/.env.example" "$ROOT_DIR/.env"
 fi
 
+# Load APP_DOMAIN / API_DOMAIN from .env (fall back to defaults)
+APP_DOMAIN="$(grep -E '^APP_DOMAIN=' "$ROOT_DIR/.env" | cut -d '=' -f2-)"
+API_DOMAIN="$(grep -E '^API_DOMAIN=' "$ROOT_DIR/.env" | cut -d '=' -f2-)"
+APP_DOMAIN="${APP_DOMAIN:-posta.test}"
+API_DOMAIN="${API_DOMAIN:-api.posta.test}"
+
+add_hosts_entry() {
+  local domain="$1"
+  local hosts_file="/etc/hosts"
+
+  if grep -qE "^[0-9.]+[[:space:]]+$domain([[:space:]]|\$)" "$hosts_file" 2>/dev/null; then
+    echo "✔ $domain already present in $hosts_file"
+    return 0
+  fi
+
+  echo "🔹 Adding $domain to $hosts_file..."
+  local line="127.0.0.1 $domain"
+
+  if sudo -n true 2>/dev/null || [ -t 0 ]; then
+    echo "$line" | sudo tee -a "$hosts_file" >/dev/null
+    return 0
+  fi
+
+  # No interactive terminal for sudo's password prompt (e.g. run from an IDE
+  # or agent-driven shell) — fall back to a GUI elevation prompt.
+  if [ "$OS" = "Darwin" ] && command -v osascript >/dev/null 2>&1; then
+    osascript -e "do shell script \"echo '$line' >> $hosts_file\" with administrator privileges" >/dev/null
+    return 0
+  fi
+
+  if command -v pkexec >/dev/null 2>&1; then
+    pkexec sh -c "echo '$line' >> $hosts_file"
+    return 0
+  fi
+
+  echo "❌ Could not get elevated privileges to edit $hosts_file (no TTY for sudo password)."
+  echo "   Add this line manually: $line"
+  exit 1
+}
+
+# Step 0b: point the local domains at this machine and generate trusted TLS certs
+if [ "$OS" = "Darwin" ] || [ "$OS" = "Linux" ]; then
+  add_hosts_entry "$APP_DOMAIN"
+  add_hosts_entry "$API_DOMAIN"
+
+  echo "🔹 Setting up local TLS certificate for $APP_DOMAIN and $API_DOMAIN..."
+  APP_DOMAIN="$APP_DOMAIN" API_DOMAIN="$API_DOMAIN" "$ROOT_DIR/certs/generate-certs.sh"
+else
+  echo "⚠ Automatic /etc/hosts and mkcert setup is only supported on macOS/Linux."
+  echo "  Add '127.0.0.1 $APP_DOMAIN' and '127.0.0.1 $API_DOMAIN' to your hosts file"
+  echo "  and run certs/generate-certs.sh manually (see docs/DEVELOPMENT.md)."
+fi
+
 # Step 1: fix permissions (optional, avoids npm EACCES errors)
 # Step 1: fix permissions (Linux only)
 echo "🔹 Fixing project folder permissions..."
@@ -98,8 +151,8 @@ for attempt in {1..12}; do
 done
 
 echo "✅ Setup complete!"
-echo "Backend: http://localhost:5001"
+echo "Frontend: https://$APP_DOMAIN"
+echo "Backend: https://$API_DOMAIN"
 echo "OCR Worker: http://localhost:6000"
-echo "Frontend: http://localhost:3000"
 echo "pgAdmin: http://localhost:8080 (Email: admin@example.com, Password: admin123)"
 echo "Seed users: admin1@example.com through admin10@example.com (Password: Admin@123456)"
