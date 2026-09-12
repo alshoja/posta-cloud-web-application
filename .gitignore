@@ -16,6 +16,9 @@ yarn-error.log
 secrets/*
 !secrets/.gitkeep
 
+# Locally-generated TLS certificates (machine-specific, never shared)
+certs/*.pem
+
 # Logs
 logs
 *.log

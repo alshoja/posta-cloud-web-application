@@ -96,11 +96,18 @@ pgAdmin (`pgadmin`) -> PostgreSQL/pgvector (`postgres_db`)
 
 ## Quick Start
 
-Copy `.env.example` to `.env` if needed, then start the full project:
+Run one command from a fresh clone:
 
 ```sh
-./setup.sh
+./setup.sh       # macOS / Linux / WSL2
+./setup.ps1      # Windows (native PowerShell, no WSL needed)
 ```
+
+This creates `.env` from `.env.example`, installs dependencies, generates a
+locally-trusted TLS certificate (via [mkcert](https://github.com/FiloSottile/mkcert)),
+points `posta.test` / `api.posta.test` at your machine, and starts Docker
+Compose behind an nginx reverse proxy. See [Development](docs/DEVELOPMENT.md)
+for what it does under the hood and how to customize the domain.
 
 Useful Docker commands:
 
@@ -113,8 +120,8 @@ docker compose down
 
 Open:
 
-- Frontend: `http://localhost:3000`
-- Backend API: `http://localhost:5001`
+- Frontend: `https://posta.test`
+- Backend API: `https://api.posta.test`
 - Ollama: `http://localhost:11434`
 - pgAdmin: `http://localhost:8080`
 
