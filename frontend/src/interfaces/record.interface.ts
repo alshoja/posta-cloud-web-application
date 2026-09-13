@@ -1,11 +1,11 @@
 export interface Address {
   id?: string
-  houseName: string
-  houseNumber: string
-  streetName: string
-  streetNumber: string
-  village: string
-  postOffice: string
+  addressLine1: string
+  addressLine2: string
+  city: string
+  state: string
+  postalCode: string
+  country: string
   locationType: string
 }
 
@@ -24,12 +24,14 @@ export interface Contact {
   whatsappNumber: string
 }
 
+export interface IdentityDocument {
+  id?: string
+  type: string
+  number: string
+}
+
 export interface IdentityDocuments {
-  aadhaarNumber?: string
-  drivingLicense?: string
-  electionID?: string
-  passportNumber?: string
-  postBoxNumber?: string
+  identityDocuments?: IdentityDocument[]
 }
 
 export interface Child {
@@ -43,6 +45,9 @@ export interface Document {
   id?: string
   name: string
   file: string
+  mimeType?: string
+  size?: number
+  uploadedAt?: Date
   extractionStatus?: 'PENDING' | 'PROCESSING' | 'READY' | 'UNSUPPORTED' | 'FAILED'
   extractionError?: string
   indexedAt?: Date
@@ -51,26 +56,29 @@ export interface Document {
   searchIndexError?: string
 }
 
-export interface Policy {
+export interface FinancialAccount {
   id?: string
   type: string
   number: string
+  provider?: string
 }
 
 export interface RecordDetail
   extends Person,
     Contact,
-    Address,
     IdentityDocuments,
     MarriageInfo,
     RedirectionAddress {
   id?: string
   profileImage?: string
-  address: Address
-  panchayat: string
-  district: string
+  addressLine1: string
+  addressLine2: string
+  city: string
+  state: string
+  postalCode: string
+  country: string
   addresses?: Address[]
-  policies?: Policy[]
+  financialAccounts?: FinancialAccount[]
   documents?: Document[]
   user?: {
     id: number
@@ -88,18 +96,19 @@ export interface StepOne extends RecordDetail {
   status?: RecordStatus
 }
 
-export interface StepTwo extends IdentityDocuments {
+export interface StepTwo {
   valid: boolean
   password?: string
   status?: RecordStatus
+  identityDocuments: IdentityDocument[]
 }
 
 export interface RedirectionAddress {
   valid: boolean
   redirectionAddress: boolean
   isAbroad: boolean
-  redirectedHouseName?: string
-  redirectedHouseNumber?: string
+  redirectedAddressLine1?: string
+  redirectedAddressLine2?: string
   redirectedAddress?: Address
   job?: string
   retirementDate?: string
@@ -125,7 +134,7 @@ export interface StepFour extends MarriageInfo {
 export interface StepFive {
   valid: boolean
   status?: RecordStatus
-  policies: Policy[]
+  financialAccounts: FinancialAccount[]
 }
 
 export interface StepSix {

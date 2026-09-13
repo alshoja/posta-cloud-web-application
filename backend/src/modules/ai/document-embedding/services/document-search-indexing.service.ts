@@ -110,9 +110,9 @@ export class DocumentSearchIndexingService {
       lastName: sourceRecord?.lastName,
       email: sourceRecord?.email,
       mobileNumber: sourceRecord?.mobileNumber,
-      village: sourceRecord?.village,
-      panchayat: sourceRecord?.panchayat,
-      district: sourceRecord?.district,
+      city: sourceRecord?.city,
+      state: sourceRecord?.state,
+      country: sourceRecord?.country,
       createdAt: chunk.createdAt ?? new Date(),
     };
   }

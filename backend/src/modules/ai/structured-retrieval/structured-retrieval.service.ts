@@ -104,7 +104,7 @@ export class StructuredRetrievalService {
 
     const record = await this.recordQueryService.findAccessibleRecord(recordId, [
       'documents',
-      'policies',
+      'financialAccounts',
       'addresses',
       'children',
     ]);
@@ -148,16 +148,16 @@ export class StructuredRetrievalService {
       status: record.status,
       contact: record.email || record.mobileNumber || 'Not saved',
       location:
-        [record.village, record.panchayat, record.district]
+        [record.city, record.state, record.country]
           .filter(Boolean)
           .join(', ') || 'Not saved',
       documentsCount: record.documents?.length ?? 0,
       documentNames: (record.documents ?? [])
         .map((document) => document.name)
         .filter(Boolean),
-      policiesCount: record.policies?.length ?? 0,
-      policyTypes: (record.policies ?? [])
-        .map((policy) => policy.type)
+      financialAccountsCount: record.financialAccounts?.length ?? 0,
+      financialAccountTypes: (record.financialAccounts ?? [])
+        .map((financialAccount) => financialAccount.type)
         .filter(Boolean),
       addressesCount: record.addresses?.length ?? 0,
       childrenCount: record.children?.length ?? 0,

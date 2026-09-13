@@ -1,4 +1,5 @@
 import { reactive } from 'vue'
+import { COUNTRY_NAMES } from '@/utils/countries'
 
 export function useValidation() {
   const isEmpty = (value: unknown) => value === null || value === undefined || String(value).trim() === ''
@@ -25,11 +26,23 @@ export function useValidation() {
 
     // Mobile Number
     mobileNumber: (value: string) =>
-      isEmpty(value) || /^\d{10}$/.test(value) || 'Mobile number must be 10 digits.',
+      isEmpty(value) ||
+      /^\+?[0-9]{7,15}$/.test(value) ||
+      'Mobile number must be 7-15 digits, with an optional leading +.',
 
-    // Aadhaar Number
-    aadhaarNumber: (value: string) =>
-      isEmpty(value) || /^\d{12}$/.test(value) || 'Aadhaar number must be 12 digits.',
+    // Identity Documents
+    identityDocumentNumber: (value: string) =>
+      isEmpty(value) ||
+      /^[A-Za-z0-9\- ]{4,32}$/.test(value) ||
+      'Document number must be 4-32 characters (letters, numbers, spaces, or dashes).',
+
+    // Postal Code
+    postalCode: (value: string) =>
+      isEmpty(value) || /^[0-9]{3,10}$/.test(value) || 'Postal code must be 3-10 digits.',
+
+    // Country
+    country: (value: string) =>
+      isEmpty(value) || COUNTRY_NAMES.includes(value) || 'Please select a valid country.',
 
     // Date of Birth
     dateOfBirth: (value: string) => {
@@ -45,11 +58,11 @@ export function useValidation() {
       ['male', 'female', 'other'].includes(value) ||
       'Gender must be Male, Female, or Other.',
 
-    // Policies
-    policyNumber: (value: string) =>
+    // Financial Accounts
+    financialAccountNumber: (value: string) =>
       isEmpty(value) ||
-      /^[A-Z0-9]{8,12}$/.test(value) ||
-      'Policy number must be 8-12 alphanumeric characters.',
+      /^[A-Za-z0-9\- ]{4,32}$/.test(value) ||
+      'Account number must be 4-32 characters (letters, numbers, spaces, or dashes).',
 
     // Dynamic rules for children or arrays
     childName: (value: string) => isEmpty(value) || true,

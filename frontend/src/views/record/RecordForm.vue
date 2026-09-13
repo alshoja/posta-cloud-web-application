@@ -2,26 +2,40 @@
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import axiosInstance from '@/axiosInstance.interceptor';
 import DropdownButton from '@/components/shared/DropdownButton.vue';
-import UiParentCard from '@/components/shared/UiParentCard.vue';
 import { useForm } from '@/composables/useForm';
 import { useValidation } from '@/composables/useValidation';
 import type { RecordDetail, RecordStatus } from '@/interfaces/record.interface';
+import { useFileStore } from '@/stores/file.store';
 import { useRecordStore } from '@/stores/record';
 import { useSnackbarStore } from '@/stores/snackbar.store';
+import { VueTelInput } from 'vue-tel-input';
+import 'vue-tel-input/vue-tel-input.css';
+import AddressFields from '@/views/record/components/AddressFields.vue';
 import FileUpload from '@/views/record/components/FileUpload.vue';
 import FileViewer from '@/views/record/components/FileViewer.vue';
 import ProfileImage from '@/views/record/components/ProfileImage.vue';
 import ViewComponent from '@/views/record/components/ViewComponent.vue';
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref, watch, watchEffect } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { BriefcaseIcon, CameraIcon, HeartIcon, HomeIcon, IdIcon, MapPinIcon, PhoneIcon, PlusIcon, ScanIcon, ShieldCheckIcon, TrashIcon, UserIcon, UsersIcon } from 'vue-tabler-icons';
+import { BriefcaseIcon, CameraIcon, CheckIcon, HeartIcon, HomeIcon, IdIcon, MapPinIcon, PhoneIcon, PlusIcon, ScanIcon, ShieldCheckIcon, TrashIcon, UserIcon, UsersIcon } from 'vue-tabler-icons';
 
 const route = useRoute()
 const loading = ref(false);
 const snackbar = useSnackbarStore();
 const router = useRouter()
 const validationRules = useValidation();
+const identityDocumentTypes = ['Passport', 'National ID', "Driver's License", 'Voter/Election Card', 'Other'];
+const financialAccountTypes = ['Bank Account', 'Insurance Policy', 'Government ID Linked Account', 'Other'];
+const mobileNumberInvalid = ref(false);
+const whatsappNumberInvalid = ref(false);
+const onMobileNumberValidate = (phoneObject: { valid?: boolean; number?: string }) => {
+    mobileNumberInvalid.value = Boolean(phoneObject.number) && !phoneObject.valid;
+};
+const onWhatsappNumberValidate = (phoneObject: { valid?: boolean; number?: string }) => {
+    whatsappNumberInvalid.value = Boolean(phoneObject.number) && !phoneObject.valid;
+};
 const recordStore = useRecordStore();
+const fileStore = useFileStore();
 const {
     stepOneInitialState,
     stepTwoInitialState,
@@ -43,7 +57,7 @@ const stepper = reactive({
     edit: false,
     show1: false,
     show2: true,
-    items: ['Personal Details', 'Sensitive Details', 'Occupation & Address', 'Family Details', 'Policies', 'Documents', 'Review & Submit'],
+    items: ['Personal Details', 'Sensitive Details', 'Occupation & Address', 'Family Details', 'Financial Accounts', 'Documents', 'Review & Submit'],
 });
 const stepOne = reactive({ ...stepOneInitialState });
 const stepTwo = reactive({ ...stepTwoInitialState });
@@ -51,7 +65,17 @@ const stepThree = reactive({ ...stepThreeInitialState });
 const stepFour = reactive({ ...stepFourInitialState });
 const stepFive = reactive({ ...stepFiveInitialState });
 const stepSix = reactive({ ...stepSixInitialState });
-const showSensitiveData = ref(false);
+const whatsappSameAsMobile = ref(false);
+const onToggleWhatsappSameAsMobile = (value: boolean | null) => {
+    if (value) {
+        stepOne.whatsappNumber = stepOne.mobileNumber;
+    }
+};
+watch(() => stepOne.mobileNumber, (mobile) => {
+    if (whatsappSameAsMobile.value) {
+        stepOne.whatsappNumber = mobile;
+    }
+});
 const isModalVisible = ref(false);
 const currentDocumentUrl = ref<string>('');
 const ocrLoading = ref(false);
@@ -120,12 +144,12 @@ const syncStepState = async () => {
 
 const addAddress = () => {
     stepThree.addresses.push({
-        houseName: '',
-        houseNumber: '',
-        streetName: '',
-        streetNumber: '',
-        village: '',
-        postOffice: '',
+        addressLine1: '',
+        addressLine2: '',
+        city: '',
+        state: '',
+        postalCode: '',
+        country: '',
         locationType: '',
     });
 };
@@ -149,7 +173,9 @@ const removeChild = (index: number) => {
     }
 };
 
-const uploadDocument = () => {
+const DOCUMENT_MAX_SIZE_MB = 2;
+
+const addBlankDocument = () => {
     stepSix.documents.push({
         name: '',
         file: ''
@@ -160,23 +186,150 @@ const removeDocument = (index: number) => {
     stepSix.documents.splice(index, 1);
 };
 
-const addPolicy = () => {
-    stepFive.policies.push({
+const completedDocumentCount = computed(() =>
+    stepSix.documents.filter((document) => document.file).length
+);
+
+const incompleteDocumentCount = computed(() =>
+    stepSix.documents.filter((document) => !document.file).length
+);
+
+const documentProgressPercent = computed(() => {
+    if (!stepSix.documents.length) return 100;
+    return (completedDocumentCount.value / stepSix.documents.length) * 100;
+});
+
+const DOCUMENT_BADGES: Record<string, { label: string; color: string }> = {
+    pdf: { label: 'PDF', color: 'red' },
+    jpg: { label: 'JPG', color: 'blue' },
+    jpeg: { label: 'JPG', color: 'blue' },
+    png: { label: 'PNG', color: 'blue' },
+    doc: { label: 'DOC', color: 'indigo' },
+    docx: { label: 'DOC', color: 'indigo' },
+};
+
+const getDocumentBadge = (document: { name: string; file: string }) => {
+    const source = document.name || document.file || '';
+    const extension = source.split('?')[0].split('.').pop()?.toLowerCase() || '';
+    return DOCUMENT_BADGES[extension] || { label: '—', color: 'grey' };
+};
+
+const bulkFileInputRef = ref<HTMLInputElement | null>(null);
+const rowFileInputRef = ref<HTMLInputElement | null>(null);
+const rowUploadTargetIndex = ref<number | null>(null);
+
+const triggerBulkFilePicker = () => {
+    bulkFileInputRef.value?.click();
+};
+
+const triggerRowFilePicker = (index: number) => {
+    rowUploadTargetIndex.value = index;
+    rowFileInputRef.value?.click();
+};
+
+const uploadFileForDocument = async (file: File, index: number) => {
+    if (file.size > DOCUMENT_MAX_SIZE_MB * 1024 * 1024) {
+        snackbar.showSnackbar(
+            `"${file.name}" is too large. Maximum file size is ${DOCUMENT_MAX_SIZE_MB} MB.`,
+            'warning',
+            []
+        );
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    const uploadPath = `/records/${route.params.recordId}/documents/upload`;
+
+    try {
+        await fileStore.uploadFile(formData, uploadPath);
+        setUploadUrlForDoc(fileStore.fileUrl, file.name, index);
+    } catch {
+        snackbar.showSnackbar(`Failed to upload "${file.name}".`, 'error', []);
+    }
+};
+
+const addAndUploadDocuments = async (files: File[]) => {
+    for (const file of files) {
+        stepSix.documents.push({ name: '', file: '' });
+        const index = stepSix.documents.length - 1;
+        await uploadFileForDocument(file, index);
+    }
+};
+
+const handleBulkFileInputChange = (event: Event) => {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files || []);
+    if (files.length) void addAndUploadDocuments(files);
+    input.value = '';
+};
+
+const handleBulkDrop = (event: DragEvent) => {
+    const files = Array.from(event.dataTransfer?.files || []);
+    if (files.length) void addAndUploadDocuments(files);
+};
+
+const handleRowFileInputChange = (event: Event) => {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file && rowUploadTargetIndex.value !== null) {
+        void uploadFileForDocument(file, rowUploadTargetIndex.value);
+    }
+    input.value = '';
+};
+
+watchEffect(() => {
+    stepSix.valid = stepSix.documents.every((document) => Boolean(document.file) && Boolean(document.name?.trim()));
+});
+
+const addFinancialAccount = () => {
+    stepFive.financialAccounts.push({
         type: '',
         number: '',
     });
 };
 
-const removePolicy = (index: number) => {
-    if (stepFive.policies.length === 1) {
-        stepFive.policies[0] = {
+const removeFinancialAccount = (index: number) => {
+    if (stepFive.financialAccounts.length === 1) {
+        stepFive.financialAccounts[0] = {
             type: '',
             number: '',
         };
         return;
     }
-    stepFive.policies.splice(index, 1);
+    stepFive.financialAccounts.splice(index, 1);
 }
+
+const addIdentityDocument = () => {
+    stepTwo.identityDocuments.push({
+        type: '',
+        number: '',
+    });
+};
+
+const removeIdentityDocument = (index: number) => {
+    if (stepTwo.identityDocuments.length === 1) {
+        stepTwo.identityDocuments[0] = {
+            type: '',
+            number: '',
+        };
+        return;
+    }
+    stepTwo.identityDocuments.splice(index, 1);
+};
+
+const fillIdentityDocumentNumber = (type: string, number: string) => {
+    const emptyIndex = stepTwo.identityDocuments.findIndex((document) => !document.number);
+    if (emptyIndex === -1) {
+        stepTwo.identityDocuments.push({ type, number });
+        return;
+    }
+    if (!stepTwo.identityDocuments[emptyIndex].type) {
+        stepTwo.identityDocuments[emptyIndex].type = type;
+    }
+    stepTwo.identityDocuments[emptyIndex].number = number;
+};
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const resetForm = (form: any, initialState: object) => Object.assign(form, initialState);
 watch(
@@ -220,20 +373,68 @@ watch(
 
 
 const setFormFields = (record: RecordDetail) => {
-    const scannedIdentityFields = {
-        aadhaarNumber: stepTwo.aadhaarNumber,
-        drivingLicense: stepTwo.drivingLicense,
-        electionID: stepTwo.electionID,
-    };
-    const steps = [stepOne, stepTwo, stepThree, stepFour, stepFive, stepSix];
-    steps.forEach(step => Object.assign(step, record));
+    // Assign only each step's own fields — Object.assign(step, record) for every
+    // step would copy every array (addresses/children/financialAccounts/documents)
+    // onto all six step objects, and whichever step happened to be spread last when
+    // building the Review form would silently overwrite the others' live edits with
+    // its stale, load-time snapshot of that same array.
+    Object.assign(stepOne, {
+        id: record.id,
+        profileImage: record.profileImage,
+        firstName: record.firstName,
+        lastName: record.lastName,
+        email: record.email,
+        dateOfBirth: record.dateOfBirth,
+        gender: record.gender,
+        mobileNumber: record.mobileNumber,
+        whatsappNumber: record.whatsappNumber,
+        addressLine1: record.addressLine1,
+        addressLine2: record.addressLine2,
+        city: record.city,
+        state: record.state,
+        postalCode: record.postalCode,
+        country: record.country,
+        status: record.status,
+    });
+    Object.assign(stepTwo, {
+        identityDocuments: record.identityDocuments,
+        status: record.status,
+    });
+    Object.assign(stepThree, {
+        job: record.job,
+        retirementDate: record.retirementDate,
+        redirectionAddress: record.redirectionAddress,
+        isAbroad: record.isAbroad,
+        isRedirected: record.isRedirected,
+        redirectedAddressLine1: record.redirectedAddressLine1,
+        redirectedAddressLine2: record.redirectedAddressLine2,
+        addresses: record.addresses,
+        status: record.status,
+    });
+    Object.assign(stepFour, {
+        marriageDate: record.marriageDate,
+        previousAddress: record.previousAddress,
+        children: record.children,
+        status: record.status,
+    });
+    Object.assign(stepFive, {
+        financialAccounts: record.financialAccounts,
+        status: record.status,
+    });
+    Object.assign(stepSix, {
+        documents: record.documents,
+        status: record.status,
+    });
 
-    stepTwo.aadhaarNumber = record.aadhaarNumber || scannedIdentityFields.aadhaarNumber || '';
-    stepTwo.drivingLicense = record.drivingLicense || scannedIdentityFields.drivingLicense || '';
-    stepTwo.electionID = record.electionID || scannedIdentityFields.electionID || '';
+    if (!stepFive.financialAccounts?.length) {
+        stepFive.financialAccounts = [{
+            type: '',
+            number: '',
+        }];
+    }
 
-    if (!stepFive.policies?.length) {
-        stepFive.policies = [{
+    if (!stepTwo.identityDocuments?.length) {
+        stepTwo.identityDocuments = [{
             type: '',
             number: '',
         }];
@@ -242,27 +443,6 @@ const setFormFields = (record: RecordDetail) => {
 
 onMounted(() => {
     void checkOcrServiceStatus();
-    // const One = {
-    //     "id": "",
-    //     "valid": true,
-    //     "profileImage": "http://localhost:5001/1738053289968-Screenshot from 2025-01-25 14-22-46.png",
-    //     "email": "asdfff@gmail.com",
-    //     "firstName": "Alshoja",
-    //     "lastName": "m ikbal",
-    //     "houseName": "Padannamakal",
-    //     "houseNumber": "123",
-    //     "streetName": "Street ",
-    //     "streetNumber": "132",
-    //     "postOffice": "652234",
-    //     "village": "Village",
-    //     "panchayat": "Panchayath",
-    //     "district": "District",
-    //     "mobileNumber": "9967521656",
-    //     "whatsappNumber": "",
-    //     "dateOfBirth": "2025-01-28",
-    //     "gender": "male"
-    // }
-    // Object.assign(stepOne, One);
 });
 
 const isCurrentStepValid = computed(() => {
@@ -340,8 +520,8 @@ const submitStepData = async (status: RecordStatus = 'DRAFT', shouldContinue = t
             successMessage: 'Family Data submitted successfully',
         },
         5: {
-            method: () => recordStore.createPolicyData(stepFive, recordId, status),
-            successMessage: 'Policy Data submitted successfully',
+            method: () => recordStore.createFinancialAccountData(stepFive, recordId, status),
+            successMessage: 'Financial account data submitted successfully',
         },
         6: {
             method: () => recordStore.createDocumentsData(stepSix, recordId, status),
@@ -416,10 +596,10 @@ const submitFinalData = async () => {
 };
 
 
-const sensitiveFieldType = computed(() => (showSensitiveData.value ? 'text' : 'password'));
-const sensitiveFieldIcon = computed(() => (showSensitiveData.value ? '$eye' : '$eyeOff'));
-const toggleSensitiveDataVisibility = () => {
-    showSensitiveData.value = !showSensitiveData.value;
+const revealedFields = reactive<Record<string, boolean>>({});
+const isFieldRevealed = (key: string) => Boolean(revealedFields[key]);
+const toggleFieldReveal = (key: string) => {
+    revealedFields[key] = !revealedFields[key];
 };
 
 function setUploadUrl(url: string) {
@@ -429,11 +609,9 @@ function setUploadUrl(url: string) {
 
 function setUploadUrlForDoc(fileUrl: string, fileName: string, index: number) {
     stepSix.documents[index].file = fileUrl;
-    stepSix.documents[index].name = fileName;
-}
-
-function clearUploadForDoc(index: number) {
-    stepSix.documents[index].file = '';
+    if (!stepSix.documents[index].name) {
+        stepSix.documents[index].name = fileName;
+    }
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -507,20 +685,22 @@ const applyOcrResultToForm = (result: IdentityDocumentParseResult): boolean => {
         return false;
     }
 
+    let scannedDocumentType = '';
+    let scannedDocumentNumber = '';
     if (fields.aadhaarNumber) {
-        stepTwo.aadhaarNumber = fields.aadhaarNumber;
-        filledAnyField = true;
-        filledFields.push('Aadhaar number');
+        scannedDocumentType = 'Aadhaar Number';
+        scannedDocumentNumber = fields.aadhaarNumber;
+    } else if (fields.drivingLicense) {
+        scannedDocumentType = 'Driving License';
+        scannedDocumentNumber = fields.drivingLicense;
+    } else if (fields.electionID) {
+        scannedDocumentType = 'Election ID';
+        scannedDocumentNumber = fields.electionID;
     }
-    if (fields.drivingLicense) {
-        stepTwo.drivingLicense = fields.drivingLicense;
+    if (scannedDocumentNumber) {
+        fillIdentityDocumentNumber(scannedDocumentType, scannedDocumentNumber);
         filledAnyField = true;
-        filledFields.push('Driving licence');
-    }
-    if (fields.electionID) {
-        stepTwo.electionID = fields.electionID;
-        filledAnyField = true;
-        filledFields.push('Election ID');
+        filledFields.push('Identity document number');
     }
     if (fields.dateOfBirth) {
         const dob = formatOcrDate(fields.dateOfBirth);
@@ -551,10 +731,10 @@ const applyOcrResultToForm = (result: IdentityDocumentParseResult): boolean => {
             filledFields.push('Last name');
         }
     }
-    if (fields.pin && !stepOne.postOffice) {
-        stepOne.postOffice = fields.pin;
+    if (fields.pin && !stepOne.postalCode) {
+        stepOne.postalCode = fields.pin;
         filledAnyField = true;
-        filledFields.push('Post office / PIN');
+        filledFields.push('Postal code');
     }
 
     ocrFilledFields.value = filledFields;
@@ -682,9 +862,13 @@ const downloadDocument = async (index: number) => {
 
 <template>
     <BaseBreadcrumb :title="page.title" :breadcrumbs="breadcrumbs" />
-    <UiParentCard title="Create Record">
 
         <v-stepper rounded="lg" class="record-stepper" :editable="stepper.edit" v-model="stepper.step" :items="stepper.items">
+            <template v-slot:icon="{ step }">
+                <CheckIcon v-if="Number(step) < stepper.step" size="16" />
+                <template v-else>{{ step }}</template>
+            </template>
+
             <!-- Step 1: Personal Details -->
             <template v-slot:item.1>
                 <v-form v-model="stepOne.valid" class="step-one-form">
@@ -694,7 +878,7 @@ const downloadDocument = async (index: number) => {
                                 <CameraIcon class="text-secondary" size="20" />
                             </v-avatar>
                             <div>
-                                <div class="text-h5">Profile Photo</div>
+                                <div class="text-subtitle-1 font-weight-bold">Profile Photo</div>
                                 <div class="text-caption text-lightText">JPG or PNG, maximum 2 MB</div>
                             </div>
                         </v-card-title>
@@ -717,7 +901,7 @@ const downloadDocument = async (index: number) => {
                                 <ScanIcon class="text-secondary" size="20" />
                             </v-avatar>
                             <div>
-                                <div class="text-h5">Document Auto-fill</div>
+                                <div class="text-subtitle-1 font-weight-bold">Document Auto-fill</div>
                                 <div class="text-caption text-lightText">Fill matching details from an identity document
                                 </div>
                             </div>
@@ -753,7 +937,7 @@ const downloadDocument = async (index: number) => {
                                         :disabled="ocrLoading || ocrServiceLoading || !canUseOcrAutofill" />
                                 </v-col>
                                 <v-col cols="12" md="3" lg="2" class="d-flex align-center">
-                                    <v-btn variant="outlined" color="secondary" size="large" class="w-100 w-md-auto mb-6"
+                                    <v-btn variant="outlined" color="secondary" class="w-100 w-md-auto mb-6"
                                         :loading="ocrLoading || ocrServiceLoading"
                                         :disabled="ocrLoading || ocrServiceLoading || !canUseOcrAutofill"
                                         @click="runOcrAutofill">
@@ -770,28 +954,28 @@ const downloadDocument = async (index: number) => {
                                 <UserIcon class="text-secondary" size="20" />
                             </v-avatar>
                             <div>
-                                <div class="text-h5">Basic Information</div>
+                                <div class="text-subtitle-1 font-weight-bold">Basic Information</div>
                                 <div class="text-caption text-lightText">Name, email, birth date, and gender</div>
                             </div>
                         </v-card-title>
                         <v-card-text>
                             <v-row>
-                                <v-col cols="12" sm="6">
+                                <v-col cols="12" sm="6" lg="4">
                                     <v-text-field variant="outlined" v-model="stepOne.firstName" label="First Name*"
                                         required :rules="[validationRules.required]" />
                                 </v-col>
-                                <v-col cols="12" sm="6">
+                                <v-col cols="12" sm="6" lg="4">
                                     <v-text-field variant="outlined" v-model="stepOne.lastName" label="Last Name" />
                                 </v-col>
-                                <v-col cols="12">
+                                <v-col cols="12" sm="6" lg="4">
                                     <v-text-field variant="outlined" v-model="stepOne.email" label="Email*"
                                         :rules="[validationRules.required, validationRules.email]" />
                                 </v-col>
-                                <v-col cols="12" sm="6">
+                                <v-col cols="12" sm="6" lg="4">
                                     <v-text-field variant="outlined" v-model="stepOne.dateOfBirth" label="Date of Birth"
                                         type="date" />
                                 </v-col>
-                                <v-col cols="12" sm="6">
+                                <v-col cols="12" sm="6" lg="4">
                                     <v-select variant="outlined" v-model="stepOne.gender"
                                         :items="['male', 'female', 'other']" label="Gender" />
                                 </v-col>
@@ -805,21 +989,44 @@ const downloadDocument = async (index: number) => {
                                 <PhoneIcon class="text-secondary" size="20" />
                             </v-avatar>
                             <div>
-                                <div class="text-h5">Contact Details</div>
+                                <div class="text-subtitle-1 font-weight-bold">Contact Details</div>
                                 <div class="text-caption text-lightText">Primary mobile and WhatsApp numbers</div>
                             </div>
                         </v-card-title>
                         <v-card-text>
                             <v-row>
                                 <v-col cols="12" md="6">
-                                    <v-text-field variant="outlined" v-model="stepOne.mobileNumber"
-                                        label="Mobile Number(+91)" />
+                                    <div class="phone-input-field" :class="{ 'phone-input-field--error': mobileNumberInvalid }">
+                                        <span class="phone-input-field__label">Mobile Number</span>
+                                        <VueTelInput v-model="stepOne.mobileNumber" mode="international"
+                                            @validate="onMobileNumberValidate" />
+                                    </div>
+                                    <div v-if="mobileNumberInvalid" class="phone-input-field__error">
+                                        Please enter a valid mobile number.
+                                    </div>
                                 </v-col>
                                 <v-col cols="12" md="6">
-                                    <v-text-field variant="outlined" v-model="stepOne.whatsappNumber"
-                                        label="WhatsApp Number(+91)" />
+                                    <div class="phone-input-field" :class="{ 'phone-input-field--error': whatsappNumberInvalid }">
+                                        <span class="phone-input-field__label">WhatsApp Number</span>
+                                        <VueTelInput v-model="stepOne.whatsappNumber" mode="international"
+                                            :disabled="whatsappSameAsMobile"
+                                            @validate="onWhatsappNumberValidate" />
+                                    </div>
+                                    <div v-if="whatsappNumberInvalid" class="phone-input-field__error">
+                                        Please enter a valid WhatsApp number.
+                                    </div>
                                 </v-col>
                             </v-row>
+                            <div class="step-three-setting mt-3"
+                                :class="{ 'step-three-setting--active': whatsappSameAsMobile }">
+                                <div>
+                                    <div class="text-subtitle-1 font-weight-medium">WhatsApp is the same number</div>
+                                    <div class="text-caption text-lightText">Turn off to enter a different number</div>
+                                </div>
+                                <v-switch v-model="whatsappSameAsMobile"
+                                    :color="whatsappSameAsMobile ? 'secondary' : 'grey'" hide-details inset
+                                    @update:model-value="onToggleWhatsappSameAsMobile" />
+                            </div>
                         </v-card-text>
                     </v-card>
 
@@ -829,40 +1036,18 @@ const downloadDocument = async (index: number) => {
                                 <HomeIcon class="text-secondary" size="20" />
                             </v-avatar>
                             <div>
-                                <div class="text-h5">Home Address</div>
+                                <div class="text-subtitle-1 font-weight-bold">Home Address</div>
                                 <div class="text-caption text-lightText">Primary residential address</div>
                             </div>
                         </v-card-title>
                         <v-card-text>
-                            <v-row>
-                                <v-col cols="12" sm="6">
-                                    <v-text-field variant="outlined" v-model="stepOne.houseName" label="House Name" />
-                                </v-col>
-                                <v-col cols="12" sm="6">
-                                    <v-text-field variant="outlined" v-model="stepOne.houseNumber"
-                                        label="House Number" />
-                                </v-col>
-                                <v-col cols="12" sm="6">
-                                    <v-text-field variant="outlined" v-model="stepOne.streetName" label="Street Name" />
-                                </v-col>
-                                <v-col cols="12" sm="6">
-                                    <v-text-field variant="outlined" v-model="stepOne.streetNumber"
-                                        label="Street Number" />
-                                </v-col>
-                                <v-col cols="12" md="6">
-                                    <v-text-field variant="outlined" v-model="stepOne.village" label="Village" />
-                                </v-col>
-                                <v-col cols="12" md="6">
-                                    <v-text-field type="number" variant="outlined" v-model="stepOne.postOffice"
-                                        label="Post Office" />
-                                </v-col>
-                                <v-col cols="12" md="6">
-                                    <v-text-field variant="outlined" v-model="stepOne.panchayat" label="Panchayat" />
-                                </v-col>
-                                <v-col cols="12" md="6">
-                                    <v-text-field variant="outlined" v-model="stepOne.district" label="District" />
-                                </v-col>
-                            </v-row>
+                            <AddressFields
+                                v-model:address-line1="stepOne.addressLine1"
+                                v-model:address-line2="stepOne.addressLine2"
+                                v-model:city="stepOne.city"
+                                v-model:state="stepOne.state"
+                                v-model:postal-code="stepOne.postalCode"
+                                v-model:country="stepOne.country" />
                         </v-card-text>
                     </v-card>
                 </v-form>
@@ -878,58 +1063,60 @@ const downloadDocument = async (index: number) => {
                                     <IdIcon class="text-secondary" size="20" />
                                 </v-avatar>
                                 <div>
-                                    <div class="text-h5">Identity Documents</div>
-                                    <div class="text-caption text-lightText">Secure identity and postal reference numbers</div>
+                                    <div class="text-subtitle-1 font-weight-bold">Identity Documents</div>
+                                    <div class="text-caption text-lightText">Reference numbers only — files go in the Documents step</div>
                                 </div>
                             </div>
-                            <v-btn color="secondary" variant="text" size="small"
-                                :prepend-icon="showSensitiveData ? '$eyeOff' : '$eye'"
-                                @click="toggleSensitiveDataVisibility">
-                                {{ showSensitiveData ? 'Hide details' : 'Show details' }}
-                            </v-btn>
+                            <div class="d-flex align-center ga-3">
+                                <span class="text-caption text-lightText">Encrypted at rest</span>
+                                <v-btn color="secondary" variant="tonal" @click="addIdentityDocument">
+                                    <PlusIcon size="18" class="mr-1" />
+                                    Add Document
+                                </v-btn>
+                            </div>
                         </v-card-title>
                         <v-card-text>
                             <v-alert type="info" color="secondary" variant="tonal" density="compact"
                                 class="step-two-alert mb-5 mt-1">
-                                Details are hidden by default to protect personal information.
+                                Document numbers are stored encrypted and hidden by default.
                             </v-alert>
 
                             <v-row>
-                            <v-col cols="12" md="6">
-                                <v-text-field class="sensitive-visibility-field" variant="outlined"
-                                    v-model="stepTwo.aadhaarNumber" label="Aadhaar Number" :type="sensitiveFieldType"
-                                    :append-inner-icon="sensitiveFieldIcon"
-                                    @click:append-inner="toggleSensitiveDataVisibility"
-                                    :rules="[validationRules.maxLength(12), validationRules.minLength(12)]" />
-                            </v-col>
-                            <v-col cols="12" md="6">
-                                <v-text-field class="sensitive-visibility-field" variant="outlined"
-                                    v-model="stepTwo.drivingLicense" label="Driving License" :type="sensitiveFieldType"
-                                    :append-inner-icon="sensitiveFieldIcon"
-                                    @click:append-inner="toggleSensitiveDataVisibility"
-                                    :rules="[validationRules.maxLength(15), validationRules.minLength(15)]" />
-                            </v-col>
-                            <v-col cols="12" md="6">
-                                <v-text-field class="sensitive-visibility-field" variant="outlined"
-                                    v-model="stepTwo.electionID" label="Election ID" :type="sensitiveFieldType"
-                                    :append-inner-icon="sensitiveFieldIcon"
-                                    @click:append-inner="toggleSensitiveDataVisibility"
-                                    :rules="[validationRules.maxLength(10), validationRules.minLength(10)]" />
-                            </v-col>
-                            <v-col cols="12" md="6">
-                                <v-text-field class="sensitive-visibility-field" variant="outlined"
-                                    v-model="stepTwo.passportNumber" label="Passport Number" :type="sensitiveFieldType"
-                                    :append-inner-icon="sensitiveFieldIcon"
-                                    @click:append-inner="toggleSensitiveDataVisibility"
-                                    :rules="[validationRules.maxLength(8), validationRules.minLength(8)]" />
-                            </v-col>
-                            <v-col cols="12" md="6">
-                                <v-text-field class="sensitive-visibility-field" variant="outlined"
-                                    v-model="stepTwo.postBoxNumber" label="Post Box Number" :type="sensitiveFieldType"
-                                    :append-inner-icon="sensitiveFieldIcon"
-                                    @click:append-inner="toggleSensitiveDataVisibility" />
-                            </v-col>
+                                <v-col cols="12" lg="6" v-for="(document, index) in stepTwo.identityDocuments"
+                                    :key="index">
+                                    <v-card variant="outlined" class="step-two-document-card">
+                                        <v-card-title class="step-two-document-header">
+                                            <span class="text-subtitle-1 font-weight-bold">Document {{ index + 1 }}</span>
+                                            <v-btn class="remove-link-btn" variant="text" density="compact" size="small"
+                                                @click="removeIdentityDocument(index)">
+                                                Remove
+                                            </v-btn>
+                                        </v-card-title>
+                                        <v-card-text class="step-two-document-body">
+                                            <v-row>
+                                                <v-col cols="12" sm="6">
+                                                    <v-combobox variant="outlined" v-model="document.type"
+                                                        :items="identityDocumentTypes" label="Document Type"
+                                                        hide-details="auto" />
+                                                </v-col>
+                                                <v-col cols="12" sm="6">
+                                                    <v-text-field class="sensitive-visibility-field" variant="outlined"
+                                                        v-model="document.number" label="Document Number"
+                                                        :type="isFieldRevealed(`identity-${index}`) ? 'text' : 'password'"
+                                                        :append-inner-icon="isFieldRevealed(`identity-${index}`) ? '$eye' : '$eyeOff'"
+                                                        @click:append-inner="toggleFieldReveal(`identity-${index}`)"
+                                                        hide-details="auto" />
+                                                </v-col>
+                                            </v-row>
+                                        </v-card-text>
+                                    </v-card>
+                                </v-col>
                             </v-row>
+                            <v-btn color="secondary" variant="tonal" block class="d-sm-none mt-2"
+                                @click="addIdentityDocument">
+                                <PlusIcon size="18" class="mr-1" />
+                                Add Another Document
+                            </v-btn>
                         </v-card-text>
                     </v-card>
                 </v-form>
@@ -951,12 +1138,12 @@ const downloadDocument = async (index: number) => {
                         <v-card-text>
                             <v-row>
                                 <v-col cols="12" md="6">
-                                    <v-text-field variant="outlined" v-model="stepThree.job" label="Occupation (ജോലി)"
+                                    <v-text-field variant="outlined" v-model="stepThree.job" label="Occupation"
                                         required />
                                 </v-col>
                                 <v-col cols="12" md="6">
                                     <v-text-field variant="outlined" v-model="stepThree.retirementDate"
-                                        label="Retirement Date (വിരമിക്കുന്ന തീയതി)" type="date" />
+                                        label="Retirement Date" type="date" />
                                 </v-col>
                             </v-row>
                         </v-card-text>
@@ -988,7 +1175,7 @@ const downloadDocument = async (index: number) => {
                             <div class="step-three-setting"
                                 :class="{ 'step-three-setting--active': stepThree.isAbroad }">
                                 <div>
-                                    <div class="text-subtitle-1 font-weight-medium">Living Abroad (വിദേശത്ത്)</div>
+                                    <div class="text-subtitle-1 font-weight-medium">Living Abroad</div>
                                     <div class="text-caption text-lightText">Mark this person as living outside the
                                         country</div>
                                 </div>
@@ -999,12 +1186,12 @@ const downloadDocument = async (index: number) => {
                             <v-expand-transition>
                                 <v-row v-if="stepThree.isRedirected" class="mt-2">
                                     <v-col cols="12" md="6">
-                                        <v-text-field variant="outlined" v-model="stepThree.redirectedHouseName"
-                                            label="Post-Retirement House Name" />
+                                        <v-text-field variant="outlined" v-model="stepThree.redirectedAddressLine1"
+                                            label="Post-Retirement Address Line 1" />
                                     </v-col>
                                     <v-col cols="12" md="6">
-                                        <v-text-field variant="outlined" v-model="stepThree.redirectedHouseNumber"
-                                            label="Post-Retirement House Number" />
+                                        <v-text-field variant="outlined" v-model="stepThree.redirectedAddressLine2"
+                                            label="Post-Retirement Address Line 2" />
                                     </v-col>
                                 </v-row>
                             </v-expand-transition>
@@ -1014,69 +1201,46 @@ const downloadDocument = async (index: number) => {
                     <v-card variant="outlined" class="step-three-card">
                         <v-card-title class="step-three-addresses-header">
                             <div>
-                                <div class="text-h5">Other Addresses</div>
-                                <div class="text-caption text-lightText">Add domestic or overseas addresses</div>
+                                <div class="text-subtitle-1 font-weight-bold">Other Addresses</div>
+                                <div class="text-caption text-lightText">Post-retirement, overseas, or correspondence</div>
                             </div>
-                            <v-btn color="secondary" variant="outlined" @click="addAddress">
+                            <v-btn color="secondary" variant="tonal" @click="addAddress">
                                 <PlusIcon size="18" class="mr-1" />
                                 Add Address
                             </v-btn>
                         </v-card-title>
                         <v-card-text>
                             <v-row>
-                                <v-col v-for="(address, index) in stepThree.addresses" :key="index" cols="12" lg="6">
+                                <v-col v-for="(address, index) in stepThree.addresses" :key="index" cols="12">
                                     <v-card variant="outlined" class="step-three-address-card">
                                         <v-card-title class="step-three-address-card-header">
-                                            <div class="d-flex align-center ga-2">
-                                                <v-avatar color="lightsecondary" size="30">
-                                                    <MapPinIcon class="text-secondary" size="17" />
-                                                </v-avatar>
-                                                <span class="text-subtitle-1 font-weight-bold">Address {{ index + 1
-                                                    }}</span>
-                                            </div>
-                                            <v-btn color="error" variant="text" icon size="small"
-                                                :aria-label="`Remove address ${index + 1}`"
+                                            <span class="text-subtitle-1 font-weight-bold">Address {{ index + 1 }}</span>
+                                            <v-btn class="remove-link-btn" variant="text" density="compact" size="small"
                                                 @click="removeAddress(index)">
-                                                <TrashIcon size="18" />
+                                                Remove
                                             </v-btn>
                                         </v-card-title>
-                                        <v-card-text>
+                                        <v-card-text class="step-two-document-body">
                                             <v-row>
-                                                <v-col cols="12" sm="6">
-                                                    <v-text-field variant="outlined" v-model="address.houseName"
-                                                        label="House Name" />
-                                                </v-col>
-                                                <v-col cols="12" sm="6">
-                                                    <v-text-field variant="outlined" v-model="address.houseNumber"
-                                                        label="House Number" />
-                                                </v-col>
-                                                <v-col cols="12" sm="6">
-                                                    <v-text-field variant="outlined" v-model="address.streetName"
-                                                        label="Street Name" />
-                                                </v-col>
-                                                <v-col cols="12" sm="6">
-                                                    <v-text-field variant="outlined" v-model="address.streetNumber"
-                                                        label="Street Number" />
-                                                </v-col>
-                                                <v-col cols="12" sm="6">
-                                                    <v-text-field variant="outlined" v-model="address.village"
-                                                        label="Village (വില്ലേജ്)" />
-                                                </v-col>
-                                                <v-col cols="12" sm="6">
-                                                    <v-text-field variant="outlined" v-model="address.postOffice"
-                                                        label="Post Office (പോസ്റ്റ് ഓഫീസ്)" />
-                                                </v-col>
-                                                <v-col cols="12">
+                                                <v-col cols="12" sm="6" lg="3">
                                                     <v-select variant="outlined" v-model="address.locationType"
-                                                        :items="['Domestic (സ്വദേശത്ത്)', 'Abroad (വിദേശത്ത്)']"
-                                                        label="Location Type" />
+                                                        :items="['Domestic', 'Abroad']"
+                                                        label="Location Type" hide-details="auto" />
                                                 </v-col>
                                             </v-row>
+                                            <AddressFields
+                                                compact
+                                                v-model:address-line1="address.addressLine1"
+                                                v-model:address-line2="address.addressLine2"
+                                                v-model:city="address.city"
+                                                v-model:state="address.state"
+                                                v-model:postal-code="address.postalCode"
+                                                v-model:country="address.country" />
                                         </v-card-text>
                                     </v-card>
                                 </v-col>
                             </v-row>
-                            <v-btn color="secondary" variant="outlined" block class="d-sm-none mt-2"
+                            <v-btn color="secondary" variant="tonal" block class="d-sm-none mt-2"
                                 @click="addAddress">
                                 <PlusIcon size="18" class="mr-1" />
                                 Add Another Address
@@ -1095,20 +1259,20 @@ const downloadDocument = async (index: number) => {
                                 <HeartIcon class="text-secondary" size="20" />
                             </v-avatar>
                             <div>
-                                <div class="text-h5">Marriage Information</div>
+                                <div class="text-subtitle-1 font-weight-bold">Marriage Information</div>
                                 <div class="text-caption text-lightText">Optional marriage and previous-address details
                                 </div>
                             </div>
                         </v-card-title>
                         <v-card-text>
                             <v-row>
-                                <v-col cols="12" md="4">
+                                <v-col cols="12" sm="6">
                                     <v-text-field variant="outlined" v-model="stepFour.marriageDate"
-                                        label="Marriage Date (വിവാഹം നടന്ന തീയതി, മാസം, വർഷം)" type="date" />
+                                        label="Marriage Date" type="date" hide-details="auto" />
                                 </v-col>
-                                <v-col cols="12" md="8">
+                                <v-col cols="12" sm="6">
                                     <v-text-field variant="outlined" v-model="stepFour.previousAddress"
-                                        label="Previous Address (മുമ്പത്തെ മേൽവിലാസം)" />
+                                        label="Previous Address" hide-details="auto" />
                                 </v-col>
                             </v-row>
                         </v-card-text>
@@ -1121,48 +1285,48 @@ const downloadDocument = async (index: number) => {
                                     <UsersIcon class="text-secondary" size="20" />
                                 </v-avatar>
                                 <div>
-                                    <div class="text-h5">Children</div>
-                                    <div class="text-caption text-lightText">Add one card for each child</div>
+                                    <div class="text-subtitle-1 font-weight-bold">Children</div>
+                                    <div class="text-caption text-lightText">One entry per child</div>
                                 </div>
                             </div>
-                            <v-btn color="secondary" variant="outlined" @click="addChild">
+                            <v-btn color="secondary" variant="tonal" @click="addChild">
                                 <PlusIcon size="18" class="mr-1" />
                                 Add Child
                             </v-btn>
                         </v-card-title>
                         <v-card-text>
                             <v-row>
-                                <v-col cols="12" lg="6" v-for="(child, index) in stepFour.children" :key="index">
+                                <v-col cols="12" v-for="(child, index) in stepFour.children" :key="index">
                                     <v-card variant="outlined" class="step-four-child-card">
                                         <v-card-title class="step-four-child-header">
                                             <span class="text-subtitle-1 font-weight-bold">Child {{ index + 1 }}</span>
-                                            <v-btn color="error" variant="text" icon size="small"
-                                                :aria-label="`Remove child ${index + 1}`" @click="removeChild(index)">
-                                                <TrashIcon size="18" />
+                                            <v-btn class="remove-link-btn" variant="text" density="compact" size="small"
+                                                @click="removeChild(index)">
+                                                Remove
                                             </v-btn>
                                         </v-card-title>
-                                        <v-card-text>
+                                        <v-card-text class="step-two-document-body">
                                             <v-row>
-                                                <v-col cols="12">
+                                                <v-col cols="12" sm="6" lg="4">
                                                     <v-text-field variant="outlined" v-model="child.name"
-                                                        label="Child's Name" required />
+                                                        label="Child's Name" hide-details="auto" />
                                                 </v-col>
-                                                <v-col cols="12" sm="6">
+                                                <v-col cols="12" sm="6" lg="4">
                                                     <v-text-field variant="outlined" v-model="child.dateOfBirth"
-                                                        label="Child's Date of Birth (കുട്ടി ജനിച്ച തീയതി)" type="date"
-                                                        required />
+                                                        label="Child's Date of Birth" type="date"
+                                                        hide-details="auto" />
                                                 </v-col>
-                                                <v-col cols="12" sm="6">
+                                                <v-col cols="12" sm="6" lg="4">
                                                     <v-select variant="outlined" v-model="child.gender"
-                                                        :items="['male', 'female']"
-                                                        label="Child's Gender (Male/ Female)" required />
+                                                        :items="['male', 'female', 'other']"
+                                                        label="Child's Gender" hide-details="auto" />
                                                 </v-col>
                                             </v-row>
                                         </v-card-text>
                                     </v-card>
                                 </v-col>
                             </v-row>
-                            <v-btn color="secondary" variant="outlined" block class="d-sm-none mt-2" @click="addChild">
+                            <v-btn color="secondary" variant="tonal" block class="d-sm-none mt-2" @click="addChild">
                                 <PlusIcon size="18" class="mr-1" />
                                 Add Another Child
                             </v-btn>
@@ -1171,7 +1335,7 @@ const downloadDocument = async (index: number) => {
                 </v-form>
             </template>
 
-            <!-- Step 5: Policy -->
+            <!-- Step 5: Financial Accounts -->
             <template v-slot:item.5>
                 <v-form v-model="stepFive.valid" class="step-five-form">
                     <v-card variant="outlined" class="step-five-card">
@@ -1181,45 +1345,64 @@ const downloadDocument = async (index: number) => {
                                     <ShieldCheckIcon class="text-secondary" size="20" />
                                 </v-avatar>
                                 <div>
-                                    <div class="text-h5">Policy Details</div>
-                                    <div class="text-caption text-lightText">Add account and policy numbers</div>
+                                    <div class="text-subtitle-1 font-weight-bold">Financial Accounts</div>
+                                    <div class="text-caption text-lightText">Bank, insurance, or other account references</div>
                                 </div>
                             </div>
-                            <v-btn color="secondary" variant="outlined" @click="addPolicy">
-                                <PlusIcon size="18" class="mr-1" />
-                                Add Policy
-                            </v-btn>
+                            <div class="d-flex align-center ga-3">
+                                <span class="text-caption text-lightText">Encrypted at rest</span>
+                                <v-btn color="secondary" variant="tonal" @click="addFinancialAccount">
+                                    <PlusIcon size="18" class="mr-1" />
+                                    Add Account
+                                </v-btn>
+                            </div>
                         </v-card-title>
                         <v-card-text>
+                            <v-alert type="info" color="secondary" variant="tonal" density="compact"
+                                class="step-two-alert mb-5 mt-1">
+                                Account numbers are stored encrypted and hidden by default.
+                            </v-alert>
                             <v-row>
-                                <v-col cols="12" md="6" v-for="(policy, index) in stepFive.policies" :key="index">
-                                    <v-card variant="outlined" class="step-five-policy-card">
-                                        <v-card-title class="step-five-policy-header">
-                                            <span class="text-subtitle-1 font-weight-bold">Policy {{ index + 1 }}</span>
-                                            <v-btn color="error" variant="text" icon size="small"
-                                                :aria-label="`Remove policy ${index + 1}`" @click="removePolicy(index)">
-                                                <TrashIcon size="18" />
+                                <v-col cols="12" v-for="(financialAccount, index) in stepFive.financialAccounts"
+                                    :key="index">
+                                    <v-card variant="outlined" class="step-five-account-card">
+                                        <v-card-title class="step-five-account-header">
+                                            <span class="text-subtitle-1 font-weight-bold">Account {{ index + 1 }}</span>
+                                            <v-btn class="remove-link-btn" variant="text" density="compact" size="small"
+                                                @click="removeFinancialAccount(index)">
+                                                Remove
                                             </v-btn>
                                         </v-card-title>
-                                        <v-card-text>
+                                        <v-card-text class="step-two-document-body">
                                             <v-row>
-                                                <v-col cols="12">
-                                                    <v-select variant="outlined" v-model="policy.type"
-                                                        :items="['Account Number', 'PLI Number', 'RPLI Number', 'IPPB Number', 'Savings Bank Number', 'Other Account Numbers']"
-                                                        label="Policy Type" required />
+                                                <v-col cols="12" sm="6" lg="4">
+                                                    <v-combobox variant="outlined" v-model="financialAccount.type"
+                                                        :items="financialAccountTypes" label="Account Type"
+                                                        hide-details="auto" />
                                                 </v-col>
-                                                <v-col cols="12">
-                                                    <v-text-field variant="outlined" v-model="policy.number"
-                                                        label="Policy Number" required />
+                                                <v-col cols="12" sm="6" lg="4">
+                                                    <v-text-field variant="outlined" v-model="financialAccount.provider"
+                                                        label="Provider" placeholder="e.g. City Bank"
+                                                        hint="Bank, insurer, or fund name" persistent-hint
+                                                        hide-details="auto" />
+                                                </v-col>
+                                                <v-col cols="12" sm="6" lg="4">
+                                                    <v-text-field class="sensitive-visibility-field" variant="outlined"
+                                                        v-model="financialAccount.number" label="Account Number"
+                                                        :type="isFieldRevealed(`financial-${index}`) ? 'text' : 'password'"
+                                                        :append-inner-icon="isFieldRevealed(`financial-${index}`) ? '$eye' : '$eyeOff'"
+                                                        @click:append-inner="toggleFieldReveal(`financial-${index}`)"
+                                                        hide-details="auto" />
                                                 </v-col>
                                             </v-row>
                                         </v-card-text>
                                     </v-card>
                                 </v-col>
                             </v-row>
-                            <v-btn color="secondary" variant="outlined" block class="d-sm-none mt-2" @click="addPolicy">
+                            <v-btn color="secondary" variant="tonal" block class="d-sm-none mt-2"
+                                @click="addFinancialAccount">
                                 <PlusIcon size="18" class="mr-1" />
-                                Add Another Policy
+                                Add Another Account
                             </v-btn>
                         </v-card-text>
                     </v-card>
@@ -1229,7 +1412,7 @@ const downloadDocument = async (index: number) => {
 
             <!-- Step 6: Documents -->
             <template v-slot:item.6>
-                <v-form v-model="stepSix.valid" class="step-six-form">
+                <v-form class="step-six-form">
                     <v-card variant="outlined" class="step-six-card">
                         <v-card-title class="step-six-header">
                             <div class="d-flex align-center ga-3">
@@ -1240,87 +1423,98 @@ const downloadDocument = async (index: number) => {
                                 <div>
                                     <div class="text-h5">Supporting Documents</div>
                                     <div class="text-caption text-lightText">
-                                        Upload Aadhaar, address proof, or other documents
+                                        Identity, address, or other supporting documents — PDF, JPG, or PNG, up to
+                                        {{ DOCUMENT_MAX_SIZE_MB }} MB each.
                                     </div>
                                 </div>
                             </div>
 
-                            <v-btn color="secondary" variant="outlined" @click="uploadDocument"
-                                class="d-none d-sm-flex">
-                                <PlusIcon size="18" class="mr-1" />
-                                Add Document
-                            </v-btn>
+                            <div class="step-six-header__actions">
+                                <div v-if="stepSix.documents.length" class="step-six-progress">
+                                    <v-progress-linear :model-value="documentProgressPercent" color="secondary"
+                                        bg-color="grey-lighten-2" height="6" rounded class="step-six-progress__bar" />
+                                    <span class="text-caption text-lightText">
+                                        {{ completedDocumentCount }}/{{ stepSix.documents.length }}
+                                    </span>
+                                </div>
+                                <v-btn color="secondary" variant="tonal" @click="addBlankDocument">
+                                    <PlusIcon size="18" class="mr-1" />
+                                    Add Document
+                                </v-btn>
+                            </div>
                         </v-card-title>
 
                         <v-card-text>
-                            <v-row>
-                                <v-col cols="12" md="6" v-for="(document, index) in stepSix.documents" :key="index">
-                                    <v-card variant="outlined" class="step-six-document-card">
-                                        <v-card-title class="step-six-document-header">
-                                            <span class="text-subtitle-1 font-weight-bold">
-                                                Document {{ index + 1 }}
-                                            </span>
+                            <div class="documents-dropzone" @click="triggerBulkFilePicker" @dragover.prevent
+                                @drop.prevent="handleBulkDrop">
+                                <UploadIcon size="20" class="text-secondary" />
+                                <span>
+                                    <strong class="text-secondary">Choose files</strong>
+                                    or drag them here — we'll create a row for each
+                                </span>
+                            </div>
+                            <input ref="bulkFileInputRef" type="file" multiple hidden accept=".pdf,.jpg,.jpeg,.png"
+                                @change="handleBulkFileInputChange" />
+                            <input ref="rowFileInputRef" type="file" hidden accept=".pdf,.jpg,.jpeg,.png"
+                                @change="handleRowFileInputChange" />
 
-                                            <div class="d-flex align-center ga-1">
-                                                <template v-if="document.file">
-                                                    <v-tooltip text="Preview Document">
-                                                        <template #activator="{ props }">
-                                                            <v-btn v-bind="props" icon variant="text" color="secondary"
-                                                                @click="viewDocument(index)">
-                                                                <EyeIcon size="18" />
-                                                            </v-btn>
-                                                        </template>
-                                                    </v-tooltip>
-
-                                                    <v-tooltip text="Download Document">
-                                                        <template #activator="{ props }">
-                                                            <v-btn v-bind="props" icon variant="text" color="secondary"
-                                                                @click="downloadDocument(index)">
-                                                                <DownloadIcon size="18" />
-                                                            </v-btn>
-                                                        </template>
-                                                    </v-tooltip>
+                            <div v-if="stepSix.documents.length" class="documents-list">
+                                <div class="documents-list__label">Document</div>
+                                <div v-for="(document, index) in stepSix.documents" :key="index" class="document-row">
+                                    <div class="document-row__badge"
+                                        :class="`document-row__badge--${getDocumentBadge(document).color}`">
+                                        {{ getDocumentBadge(document).label }}
+                                    </div>
+                                    <div class="document-row__info">
+                                        <input v-model="document.name" class="document-row__name"
+                                            placeholder="e.g., ID Copy, Address Proof" />
+                                        <div v-if="!document.file" class="document-row__meta document-row__meta--error">
+                                            No file attached — required
+                                        </div>
+                                    </div>
+                                    <v-chip :color="document.file ? 'success' : 'warning'" size="small" variant="tonal"
+                                        class="document-row__status">
+                                        {{ document.file ? 'Uploaded' : 'Needs file' }}
+                                    </v-chip>
+                                    <div class="document-row__actions">
+                                        <template v-if="document.file">
+                                            <v-tooltip text="Preview Document">
+                                                <template #activator="{ props }">
+                                                    <v-btn v-bind="props" icon variant="text" color="secondary"
+                                                        size="small" @click="viewDocument(index)">
+                                                        <EyeIcon size="18" />
+                                                    </v-btn>
                                                 </template>
+                                            </v-tooltip>
+                                            <v-tooltip text="Download Document">
+                                                <template #activator="{ props }">
+                                                    <v-btn v-bind="props" icon variant="text" color="secondary"
+                                                        size="small" @click="downloadDocument(index)">
+                                                        <DownloadIcon size="18" />
+                                                    </v-btn>
+                                                </template>
+                                            </v-tooltip>
+                                        </template>
+                                        <v-btn v-else variant="outlined" color="secondary" size="small"
+                                            @click="triggerRowFilePicker(index)">
+                                            Upload
+                                        </v-btn>
+                                        <v-btn class="remove-link-btn" icon variant="text" size="small"
+                                            :aria-label="`Remove document ${index + 1}`"
+                                            @click="removeDocument(index)">
+                                            <TrashIcon size="18" />
+                                        </v-btn>
+                                    </div>
+                                </div>
+                            </div>
+                            <v-alert v-else type="info" color="secondary" variant="tonal" class="mt-3">
+                                No documents added yet.
+                            </v-alert>
 
-                                                <v-tooltip text="Remove Document">
-                                                    <template #activator="{ props }">
-                                                        <v-btn v-bind="props" icon variant="text" color="error"
-                                                            @click="removeDocument(index)">
-                                                            <TrashIcon size="18" />
-                                                        </v-btn>
-                                                    </template>
-                                                </v-tooltip>
-                                            </div>
-                                        </v-card-title>
-
-                                        <v-card-text class="pt-0">
-                                            <v-row>
-                                                <v-col cols="12">
-                                                    <v-text-field variant="outlined" v-model="document.name"
-                                                        label="Document Name"
-                                                        placeholder="e.g., Aadhaar Copy, Address Proof"
-                                                        :rules="[validationRules.required]" />
-                                                </v-col>
-
-                                                <v-col cols="12">
-                                                    <FileUpload label="Upload Document"
-                                                        :rules="[validationRules.required]"
-                                                        :upload-path="`/records/${route.params.recordId}/documents/upload`"
-                                                        :existing-file-url="document.file"
-                                                        @uploaded="(fileUrl, fileName) => setUploadUrlForDoc(fileUrl, fileName, index)"
-                                                        @cleared="clearUploadForDoc(index)" />
-                                                </v-col>
-                                            </v-row>
-                                        </v-card-text>
-                                    </v-card>
-                                </v-col>
-                            </v-row>
-
-                            <v-btn color="secondary" variant="outlined" block class="d-sm-none mt-2"
-                                @click="uploadDocument">
-                                <PlusIcon size="18" class="mr-1" />
-                                Add Another Document
-                            </v-btn>
+                            <div v-if="incompleteDocumentCount > 0" class="text-error text-caption mt-3">
+                                {{ incompleteDocumentCount }} document{{ incompleteDocumentCount > 1 ? 's' : '' }}
+                                still need{{ incompleteDocumentCount > 1 ? '' : 's' }} a file.
+                            </div>
                         </v-card-text>
                     </v-card>
                 </v-form>
@@ -1350,7 +1544,7 @@ const downloadDocument = async (index: number) => {
                     <v-card-text>
                         <ViewComponent
                             :form="{ ...stepOne, ...stepTwo, ...stepThree, ...stepFour, ...stepFive, ...stepSix }"
-                            review-mode />
+                            review-mode @jump-to-step="stepper.step = $event" />
                     </v-card-text>
                 </v-card>
             </template>
@@ -1358,7 +1552,7 @@ const downloadDocument = async (index: number) => {
             <!-- Custom Next and Prev buttons -->
             <template v-slot:actions="{ }">
                 <v-row class="d-flex align-center justify-space-between ma-5">
-                    <v-btn :disabled="stepper.step === 1" outlined color="secondary" size="default" density="default"
+                    <v-btn :disabled="stepper.step === 1" color="secondary" size="default" density="default"
                         @click="previousStep">
                         Back
                     </v-btn>
@@ -1374,11 +1568,74 @@ const downloadDocument = async (index: number) => {
                 </v-row>
             </template>
         </v-stepper>
-    </UiParentCard>
-
 </template>
 
 <style scoped>
+.step-one-card {
+    position: relative;
+}
+
+.step-one-card:focus-within {
+    z-index: 10;
+}
+
+.phone-input-field {
+    position: relative;
+    margin-top: 10px;
+}
+
+.phone-input-field__label {
+    position: absolute;
+    top: -8px;
+    left: 12px;
+    padding: 0 4px;
+    font-size: 0.75rem;
+    line-height: 1;
+    background: rgb(var(--v-theme-surface));
+    color: rgba(var(--v-theme-on-surface), 0.6);
+    z-index: 1;
+}
+
+.phone-input-field--error .phone-input-field__label {
+    color: rgb(var(--v-theme-error));
+}
+
+.phone-input-field__error {
+    color: rgb(var(--v-theme-error));
+    font-size: 0.75rem;
+    margin-top: 4px;
+    padding-left: 12px;
+}
+
+:deep(.vue-tel-input) {
+    box-sizing: border-box;
+    border-radius: 8px;
+    border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    height: 45px;
+    background: rgb(var(--v-theme-surface));
+}
+
+:deep(.vti__input) {
+    box-sizing: border-box;
+    height: 100%;
+}
+
+.phone-input-field:focus-within :deep(.vue-tel-input) {
+    border-color: rgba(var(--v-theme-on-surface), 0.87);
+    border-width: 2px;
+}
+
+.phone-input-field--error :deep(.vue-tel-input) {
+    border-color: rgb(var(--v-theme-error));
+}
+
+:deep(.vti__dropdown-list) {
+    z-index: 20;
+    border-radius: 8px;
+    margin-top: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
 :deep(.sensitive-visibility-field .v-field__append-inner .v-icon) {
     color: rgb(var(--v-theme-secondary));
     opacity: 1;
@@ -1386,6 +1643,15 @@ const downloadDocument = async (index: number) => {
 
 :deep(.sensitive-visibility-field .v-field__append-inner) {
     opacity: 1;
+}
+
+.remove-link-btn {
+    color: rgb(var(--v-theme-lightText));
+}
+
+.remove-link-btn:hover {
+    color: rgb(var(--v-theme-error));
+    background: rgba(var(--v-theme-error), 0.08);
 }
 
 .step-three-form {
@@ -1411,7 +1677,7 @@ const downloadDocument = async (index: number) => {
 }
 
 .step-five-header,
-.step-five-policy-header {
+.step-five-account-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1422,12 +1688,15 @@ const downloadDocument = async (index: number) => {
     padding: 16px 20px;
 }
 
-.step-five-policy-card {
+.step-five-account-card {
     height: 100%;
+    overflow: hidden;
 }
 
-.step-five-policy-header {
-    padding: 12px 16px;
+.step-five-account-header {
+    padding: 11px 16px;
+    background: rgba(var(--v-theme-on-surface), 0.035);
+    border-bottom: 1px solid rgba(var(--v-border-color), 0.15);
 }
 
 .step-four-card {
@@ -1448,10 +1717,13 @@ const downloadDocument = async (index: number) => {
 
 .step-four-child-card {
     height: 100%;
+    overflow: hidden;
 }
 
 .step-four-child-header {
-    padding: 12px 16px;
+    padding: 11px 16px;
+    background: rgba(var(--v-theme-on-surface), 0.035);
+    border-bottom: 1px solid rgba(var(--v-border-color), 0.15);
 }
 
 .step-one-form {
@@ -1480,6 +1752,24 @@ const downloadDocument = async (index: number) => {
 
 .step-two-alert {
     border-radius: 10px;
+}
+
+.step-two-document-card {
+    overflow: hidden;
+}
+
+.step-two-document-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 11px 16px;
+    background: rgba(var(--v-theme-on-surface), 0.035);
+    border-bottom: 1px solid rgba(var(--v-border-color), 0.15);
+}
+
+.step-two-document-body {
+    padding-top: 28px;
 }
 
 .step-one-card {
@@ -1561,10 +1851,13 @@ const downloadDocument = async (index: number) => {
 
 .step-three-address-card {
     height: 100%;
+    overflow: hidden;
 }
 
 .step-three-address-card-header {
-    padding: 12px 16px;
+    padding: 11px 16px;
+    background: rgba(var(--v-theme-on-surface), 0.035);
+    border-bottom: 1px solid rgba(var(--v-border-color), 0.15);
 }
 
 @media (max-width: 599px) {
@@ -1657,19 +1950,135 @@ const downloadDocument = async (index: number) => {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
     padding: 20px 24px;
 }
 
-.step-six-document-card {
-    border-radius: 12px;
-    height: 100%;
-}
-
-.step-six-document-header {
+.step-six-header__actions {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 16px 20px 8px;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.step-six-progress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 96px;
+}
+
+.step-six-progress__bar {
+    width: 72px;
+}
+
+.documents-dropzone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 24px 16px;
+    border: 1px dashed rgba(var(--v-border-color), 0.4);
+    border-radius: 12px;
+    background: rgba(var(--v-theme-on-surface), 0.02);
+    cursor: pointer;
+    text-align: center;
+    color: rgba(var(--v-theme-on-surface), 0.7);
+    font-size: 0.875rem;
+}
+
+.documents-dropzone:hover {
+    background: rgba(var(--v-theme-on-surface), 0.035);
+    border-color: rgba(var(--v-theme-on-surface), 0.5);
+}
+
+.documents-list {
+    margin-top: 20px;
+}
+
+.documents-list__label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: rgba(var(--v-theme-on-surface), 0.5);
+    padding: 0 4px 8px;
+}
+
+.document-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 4px;
+    border-top: 1px solid rgba(var(--v-border-color), 0.15);
+    flex-wrap: wrap;
+}
+
+.document-row__badge {
+    flex: 0 0 auto;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 700;
+    background: rgba(var(--v-theme-on-surface), 0.06);
+    color: rgba(var(--v-theme-on-surface), 0.6);
+}
+
+.document-row__badge--red {
+    background: rgba(var(--v-theme-error), 0.12);
+    color: rgb(var(--v-theme-error));
+}
+
+.document-row__badge--blue,
+.document-row__badge--indigo {
+    background: rgba(var(--v-theme-secondary), 0.12);
+    color: rgb(var(--v-theme-secondary));
+}
+
+.document-row__info {
+    flex: 1 1 200px;
+    min-width: 0;
+}
+
+.document-row__name {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: rgb(var(--v-theme-on-surface));
+    padding: 2px 0;
+}
+
+.document-row__name::placeholder {
+    font-weight: 400;
+    color: rgba(var(--v-theme-on-surface), 0.4);
+}
+
+.document-row__meta {
+    font-size: 0.75rem;
+    color: rgba(var(--v-theme-on-surface), 0.5);
+}
+
+.document-row__meta--error {
+    color: rgb(var(--v-theme-error));
+}
+
+.document-row__status {
+    flex: 0 0 auto;
+}
+
+.document-row__actions {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 2px;
 }
 
 @media (max-width: 600px) {
@@ -1677,6 +2086,26 @@ const downloadDocument = async (index: number) => {
         flex-direction: column;
         align-items: flex-start;
         gap: 12px;
+    }
+
+    .step-six-header__actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .document-row {
+        position: relative;
+        padding-right: 40px;
+    }
+
+    .document-row__status {
+        order: 1;
+    }
+
+    .document-row__actions {
+        position: absolute;
+        top: 12px;
+        right: 4px;
     }
 }
 

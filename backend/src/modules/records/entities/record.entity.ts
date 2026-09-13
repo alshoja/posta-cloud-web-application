@@ -1,7 +1,4 @@
-import { Transform } from 'class-transformer';
 import {
-  BeforeInsert,
-  BeforeUpdate,
   Column,
   Entity,
   JoinColumn,
@@ -16,8 +13,8 @@ import { RecordStatus } from '../enums/record-status.enum';
 import { Address } from './address.entity';
 import { Child } from './child.entity';
 import { Document } from './document.entity';
-import { Policy } from './policy.entity';
-import { EncryptionUtility } from '../../../utilities/encryption.utility';
+import { FinancialAccount } from './financial-account.entity';
+import { IdentityDocument } from './identity-document.entity';
 import { User } from 'src/modules/users/entities/user.entity';
 
 @Entity('records')
@@ -27,9 +24,6 @@ export class Record {
 
   @Column({ nullable: true })
   profileImage: string;
-
-  @Column({ nullable: true })
-  postBoxNumber: number;
 
   @Column({ unique: true })
   email: string;
@@ -57,58 +51,19 @@ export class Record {
   gender: Gender;
 
   @Column({ nullable: true })
-  houseName: string;
+  addressLine1: string;
 
   @Column({ nullable: true })
-  houseNumber: string;
+  addressLine2: string;
 
   @Column({ nullable: true })
-  streetName: string;
+  city: string;
 
   @Column({ nullable: true })
-  streetNumber: string;
+  state: string;
 
   @Column({ nullable: true })
-  panchayat: string;
-
-  @Column({ nullable: true })
-  district: string;
-
-  @Column({ nullable: true })
-  @Transform(
-    ({ value }) => (value ? EncryptionUtility.decrypt(value) : value),
-    {
-      toPlainOnly: true,
-    },
-  )
-  aadhaarNumber: string;
-
-  @Column({ nullable: true })
-  @Transform(
-    ({ value }) => (value ? EncryptionUtility.decrypt(value) : value),
-    {
-      toPlainOnly: true,
-    },
-  )
-  drivingLicense: string;
-
-  @Column({ nullable: true })
-  @Transform(
-    ({ value }) => (value ? EncryptionUtility.decrypt(value) : value),
-    {
-      toPlainOnly: true,
-    },
-  )
-  electionID: string;
-
-  @Column({ nullable: true })
-  @Transform(
-    ({ value }) => (value ? EncryptionUtility.decrypt(value) : value),
-    {
-      toPlainOnly: true,
-    },
-  )
-  passportNumber: string;
+  country: string;
 
   @Column({ default: false })
   redirectionAddress: boolean;
@@ -117,10 +72,10 @@ export class Record {
   isAbroad: boolean;
 
   @Column({ nullable: true })
-  redirectedHouseName: string;
+  redirectedAddressLine1: string;
 
   @Column({ nullable: true })
-  redirectedHouseNumber: string;
+  redirectedAddressLine2: string;
 
   @Column({ nullable: true })
   job: string;
@@ -132,7 +87,7 @@ export class Record {
   isRedirected: boolean;
 
   @Column({ nullable: true })
-  postOffice: number;
+  postalCode: string;
 
   @Column({
     type: 'enum',
@@ -157,9 +112,6 @@ export class Record {
   marriageDate: string;
 
   @Column({ nullable: true })
-  village: string;
-
-  @Column({ nullable: true })
   previousAddress: string;
 
   @OneToMany(() => Child, (child) => child.records, { cascade: true })
@@ -172,11 +124,17 @@ export class Record {
   @JoinColumn()
   documents:  Relation<Document>[];
 
-  @OneToMany(() => Policy, (policy) => policy.records, {
+  @OneToMany(() => FinancialAccount, (financialAccount) => financialAccount.records, {
     cascade: true,
   })
   @JoinColumn()
-  policies:  Relation<Policy>[];
+  financialAccounts:  Relation<FinancialAccount>[];
+
+  @OneToMany(() => IdentityDocument, (identityDocument) => identityDocument.records, {
+    cascade: true,
+  })
+  @JoinColumn()
+  identityDocuments:  Relation<IdentityDocument>[];
 
   @ManyToOne(() => User, (user) => user.records, {
     onDelete: 'CASCADE',
@@ -202,30 +160,4 @@ export class Record {
     onUpdate: 'CURRENT_TIMESTAMP',
   })
   updatedAt: Date;
-
-  @BeforeInsert()
-  @BeforeUpdate()
-  async encryptSensitiveInformation() {
-    if (
-      this.aadhaarNumber &&
-      !EncryptionUtility.isEncrypted(this.aadhaarNumber)
-    ) {
-      this.aadhaarNumber = EncryptionUtility.encrypt(this.aadhaarNumber);
-    }
-    if (this.electionID && !EncryptionUtility.isEncrypted(this.electionID)) {
-      this.electionID = EncryptionUtility.encrypt(this.electionID);
-    }
-    if (
-      this.passportNumber &&
-      !EncryptionUtility.isEncrypted(this.passportNumber)
-    ) {
-      this.passportNumber = EncryptionUtility.encrypt(this.passportNumber);
-    }
-    if (
-      this.drivingLicense &&
-      !EncryptionUtility.isEncrypted(this.drivingLicense)
-    ) {
-      this.drivingLicense = EncryptionUtility.encrypt(this.drivingLicense);
-    }
-  }
 }

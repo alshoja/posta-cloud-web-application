@@ -13,8 +13,8 @@ export interface DocumentChunkIndexPayload {
   lastName?: string;
   email?: string;
   mobileNumber?: string;
-  village?: string;
-  panchayat?: string;
-  district?: string;
+  city?: string;
+  state?: string;
+  country?: string;
   createdAt: Date;
 }

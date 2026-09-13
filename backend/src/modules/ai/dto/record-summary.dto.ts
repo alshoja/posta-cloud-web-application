@@ -8,8 +8,8 @@ export class RecordSummaryDto {
   location: string;
   documentsCount: number;
   documentNames: string[];
-  policiesCount: number;
-  policyTypes: string[];
+  financialAccountsCount: number;
+  financialAccountTypes: string[];
   addressesCount: number;
   childrenCount: number;
   postRetirementAddressEnabled: boolean;

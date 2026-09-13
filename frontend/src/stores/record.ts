@@ -45,14 +45,12 @@ export const useRecordStore = defineStore('Record', {
           lastName: formData.lastName || undefined,
           email: formData.email || undefined,
           gender: formData.gender || undefined,
-          houseName: formData.houseName || undefined,
-          houseNumber: formData.houseNumber || undefined,
-          streetName: formData.streetName || undefined,
-          streetNumber: formData.streetNumber || undefined,
-          postOffice: formData.postOffice || undefined,
-          village: formData.village || undefined,
-          panchayat: formData.panchayat || undefined,
-          district: formData.district || undefined,
+          addressLine1: formData.addressLine1 || undefined,
+          addressLine2: formData.addressLine2 || undefined,
+          city: formData.city || undefined,
+          state: formData.state || undefined,
+          postalCode: formData.postalCode || undefined,
+          country: formData.country || undefined,
           mobileNumber: formData.mobileNumber || undefined,
           whatsappNumber: formData.whatsappNumber || undefined,
           dateOfBirth: formData.dateOfBirth || undefined,
@@ -71,11 +69,10 @@ export const useRecordStore = defineStore('Record', {
     async createIdentificationData(formData: StepTwo, id: string, status: RecordStatus) {
       try {
         const payload = {
-          aadhaarNumber: formData.aadhaarNumber || undefined,
-          drivingLicense: formData.drivingLicense || undefined,
-          electionID: formData.electionID || undefined,
-          passportNumber: formData.passportNumber || undefined,
-          postBoxNumber: formData.postBoxNumber || undefined,
+          identityDocuments: (formData.identityDocuments || []).map((document) => ({
+            type: document.type || undefined,
+            number: document.number || undefined
+          })),
           status
         }
         const response = await axios.post(`${baseUrl}/step/two/${id}`, payload, {
@@ -92,19 +89,19 @@ export const useRecordStore = defineStore('Record', {
         const payload = {
           redirectionAddress: formData.redirectionAddress,
           isAbroad: formData.isAbroad,
-          redirectedHouseName: formData.redirectedHouseName || undefined,
-          redirectedHouseNumber: formData.redirectedHouseNumber || undefined,
+          redirectedAddressLine1: formData.redirectedAddressLine1 || undefined,
+          redirectedAddressLine2: formData.redirectedAddressLine2 || undefined,
           job: formData.job || undefined,
           retirementDate: formData.retirementDate || undefined,
           isRedirected: formData.isRedirected,
           addresses: (formData.addresses || []).map((address) => ({
             id: address.id || undefined,
-            houseName: address.houseName || undefined,
-            houseNumber: address.houseNumber || undefined,
-            streetName: address.streetName || undefined,
-            streetNumber: address.streetNumber || undefined,
-            village: address.village || undefined,
-            postOffice: address.postOffice || undefined,
+            addressLine1: address.addressLine1 || undefined,
+            addressLine2: address.addressLine2 || undefined,
+            city: address.city || undefined,
+            state: address.state || undefined,
+            postalCode: address.postalCode || undefined,
+            country: address.country || undefined,
             locationType: address.locationType || undefined
           })),
           status
@@ -140,15 +137,16 @@ export const useRecordStore = defineStore('Record', {
         throw err
       }
     },
-    async createPolicyData({ policies }: StepFive, id: string, status: RecordStatus) {
+    async createFinancialAccountData({ financialAccounts }: StepFive, id: string, status: RecordStatus) {
       try {
         const response = await axios.post(
           `${baseUrl}/step/five/${id}`,
           {
             status,
-            policies: (policies || []).map((policy) => ({
-              type: policy.type || undefined,
-              number: policy.number || undefined
+            financialAccounts: (financialAccounts || []).map((financialAccount) => ({
+              type: financialAccount.type || undefined,
+              number: financialAccount.number || undefined,
+              provider: financialAccount.provider || undefined
             }))
           },
           {

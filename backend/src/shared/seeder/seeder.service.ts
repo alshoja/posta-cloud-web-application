@@ -11,7 +11,9 @@ import { RecordStatus } from '../../modules/records/enums/record-status.enum';
 import { Address } from '../../modules/records/entities/address.entity';
 import { Child } from '../../modules/records/entities/child.entity';
 import { Document } from '../../modules/records/entities/document.entity';
-import { Policy } from '../../modules/records/entities/policy.entity';
+import { IdentityDocument } from '../../modules/records/entities/identity-document.entity';
+import { FinancialAccount } from '../../modules/records/entities/financial-account.entity';
+import { EncryptionUtility } from '../../utilities/encryption.utility';
 import * as bcrypt from 'bcrypt';
 
 interface SeedUserDefinition {
@@ -123,7 +125,8 @@ export class SeederService {
         const addressRepository = manager.getRepository(Address);
         const childRepository = manager.getRepository(Child);
         const documentRepository = manager.getRepository(Document);
-        const policyRepository = manager.getRepository(Policy);
+        const financialAccountRepository = manager.getRepository(FinancialAccount);
+        const identityDocumentRepository = manager.getRepository(IdentityDocument);
 
         for (let i = 0; i < numRecords; i++) {
           const seedUser = seedUsers[i % seedUsers.length];
@@ -136,7 +139,6 @@ export class SeederService {
             isCompleted && adminUser ? adminUser.id : seedUser.id;
           const record = recordRepository.create({
             profileImage: `-User${i + 1}.jpg`,
-            postBoxNumber: i + 1,
             email: `record${i + 1}@gmail.com`,
             firstName: faker.person.firstName(),
             lastName: faker.person.lastName(),
@@ -149,24 +151,17 @@ export class SeederService {
               .toISOString()
               .split('T')[0],
             gender: faker.helpers.arrayElement(Object.values(Gender)),
-            houseName: faker.location.secondaryAddress(),
-            houseNumber: faker.string.numeric(2),
-            streetName: faker.location.street(),
-            streetNumber: faker.string.numeric(3),
-            panchayat: faker.location.city(),
-            district: faker.location.state(),
-            aadhaarNumber: faker.string.numeric(16),
-            drivingLicense:
-              i % 3 === 0 ? faker.string.alphanumeric(12) : undefined,
-            electionID: i % 4 === 0 ? faker.string.alphanumeric(10) : undefined,
-            passportNumber:
-              i % 5 === 0 ? faker.string.alphanumeric(9) : undefined,
+            addressLine1: faker.location.streetAddress(),
+            addressLine2: faker.location.secondaryAddress(),
+            city: faker.location.city(),
+            state: faker.location.state(),
+            country: faker.location.country(),
             redirectionAddress: i % 6 === 0,
             isAbroad: i % 7 === 0,
-            redirectedHouseName:
+            redirectedAddressLine1:
+              i % 6 === 0 ? faker.location.streetAddress() : undefined,
+            redirectedAddressLine2:
               i % 6 === 0 ? faker.location.secondaryAddress() : undefined,
-            redirectedHouseNumber:
-              i % 6 === 0 ? faker.string.numeric(2) : undefined,
             job: faker.helpers.arrayElement([
               'Engineer',
               'Doctor',
@@ -179,7 +174,7 @@ export class SeederService {
                 ? faker.date.future().toISOString().split('T')[0]
                 : undefined,
             isRedirected: i % 6 === 0,
-            postOffice: parseInt(faker.string.numeric(6), 10),
+            postalCode: faker.location.zipCode(),
             status: isCompleted ? RecordStatus.COMPLETED : RecordStatus.DRAFT,
             lastCompletedStep,
             completedAt: isCompleted ? faker.date.recent({ days: 30 }) : null,
@@ -187,7 +182,6 @@ export class SeederService {
               i % 2 === 0
                 ? faker.date.past({ years: 20 }).toISOString().split('T')[0]
                 : undefined,
-            village: faker.location.city(),
             previousAddress:
               i % 3 === 0 ? faker.location.streetAddress() : undefined,
             userId: seedUser.id,
@@ -206,8 +200,13 @@ export class SeederService {
             );
           }
           if (i % 3 !== 0) {
-            await policyRepository.insert(
-              this.createSeedPolicies(savedRecord.id, i),
+            await financialAccountRepository.insert(
+              this.createSeedFinancialAccounts(savedRecord.id, i),
+            );
+          }
+          if (i % 6 !== 0) {
+            await identityDocumentRepository.insert(
+              this.createSeedIdentityDocuments(savedRecord.id, i),
             );
           }
           if (lastCompletedStep >= 6 || isCompleted) {
@@ -310,22 +309,22 @@ export class SeederService {
   private createSeedAddresses(recordsId: number, index: number): Address[] {
     return [
       {
-        houseName: faker.location.secondaryAddress(),
-        houseNumber: faker.string.numeric(2),
-        streetName: faker.location.street(),
-        streetNumber: faker.string.numeric(3),
-        village: faker.location.city(),
-        postOffice: faker.string.numeric(6),
+        addressLine1: faker.location.streetAddress(),
+        addressLine2: faker.location.secondaryAddress(),
+        city: faker.location.city(),
+        state: faker.location.state(),
+        postalCode: faker.location.zipCode(),
+        country: faker.location.country(),
         locationType: 'current',
         recordsId,
       },
       {
-        houseName: index % 2 === 0 ? faker.location.secondaryAddress() : '',
-        houseNumber: index % 2 === 0 ? faker.string.numeric(2) : '',
-        streetName: faker.location.street(),
-        streetNumber: faker.string.numeric(3),
-        village: faker.location.city(),
-        postOffice: faker.string.numeric(6),
+        addressLine1: index % 2 === 0 ? faker.location.streetAddress() : '',
+        addressLine2: index % 2 === 0 ? faker.location.secondaryAddress() : '',
+        city: faker.location.city(),
+        state: faker.location.state(),
+        postalCode: faker.location.zipCode(),
+        country: faker.location.country(),
         locationType: 'permanent',
         recordsId,
       },
@@ -344,21 +343,65 @@ export class SeederService {
     })) as Child[];
   }
 
-  private createSeedPolicies(recordsId: number, index: number): Policy[] {
+  private createSeedFinancialAccounts(
+    recordsId: number,
+    index: number,
+  ): FinancialAccount[] {
     return [
       {
-        type: faker.helpers.arrayElement(['Life', 'Health', 'Vehicle']),
-        number: `POL-${String(index + 1).padStart(5, '0')}`,
+        type: faker.helpers.arrayElement([
+          'Bank Account',
+          'Insurance Policy',
+          'Government ID Linked Account',
+        ]),
+        number: `ACC-${String(index + 1).padStart(5, '0')}`,
         recordsId,
       },
-    ] as Policy[];
+    ] as FinancialAccount[];
+  }
+
+  private createSeedIdentityDocuments(
+    recordsId: number,
+    index: number,
+  ): IdentityDocument[] {
+    const documents: IdentityDocument[] = [
+      {
+        type: 'Passport',
+        number: EncryptionUtility.encrypt(
+          faker.string.alphanumeric(9).toUpperCase(),
+        ),
+        recordsId,
+      } as IdentityDocument,
+    ];
+
+    if (index % 3 === 0) {
+      documents.push({
+        type: "Driver's License",
+        number: EncryptionUtility.encrypt(
+          faker.string.alphanumeric(12).toUpperCase(),
+        ),
+        recordsId,
+      } as IdentityDocument);
+    }
+
+    if (index % 4 === 0) {
+      documents.push({
+        type: 'National ID',
+        number: EncryptionUtility.encrypt(
+          faker.string.alphanumeric(10).toUpperCase(),
+        ),
+        recordsId,
+      } as IdentityDocument);
+    }
+
+    return documents;
   }
 
   private createSeedDocuments(recordsId: number, index: number): Document[] {
     return [
       {
-        name: 'Aadhaar',
-        file: `seed-documents/aadhaar-${index + 1}.pdf`,
+        name: 'ID Document',
+        file: `seed-documents/id-document-${index + 1}.pdf`,
         recordsId,
       },
       {

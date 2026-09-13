@@ -1,7 +1,8 @@
 import type {
   Address,
   Child,
-  Policy,
+  FinancialAccount,
+  IdentityDocument,
   Document,
   StepOne,
   StepTwo,
@@ -13,12 +14,12 @@ import type {
 
 export function useForm() {
   const createAddress = (): Address => ({
-    houseName: '',
-    houseNumber: '',
-    streetName: '',
-    streetNumber: '',
-    village: '',
-    postOffice: '',
+    addressLine1: '',
+    addressLine2: '',
+    city: '',
+    state: '',
+    postalCode: '',
+    country: '',
     locationType: ''
   })
 
@@ -33,7 +34,13 @@ export function useForm() {
     file: ''
   })
 
-  const createPolicy = (): Policy => ({
+  const createFinancialAccount = (): FinancialAccount => ({
+    type: '',
+    number: '',
+    provider: ''
+  })
+
+  const createIdentityDocument = (): IdentityDocument => ({
     type: '',
     number: ''
   })
@@ -45,20 +52,16 @@ export function useForm() {
     email: '',
     firstName: '',
     lastName: '',
-    houseName: '',
-    houseNumber: '',
-    streetName: '',
-    streetNumber: '',
-    postOffice: '',
-    village: '',
-    panchayat: '',
-    district: '',
+    addressLine1: '',
+    addressLine2: '',
+    city: '',
+    state: '',
+    postalCode: '',
+    country: '',
     mobileNumber: '',
     whatsappNumber: '',
     dateOfBirth: '',
     gender: '',
-    address: createAddress(),
-    locationType: '',
     children: [createChild()],
     redirectionAddress: false,
     isAbroad: false,
@@ -68,23 +71,18 @@ export function useForm() {
   const stepTwoInitialState: StepTwo = {
     valid: false,
     password: '',
-    aadhaarNumber: '',
-    drivingLicense: '',
-    electionID: '',
-    passportNumber: '',
-    postBoxNumber: ''
+    identityDocuments: [createIdentityDocument()]
   }
 
   const stepThreeInitialState: StepThree = {
     valid: false,
     redirectionAddress: false,
     isAbroad: false,
-    ...createAddress(),
     job: '',
     retirementDate: '',
     isRedirected: false,
-    redirectedHouseName: '',
-    redirectedHouseNumber: '',
+    redirectedAddressLine1: '',
+    redirectedAddressLine2: '',
     addresses: [createAddress()]
   }
 
@@ -97,7 +95,7 @@ export function useForm() {
 
   const stepFiveInitialState: StepFive = {
     valid: true,
-    policies: [createPolicy()]
+    financialAccounts: [createFinancialAccount()]
   }
 
   const stepSixInitialState: StepSix = {

@@ -24,10 +24,12 @@ import { StepTwoDto } from '../dto/step-two.dto';
 import { Address } from '../entities/address.entity';
 import { Child } from '../entities/child.entity';
 import { Document } from '../entities/document.entity';
-import { Policy } from '../entities/policy.entity';
+import { IdentityDocument } from '../entities/identity-document.entity';
+import { FinancialAccount } from '../entities/financial-account.entity';
 import { RecordStatus } from '../enums/record-status.enum';
 import { Record as RecordEntity } from '../entities/record.entity';
 import { StorageService } from 'src/shared/services/storage.service';
+import { EncryptionUtility } from 'src/utilities/encryption.utility';
 import {
   PROFILE_IMAGES_BUCKET,
   RECORD_DOCUMENTS_BUCKET,
@@ -149,7 +151,7 @@ export class RecordsService {
   }
 
   async createStepTwo(
-    stepTwoDto: StepTwoDto,
+    { identityDocuments, status }: StepTwoDto,
     recordsId: number,
   ): Promise<{ id: number; status: RecordStatus; lastCompletedStep: number }> {
     const queryRunner = this.dataSource.createQueryRunner();
@@ -162,19 +164,21 @@ export class RecordsService {
       this.ensureRecordEditable(existingRecord);
       const userId = this.request.user.sub;
       const recordRepository = queryRunner.manager.getRepository(RecordEntity);
-      const action = this.determineStepSubmissionAction(stepTwoDto.status, 2);
-      const { status: _status, ...stepTwoPayload } = stepTwoDto;
-      const hasStepTwoValues = Object.values(stepTwoPayload).some(
-        (value) => value !== undefined && value !== null && value !== '',
-      );
+      const identityDocumentRepository =
+        queryRunner.manager.getRepository(IdentityDocument);
+      const action = this.determineStepSubmissionAction(status, 2);
+      const normalizedIdentityDocuments = identityDocuments ?? [];
+      const _identityDocuments = normalizedIdentityDocuments.map((document) => ({
+        type: document.type?.trim() ? document.type : null,
+        number: EncryptionUtility.encryptIfNeeded(document.number),
+        recordsId,
+      }));
 
-      if (hasStepTwoValues) {
-        const recordToUpdate = await recordRepository.findOneOrFail({
-          where: { id: recordsId },
-        });
-        Object.assign(recordToUpdate, stepTwoPayload, { updatedBy: userId });
-        await recordRepository.save(recordToUpdate);
+      await identityDocumentRepository.delete({ recordsId });
+      if (_identityDocuments.length > 0) {
+        await identityDocumentRepository.insert(_identityDocuments);
       }
+
       await this.applyStepAction(recordRepository, recordsId, 2, action, userId);
       const record = await recordRepository.findOneOrFail({ where: { id: recordsId } });
       await queryRunner.commitTransaction();
@@ -205,12 +209,12 @@ export class RecordsService {
       const userId = this.request.user.sub;
       const normalizedAddresses = addresses ?? [];
       const _addresses = normalizedAddresses.map((address) => ({
-        houseName: this.normalizeNullableString(address.houseName),
-        houseNumber: this.normalizeNullableString(address.houseNumber),
-        streetName: this.normalizeNullableString(address.streetName),
-        streetNumber: this.normalizeNullableString(address.streetNumber),
-        village: this.normalizeNullableString(address.village),
-        postOffice: this.normalizeNullableString(address.postOffice),
+        addressLine1: this.normalizeNullableString(address.addressLine1),
+        addressLine2: this.normalizeNullableString(address.addressLine2),
+        city: this.normalizeNullableString(address.city),
+        state: this.normalizeNullableString(address.state),
+        postalCode: this.normalizeNullableString(address.postalCode),
+        country: this.normalizeNullableString(address.country),
         locationType: this.normalizeNullableString(address.locationType),
         recordsId,
       }));
@@ -330,16 +334,17 @@ export class RecordsService {
       this.ensureRecordEditable(existingRecord);
       const userId = this.request.user.sub;
       const action = this.determineStepSubmissionAction(stepFiveDto.status, 5);
-      const policies = stepFiveDto.policies.map((policy) => ({
-        type: policy.type?.trim() ? policy.type : null,
-        number: policy.number?.trim() ? policy.number : null,
+      const financialAccounts = stepFiveDto.financialAccounts.map((financialAccount) => ({
+        type: financialAccount.type?.trim() ? financialAccount.type : null,
+        provider: financialAccount.provider?.trim() ? financialAccount.provider : null,
+        number: EncryptionUtility.encryptIfNeeded(financialAccount.number),
         recordsId,
       }));
 
-      const policyRepository = queryRunner.manager.getRepository(Policy);
+      const financialAccountRepository = queryRunner.manager.getRepository(FinancialAccount);
       const recordRepository = queryRunner.manager.getRepository(RecordEntity);
-      await policyRepository.delete({ recordsId });
-      await policyRepository.insert(policies);
+      await financialAccountRepository.delete({ recordsId });
+      await financialAccountRepository.insert(financialAccounts);
       await this.applyStepAction(recordRepository, recordsId, 5, action, userId);
       const record = await recordRepository.findOneOrFail({ where: { id: recordsId } });
 
@@ -376,7 +381,7 @@ export class RecordsService {
       const existingDocuments = existingRecord.documents ?? [];
       const _document = await Promise.all(
         stepSixDto.documents.map(async (document) => {
-          const file = await this.normalizeDocumentReference(
+          const { file, size, uploadedAt } = await this.resolveDocumentMetadata(
             document.file,
             existingRecord.userId,
             recordsId,
@@ -386,6 +391,8 @@ export class RecordsService {
             name: document.name?.trim() ? document.name : null,
             file,
             mimeType: this.getDocumentMimeType(file),
+            size,
+            ...(uploadedAt ? { uploadedAt } : {}),
             recordsId,
           };
         }),
@@ -455,8 +462,9 @@ export class RecordsService {
         .createQueryBuilder('record')
         .leftJoinAndSelect('record.addresses', 'addresses')
         .leftJoinAndSelect('record.children', 'children')
-        .leftJoinAndSelect('record.policies', 'policies')
+        .leftJoinAndSelect('record.financialAccounts', 'financialAccounts')
         .leftJoinAndSelect('record.documents', 'documents')
+        .leftJoinAndSelect('record.identityDocuments', 'identityDocuments')
         .leftJoinAndSelect('record.user', 'user')
         .skip((page - 1) * limit)
         .take(limit);
@@ -514,7 +522,14 @@ export class RecordsService {
     const isAdmin = this.request.user.role === UserRole.ADMIN;
 
     const record = await this.recordRepository.findOne({
-      relations: ['addresses', 'children', 'policies', 'documents', 'user'],
+      relations: [
+        'addresses',
+        'children',
+        'financialAccounts',
+        'documents',
+        'identityDocuments',
+        'user',
+      ],
       where: isAdmin ? { id } : { id, userId },
     });
     if (!record) {
@@ -794,14 +809,14 @@ export class RecordsService {
     };
   }
 
-  private async normalizeDocumentReference(
+  private async resolveDocumentMetadata(
     submittedReference: string | undefined,
     userId: number,
     recordId: number,
     existingDocuments: Document[],
-  ): Promise<string | null> {
+  ): Promise<{ file: string | null; size: number | null; uploadedAt?: Date }> {
     if (!submittedReference) {
-      return null;
+      return { file: null, size: null };
     }
 
     const existingMatch = submittedReference.match(
@@ -814,7 +829,11 @@ export class RecordsService {
       if (!document?.file) {
         throw new BadRequestException('Existing document was not found');
       }
-      return document.file;
+      return {
+        file: document.file,
+        size: document.size ?? null,
+        uploadedAt: document.uploadedAt,
+      };
     }
 
     const uploadMatch = submittedReference.match(
@@ -836,10 +855,11 @@ export class RecordsService {
     } catch {
       throw new BadRequestException('Invalid document storage reference');
     }
-    if (!(await this.storageService.exists(reference))) {
+    const metadata = await this.storageService.stat(reference);
+    if (!metadata) {
       throw new BadRequestException('Uploaded document was not found');
     }
-    return reference;
+    return { file: reference, size: metadata.size ?? null };
   }
 
   private toPublicRecord(record: RecordEntity): RecordEntity {
@@ -902,7 +922,7 @@ export class RecordsService {
   ) {
     const record = await recordRepository.findOne({
       where: { id: recordsId },
-      relations: ['documents', 'policies'],
+      relations: ['documents', 'financialAccounts'],
     });
 
     if (!record) {
