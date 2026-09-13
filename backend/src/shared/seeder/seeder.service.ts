@@ -14,7 +14,7 @@ import { Document } from '../../modules/records/entities/document.entity';
 import { IdentityDocument } from '../../modules/records/entities/identity-document.entity';
 import { FinancialAccount } from '../../modules/records/entities/financial-account.entity';
 import { EncryptionUtility } from '../../utilities/encryption.utility';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 
 interface SeedUserDefinition {
   username: string;
