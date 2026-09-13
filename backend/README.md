@@ -1,6 +1,6 @@
 # Backend
 
-NestJS API for Posta Cloud. Start here when working inside `backend/`, then read
+NestJS API for Recordly. Start here when working inside `backend/`, then read
 only the README for the feature module you are changing.
 
 ## Module Map
@@ -8,7 +8,7 @@ only the README for the feature module you are changing.
 - [`auth`](src/modules/auth/README.md): JWT authentication and global auth/role guards.
 - [`users`](src/modules/users/README.md): user persistence and default admin setup.
 - [`records`](src/modules/records/README.md): six-step record workflow and authorized record queries.
-- [`ai`](src/modules/ai/README.md): Posta Mitra, document embedding, and RAG.
+- [`ai`](src/modules/ai/README.md): Recordly AI, document embedding, and RAG.
 - [`search`](src/modules/search/README.md): Elasticsearch BM25 indexing for document chunks.
 - [`shared`](src/shared/README.md): queues, Redis, common services, and utilities.
 

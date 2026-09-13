@@ -1,6 +1,6 @@
 # Frontend
 
-The frontend is a Vue 3 app built with Vite, Vuetify, Pinia, and Vue Router. It includes the authenticated Posta Mitra floating AI chat widget.
+The frontend is a Vue 3 app built with Vite, Vuetify, Pinia, and Vue Router. It includes the authenticated Recordly AI floating AI chat widget.
 
 ## Docker Workflow
 
@@ -26,7 +26,7 @@ The development compose file mounts `./frontend` into `/app`. Changes made in th
 
 ## AI Chat
 
-Posta Mitra is mounted in the authenticated full layout and calls `POST /api/ai-chat/message` through the existing Axios interceptor.
+Recordly AI is mounted in the authenticated full layout and calls `POST /api/ai-chat/message` through the existing Axios interceptor.
 
 Current frontend behavior:
 

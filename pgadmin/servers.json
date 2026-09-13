@@ -1,13 +1,13 @@
 {
   "Servers": {
     "1": {
-      "Name": "Posta Cloud DB",
+      "Name": "Recordly DB",
       "Group": "Servers",
       "Host": "postgres_db",
       "Port": 5432,
       "MaintenanceDB": "postgres",
-      "Username": "posta_cloud_db",
-      "Password": "posta_cloud123",
+      "Username": "recordly_db",
+      "Password": "recordly123",
       "SSLMode": "prefer"
     }
   }

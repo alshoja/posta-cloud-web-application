@@ -10,7 +10,7 @@ networks:
 services:
   nginx:
     image: nginx:1.27-alpine
-    container_name: posta_cloud_nginx
+    container_name: recordly_nginx
     ports:
       - "80:80"
       - "443:443"
@@ -25,7 +25,7 @@ services:
       - common-net
 
   postgres_db:
-    container_name: posta_cloud_db
+    container_name: recordly_db
     image: pgvector/pgvector:pg17
     platform: linux/amd64
     ports:
@@ -42,7 +42,7 @@ services:
     networks:
       - common-net
   pgadmin:
-    container_name: posta_cloud_pgadmin
+    container_name: recordly_pgadmin
     image: dpage/pgadmin4:latest
     platform: linux/amd64
     ports:
@@ -69,7 +69,7 @@ services:
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
-    container_name: posta_cloud_elasticsearch
+    container_name: recordly_elasticsearch
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
@@ -93,7 +93,7 @@ services:
 
   minio:
     image: ${MINIO_IMAGE:-quay.io/minio/aistor/minio:latest}
-    container_name: posta_cloud_minio
+    container_name: recordly_minio
     command: server /data --console-address ":9001" --license /minio.license
     ports:
       - "${MINIO_API_PORT:-9000}:9000"
@@ -134,10 +134,10 @@ services:
       - |
         set -e
         mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"
-        mc mb --ignore-existing local/posta-record-documents local/posta-profile-images local/posta-transient
-        mc anonymous set none local/posta-record-documents
-        mc anonymous set none local/posta-profile-images
-        mc anonymous set none local/posta-transient
+        mc mb --ignore-existing local/recordly-record-documents local/recordly-profile-images local/recordly-transient
+        mc anonymous set none local/recordly-record-documents
+        mc anonymous set none local/recordly-profile-images
+        mc anonymous set none local/recordly-transient
         mc admin accesskey create local/ "$$MINIO_ROOT_USER" --access-key "$$S3_BACKEND_ACCESS_KEY" --secret-key "$$S3_BACKEND_SECRET_KEY" --policy /policies/backend.json || true
         mc admin accesskey create local/ "$$MINIO_ROOT_USER" --access-key "$$S3_OCR_ACCESS_KEY" --secret-key "$$S3_OCR_SECRET_KEY" --policy /policies/ocr-worker.json || true
     networks:
@@ -175,7 +175,7 @@ services:
     environment:
       - VITE_API_URL=${VITE_API_URL}
       - VITE_ASSET_URL=${VITE_ASSET_URL}
-      - APP_DOMAIN=${APP_DOMAIN:-posta.test}
+      - APP_DOMAIN=${APP_DOMAIN:-recordly.techdev}
     depends_on:
       - backend
     networks:
@@ -231,10 +231,10 @@ services:
 
 volumes:
   db-data:
-    name: posta_cloud_db_data
+    name: recordly_db_data
   pgadmin-data:
   ollama-data:
   elasticsearch-data:
-    name: posta_cloud_elasticsearch_data
+    name: recordly_elasticsearch_data
   minio-data:
-    name: posta_cloud_minio_data
+    name: recordly_minio_data

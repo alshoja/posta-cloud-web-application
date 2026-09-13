@@ -4,12 +4,12 @@
     {
       "Effect": "Allow",
       "Action": ["s3:GetObject", "s3:DeleteObject"],
-      "Resource": ["arn:aws:s3:::posta-transient/*"]
+      "Resource": ["arn:aws:s3:::recordly-transient/*"]
     },
     {
       "Effect": "Allow",
       "Action": ["s3:GetObject"],
-      "Resource": ["arn:aws:s3:::posta-record-documents/*"]
+      "Resource": ["arn:aws:s3:::recordly-record-documents/*"]
     }
   ]
 }

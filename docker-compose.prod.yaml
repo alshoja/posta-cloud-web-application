@@ -92,10 +92,10 @@ services:
       - |
         set -e
         mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"
-        mc mb --ignore-existing local/posta-record-documents local/posta-profile-images local/posta-transient
-        mc anonymous set none local/posta-record-documents
-        mc anonymous set none local/posta-profile-images
-        mc anonymous set none local/posta-transient
+        mc mb --ignore-existing local/recordly-record-documents local/recordly-profile-images local/recordly-transient
+        mc anonymous set none local/recordly-record-documents
+        mc anonymous set none local/recordly-profile-images
+        mc anonymous set none local/recordly-transient
         mc admin accesskey create local/ "$$MINIO_ROOT_USER" --access-key "$$S3_BACKEND_ACCESS_KEY" --secret-key "$$S3_BACKEND_SECRET_KEY" --policy /policies/backend.json || true
         mc admin accesskey create local/ "$$MINIO_ROOT_USER" --access-key "$$S3_OCR_ACCESS_KEY" --secret-key "$$S3_OCR_SECRET_KEY" --policy /policies/ocr-worker.json || true
     logging: *default-logging
@@ -189,9 +189,9 @@ services:
 
 volumes:
   db-data:
-    name: posta_cloud_prod_db_data
+    name: recordly_prod_db_data
   ollama-data:
   elasticsearch-data:
-    name: posta_cloud_prod_elasticsearch_data
+    name: recordly_prod_elasticsearch_data
   minio-data:
-    name: posta_cloud_prod_minio_data
+    name: recordly_prod_minio_data

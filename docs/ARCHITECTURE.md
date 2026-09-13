@@ -1,6 +1,6 @@
 # Architecture
 
-Posta Cloud is a Docker Compose application made of a Vue frontend, NestJS backend, OCR worker, PostgreSQL with pgvector, optional Elasticsearch BM25 search, Redis, Ollama, and pgAdmin.
+Recordly is a Docker Compose application made of a Vue frontend, NestJS backend, OCR worker, PostgreSQL with pgvector, optional Elasticsearch BM25 search, Redis, Ollama, and pgAdmin.
 
 ## Service Layout
 

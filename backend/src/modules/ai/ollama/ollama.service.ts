@@ -57,7 +57,7 @@ export class OllamaService {
     } catch {
       throw new ServiceUnavailableException(
         request.unavailableMessage ??
-          'Posta AI Assistant cannot reach Ollama right now.',
+          'Recordly AI Assistant cannot reach Ollama right now.',
       );
     }
   }
@@ -91,7 +91,7 @@ export class OllamaService {
       return embedding;
     } catch {
       throw new ServiceUnavailableException(
-        'Posta AI Assistant cannot generate document embeddings right now.',
+        'Recordly AI Assistant cannot generate document embeddings right now.',
       );
     }
   }
@@ -100,7 +100,7 @@ export class OllamaService {
     const aiChatEnabled = this.configService.get<boolean>('config.aiChatEnabled');
 
     if (!aiChatEnabled) {
-      throw new ServiceUnavailableException('Posta AI Assistant is turned off.');
+      throw new ServiceUnavailableException('Recordly AI Assistant is turned off.');
     }
   }
 }

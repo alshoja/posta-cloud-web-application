@@ -8,8 +8,8 @@ set -e
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CERT_DIR="$ROOT_DIR/certs"
-APP_DOMAIN="${APP_DOMAIN:-posta.test}"
-API_DOMAIN="${API_DOMAIN:-api.posta.test}"
+APP_DOMAIN="${APP_DOMAIN:-recordly.techdev}"
+API_DOMAIN="${API_DOMAIN:-api.recordly.techdev}"
 
 install_mkcert() {
   if command -v mkcert >/dev/null 2>&1; then

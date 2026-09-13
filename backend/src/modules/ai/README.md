@@ -1,6 +1,6 @@
 # AI Module
 
-Owns Posta Mitra, document ingestion, document indexing, and document RAG.
+Owns Recordly AI, document ingestion, document indexing, and document RAG.
 
 ## Local Map
 

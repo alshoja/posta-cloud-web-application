@@ -64,12 +64,12 @@ export class RecordRagService {
       userContent: JSON.stringify({ question, documentChunks }),
       temperature: 0.1,
       unavailableMessage:
-        'Posta AI Assistant cannot answer document questions right now.',
+        'Recordly AI Assistant cannot answer document questions right now.',
     });
 
     if (!answer) {
       throw new ServiceUnavailableException(
-        'Posta AI Assistant cannot answer document questions right now.',
+        'Recordly AI Assistant cannot answer document questions right now.',
       );
     }
 

@@ -22,7 +22,7 @@ const sidebarMenu = shallowRef(sidebarItems);
     <!---Logo part -->
 
     <div class="pa-5">
-      <!-- <h1>Posta Cloud</h1> -->
+      <!-- <h1>Recordly</h1> -->
       <Logo />
     </div>
     <!-- ---------------------------------------------- -->

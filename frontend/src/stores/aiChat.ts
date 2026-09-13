@@ -62,10 +62,10 @@ const getAiChatErrorMessage = (error: unknown) => {
   }
 
   if (axiosError.code === 'ECONNABORTED') {
-    return 'Posta AI took too long to answer. Please try again.'
+    return 'Recordly AI took too long to answer. Please try again.'
   }
 
-  return 'Posta AI is warming up. Please try again.'
+  return 'Recordly AI is warming up. Please try again.'
 }
 
 export const useAiChatStore = defineStore('aiChat', {
@@ -76,7 +76,7 @@ export const useAiChatStore = defineStore('aiChat', {
       {
         id: createMessageId(),
         role: 'assistant' as AiChatMessageRole,
-        content: "Hi, I'm Posta Mitra, your AI assistant for postal records. I can help you quickly find records and information stored in the system."
+        content: "Hi, I'm Recordly AI, your AI assistant for records. I can help you quickly find records and information stored in the system."
       }
     ] as AiChatMessage[]
   }),

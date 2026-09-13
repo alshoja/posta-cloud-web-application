@@ -1,6 +1,6 @@
 # Security
 
-Posta Cloud handles personal records, uploaded documents, authentication data, and encrypted fields. Treat the repository and runtime data carefully.
+Recordly handles personal records, uploaded documents, authentication data, and encrypted fields. Treat the repository and runtime data carefully.
 
 ## Secrets
 

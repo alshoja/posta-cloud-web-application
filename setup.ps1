@@ -62,8 +62,8 @@ if (-not (Test-Path $envPath)) {
     Copy-Item $envExamplePath $envPath
 }
 
-$AppDomain = Get-EnvValue -Path $envPath -Name "APP_DOMAIN" -Default "posta.test"
-$ApiDomain = Get-EnvValue -Path $envPath -Name "API_DOMAIN" -Default "api.posta.test"
+$AppDomain = Get-EnvValue -Path $envPath -Name "APP_DOMAIN" -Default "recordly.techdev"
+$ApiDomain = Get-EnvValue -Path $envPath -Name "API_DOMAIN" -Default "api.recordly.techdev"
 
 # Step 0a: point the local domains at this machine
 Add-HostsEntry -Domain $AppDomain
