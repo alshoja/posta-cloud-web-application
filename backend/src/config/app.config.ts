@@ -51,8 +51,8 @@ export default registerAs('config', () => ({
   openaiEmbeddingModel:
     process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small',
   aiChatEnabled: readBooleanEnv(process.env.AI_CHAT_ENABLED, true),
-  documentSearchBm25Enabled: readBooleanEnv(
-    process.env.DOCUMENT_SEARCH_BM25_ENABLED,
+  documentSearchHybridEnabled: readBooleanEnv(
+    process.env.DOCUMENT_SEARCH_HYBRID_ENABLED,
     false,
   ),
   elasticsearchNode:

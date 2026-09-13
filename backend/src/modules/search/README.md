@@ -4,7 +4,7 @@ Owns optional search infrastructure adapters.
 
 ## Boundaries
 
-- Elasticsearch is disabled by default through `DOCUMENT_SEARCH_BM25_ENABLED`.
+- Elasticsearch is disabled by default through `DOCUMENT_SEARCH_HYBRID_ENABLED`.
 - `ElasticsearchService` owns client setup, health checks, index creation, chunk indexing, chunk deletion, and BM25 queries.
 - Elasticsearch stores redacted chunk text and metadata only; embeddings stay in PostgreSQL/pgvector.
 - RAG authorization does not happen in Elasticsearch. Elasticsearch returns candidate chunk IDs, and final chunks are fetched through guarded PostgreSQL queries.
