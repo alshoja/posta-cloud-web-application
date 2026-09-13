@@ -6,6 +6,7 @@ import {
   JoinColumn,
   OneToMany,
   Relation,
+  CreateDateColumn,
 } from 'typeorm';
 import { Record } from './record.entity';
 import { DocumentExtractionStatus } from '../enums/document-extraction-status.enum';
@@ -25,6 +26,12 @@ export class Document {
 
   @Column({ nullable: true })
   mimeType?: string;
+
+  @Column({ type: 'int', nullable: true })
+  size?: number;
+
+  @CreateDateColumn()
+  uploadedAt: Date;
 
   @Column({
     type: 'enum',

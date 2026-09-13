@@ -336,6 +336,7 @@ export class RecordsService {
       const action = this.determineStepSubmissionAction(stepFiveDto.status, 5);
       const financialAccounts = stepFiveDto.financialAccounts.map((financialAccount) => ({
         type: financialAccount.type?.trim() ? financialAccount.type : null,
+        provider: financialAccount.provider?.trim() ? financialAccount.provider : null,
         number: EncryptionUtility.encryptIfNeeded(financialAccount.number),
         recordsId,
       }));
@@ -380,7 +381,7 @@ export class RecordsService {
       const existingDocuments = existingRecord.documents ?? [];
       const _document = await Promise.all(
         stepSixDto.documents.map(async (document) => {
-          const file = await this.normalizeDocumentReference(
+          const { file, size, uploadedAt } = await this.resolveDocumentMetadata(
             document.file,
             existingRecord.userId,
             recordsId,
@@ -390,6 +391,8 @@ export class RecordsService {
             name: document.name?.trim() ? document.name : null,
             file,
             mimeType: this.getDocumentMimeType(file),
+            size,
+            ...(uploadedAt ? { uploadedAt } : {}),
             recordsId,
           };
         }),
@@ -806,14 +809,14 @@ export class RecordsService {
     };
   }
 
-  private async normalizeDocumentReference(
+  private async resolveDocumentMetadata(
     submittedReference: string | undefined,
     userId: number,
     recordId: number,
     existingDocuments: Document[],
-  ): Promise<string | null> {
+  ): Promise<{ file: string | null; size: number | null; uploadedAt?: Date }> {
     if (!submittedReference) {
-      return null;
+      return { file: null, size: null };
     }
 
     const existingMatch = submittedReference.match(
@@ -826,7 +829,11 @@ export class RecordsService {
       if (!document?.file) {
         throw new BadRequestException('Existing document was not found');
       }
-      return document.file;
+      return {
+        file: document.file,
+        size: document.size ?? null,
+        uploadedAt: document.uploadedAt,
+      };
     }
 
     const uploadMatch = submittedReference.match(
@@ -848,10 +855,11 @@ export class RecordsService {
     } catch {
       throw new BadRequestException('Invalid document storage reference');
     }
-    if (!(await this.storageService.exists(reference))) {
+    const metadata = await this.storageService.stat(reference);
+    if (!metadata) {
       throw new BadRequestException('Uploaded document was not found');
     }
-    return reference;
+    return { file: reference, size: metadata.size ?? null };
   }
 
   private toPublicRecord(record: RecordEntity): RecordEntity {

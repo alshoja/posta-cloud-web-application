@@ -13,6 +13,11 @@ export class CreateFinancialAccountDto {
     message: 'Account number must be 4-32 characters (letters, numbers, spaces, or dashes).',
   })
   number?: string;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== '' && value !== null && value !== undefined)
+  @IsString({ message: 'Provider must be a string.' })
+  provider?: string;
 }
 
 export class UpdateFinancialAccountDto extends PartialType(CreateFinancialAccountDto) {}

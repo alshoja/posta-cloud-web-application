@@ -163,14 +163,18 @@ export class StorageService implements OnModuleInit, OnModuleDestroy {
   }
 
   async exists(reference: string): Promise<boolean> {
+    return (await this.stat(reference)) !== null;
+  }
+
+  async stat(reference: string): Promise<{ size?: number } | null> {
     const object = this.requireReference(reference);
     try {
-      await this.client.send(
+      const response = await this.client.send(
         new HeadObjectCommand({ Bucket: object.bucket, Key: object.key }),
       );
-      return true;
+      return { size: response.ContentLength };
     } catch {
-      return false;
+      return null;
     }
   }
 

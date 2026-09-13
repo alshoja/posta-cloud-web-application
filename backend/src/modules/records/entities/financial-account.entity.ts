@@ -19,6 +19,9 @@ export class FinancialAccount {
   type: string;
 
   @Column({ nullable: true })
+  provider: string;
+
+  @Column({ nullable: true })
   @Transform(
     ({ value }) => (value ? EncryptionUtility.decrypt(value) : value),
     {

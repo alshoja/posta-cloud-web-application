@@ -45,6 +45,9 @@ export interface Document {
   id?: string
   name: string
   file: string
+  mimeType?: string
+  size?: number
+  uploadedAt?: Date
   extractionStatus?: 'PENDING' | 'PROCESSING' | 'READY' | 'UNSUPPORTED' | 'FAILED'
   extractionError?: string
   indexedAt?: Date
@@ -57,6 +60,7 @@ export interface FinancialAccount {
   id?: string
   type: string
   number: string
+  provider?: string
 }
 
 export interface RecordDetail

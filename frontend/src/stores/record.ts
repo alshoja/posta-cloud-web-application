@@ -145,7 +145,8 @@ export const useRecordStore = defineStore('Record', {
             status,
             financialAccounts: (financialAccounts || []).map((financialAccount) => ({
               type: financialAccount.type || undefined,
-              number: financialAccount.number || undefined
+              number: financialAccount.number || undefined,
+              provider: financialAccount.provider || undefined
             }))
           },
           {

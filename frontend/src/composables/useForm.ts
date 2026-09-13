@@ -36,7 +36,8 @@ export function useForm() {
 
   const createFinancialAccount = (): FinancialAccount => ({
     type: '',
-    number: ''
+    number: '',
+    provider: ''
   })
 
   const createIdentityDocument = (): IdentityDocument => ({
