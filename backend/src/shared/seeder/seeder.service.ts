@@ -354,7 +354,9 @@ export class SeederService {
           'Insurance Policy',
           'Government ID Linked Account',
         ]),
-        number: `ACC-${String(index + 1).padStart(5, '0')}`,
+        number: EncryptionUtility.encrypt(
+          `ACC-${String(index + 1).padStart(5, '0')}`,
+        ),
         recordsId,
       },
     ] as FinancialAccount[];
