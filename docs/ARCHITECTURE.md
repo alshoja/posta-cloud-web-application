@@ -1,6 +1,6 @@
 # Architecture
 
-Recordly is a Docker Compose application made of a Vue frontend, NestJS backend, OCR worker, PostgreSQL with pgvector, optional Elasticsearch BM25 search, Redis, Ollama, and pgAdmin.
+Recordly is a Docker Compose application made of a Vue frontend, NestJS backend, OCR worker, PostgreSQL with pgvector, optional Elasticsearch BM25 search, Redis, Ollama, and pgAdmin. The backend's AI calls go through a pluggable provider: Ollama by default locally, or OpenAI in production via `AI_PROVIDER`.
 
 ## Service Layout
 
@@ -10,14 +10,14 @@ Recordly is a Docker Compose application made of a Vue frontend, NestJS backend,
 - `postgres_db`: PostgreSQL with pgvector and persistent Docker volume storage.
 - `elasticsearch`: optional BM25 keyword index for uploaded document chunks.
 - `redis`: queue backend used for OCR, document embedding, and temporary AI search context.
-- `ollama`: local chat and embedding model server.
+- `ollama`: local chat and embedding model server, the default AI provider.
 - `pgadmin`: database administration UI for local development.
 
 All services share the `common-net` Docker network.
 
 ## Data Flow
 
-The frontend calls the backend API using `VITE_API_URL`. The backend owns authentication, authorization, validation, database queries, document processing orchestration, and AI routing. Ollama never receives database access and never generates executable SQL.
+The frontend calls the backend API using `VITE_API_URL`. The backend owns authentication, authorization, validation, database queries, document processing orchestration, and AI routing. The model provider never receives database access and never generates executable SQL.
 
 ```text
 Frontend
@@ -26,7 +26,7 @@ Frontend
       -> Elasticsearch BM25 index
       -> Redis queues
           -> OCR worker
-      -> Ollama chat and embedding APIs
+      -> LLM provider chat and embedding APIs (Ollama locally, OpenAI in production)
 ```
 
 Uploaded files live in private MinIO buckets. Permanent documents and profile
@@ -52,7 +52,9 @@ The parent `backend/src/modules/ai` area separates AI behavior by responsibility
 - `rag`: vector/BM25 hybrid retrieval and document-grounded answers.
 - `document-embedding`: extraction, redaction, chunking, embeddings, vector persistence, and optional BM25 indexing.
 - `search`: optional Elasticsearch adapter and document chunk index mapping.
-- `ollama`: generic `chat()` and `embed()` integration only.
+- `llm`: resolves the active `LlmClient` (`ollama` or `openai`) from `AI_PROVIDER`.
+- `ollama`: generic `chat()` and `embed()` integration for the local model.
+- `openai`: generic `chat()` and `embed()` integration for the production model.
 - `prompts`, `dto`, and `enums`: shared AI contracts.
 
 `RecordQueryService` remains in the records module and owns authorized record queries. Both structured retrieval and RAG use it so permission rules are enforced by backend TypeORM queries.
@@ -68,7 +70,7 @@ Document saved
       -> scanned PDF: unpdf render at scale 2 -> OCR worker, maximum 10 pages
       -> uploaded image: OCR worker
   -> redact and chunk page text
-  -> Ollama embeddinggemma
+  -> LLM provider embedding call (Ollama embeddinggemma locally, OpenAI text-embedding-3-small in production, truncated to 768 dims)
   -> validate 768-dimension vector
   -> document_chunks table
   -> HNSW cosine index
@@ -81,7 +83,7 @@ Only redacted chunks are persisted for RAG. Embeddings stay in PostgreSQL/pgvect
 
 ```text
 POST /api/ai-chat/message
-  -> AiChatService asks Ollama for a JSON intent
+  -> AiChatService asks the configured LLM provider for a JSON intent
   -> backend validates the intent and filters
   -> StructuredRetrievalService for record search, pagination, or summaries
      OR RecordRagService for document questions and semantic document search
@@ -89,7 +91,7 @@ POST /api/ai-chat/message
   -> backend returns compact records and optional document/page citations
 ```
 
-For RAG, the backend embeds the question and always applies record access rules in PostgreSQL before returning chunks to Ollama. When BM25 is disabled, retrieval is vector-only through pgvector. When BM25 is enabled, Elasticsearch returns candidate chunk IDs, the backend merges vector and BM25 ranks with configured weights, and the final authorized chunks are fetched from PostgreSQL. The model cannot bypass these query restrictions.
+For RAG, the backend embeds the question and always applies record access rules in PostgreSQL before returning chunks to the model. When hybrid search (`DOCUMENT_SEARCH_HYBRID_ENABLED`) is disabled, retrieval is vector-only through pgvector. When enabled, Elasticsearch also returns candidate chunk IDs, the backend merges vector and BM25 ranks with configured weights, and the final authorized chunks are fetched from PostgreSQL. The model cannot bypass these query restrictions.
 
 ## Frontend Structure
 
@@ -103,6 +105,6 @@ Security is enforced by backend code:
 
 - DTOs validate client input.
 - `RecordQueryService.guardQueryAccess()` scopes record and RAG queries.
-- Ollama output is treated as untrusted and normalized before use.
-- Ollama never receives credentials, direct database access, or executable query control.
+- Model output is treated as untrusted and normalized before use, regardless of provider.
+- The model provider never receives credentials, direct database access, or executable query control.
 - Only redacted document chunks are stored and supplied as RAG evidence.

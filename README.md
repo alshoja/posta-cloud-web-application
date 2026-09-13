@@ -48,7 +48,8 @@ I built this as a practical sample project for field-data workflows: users can s
 ## Architecture
 
 The app keeps browser concerns in Vue, business and security rules in NestJS,
-background OCR in its worker, and local AI calls behind the backend. See
+background OCR in its worker, and AI calls (Ollama locally, OpenAI in
+production) behind the backend. See
 [Architecture](docs/ARCHITECTURE.md) for service and data flows.
 
 ```text
@@ -77,16 +78,16 @@ Backend API (`backend`, NestJS)
        |     -> send images and scanned PDF pages through Redis (`redis`)
        |     -> OCR worker (`ocr-worker`) downloads private MinIO objects and returns text
        |     -> redact and chunk text
-       |     -> Ollama (`ollama`) creates embeddings
+       |     -> LLM provider (Ollama locally, OpenAI in production) creates embeddings
        |     -> PostgreSQL/pgvector (`postgres_db`) stores searchable chunks
        |     -> Elasticsearch (`elasticsearch`) optionally stores BM25 text index
        |
        +-- Recordly AI chat
-             -> Ollama classifies the user intent
+             -> LLM provider classifies the user intent
              -> backend validates the intent
              -> authorized record query
                 OR authorized vector/BM25 hybrid document retrieval
-             -> Ollama writes summaries or document-grounded answers
+             -> LLM provider writes summaries or document-grounded answers
              -> frontend receives records and optional citations
 
 pgAdmin (`pgadmin`) -> PostgreSQL/pgvector (`postgres_db`)
@@ -128,8 +129,10 @@ Open:
 
 Recordly AI supports natural-language record search, safe record summaries, and
 questions grounded in uploaded documents. Document answers use pgvector semantic
-retrieval and can optionally add Elasticsearch BM25 keyword retrieval. The
-backend owns permissions and database queries; Ollama never receives direct database access. See the
+retrieval and can optionally add Elasticsearch BM25 keyword retrieval
+(`DOCUMENT_SEARCH_HYBRID_ENABLED`). The AI provider is pluggable (`AI_PROVIDER`:
+Ollama locally, OpenAI in production); the backend owns permissions and
+database queries and the model never receives direct database access. See the
 [AI module](backend/src/modules/ai/README.md) when changing AI behavior.
 
 ## Documentation
