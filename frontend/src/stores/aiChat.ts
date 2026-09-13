@@ -76,7 +76,7 @@ export const useAiChatStore = defineStore('aiChat', {
       {
         id: createMessageId(),
         role: 'assistant' as AiChatMessageRole,
-        content: 'Hi Im Posta Mitra, your AI assistant for postal records.I can help you quickly find records and information stored in the system.'
+        content: "Hi, I'm Posta Mitra, your AI assistant for postal records. I can help you quickly find records and information stored in the system."
       }
     ] as AiChatMessage[]
   }),

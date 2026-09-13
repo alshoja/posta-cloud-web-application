@@ -58,6 +58,7 @@ export class RecordQueryService {
         .createQueryBuilder('record')
         .leftJoin('record.documents', 'documents')
         .leftJoin('record.financialAccounts', 'financialAccounts')
+        .leftJoin('record.identityDocuments', 'identityDocuments')
         .select([
           'record.id',
           'record.firstName',
@@ -177,6 +178,18 @@ export class RecordQueryService {
       query.andWhere('record.postalCode ILIKE :postalCode', {
         postalCode: `%${filters.postalCode}%`,
       });
+    }
+
+    for (const { key, alias, column } of [
+      { key: 'identityDocumentType', alias: 'identityDocuments', column: 'type' },
+      { key: 'financialAccountType', alias: 'financialAccounts', column: 'type' },
+      { key: 'financialAccountProvider', alias: 'financialAccounts', column: 'provider' },
+    ] as const) {
+      if (filters[key]) {
+        query.andWhere(`${alias}.${column} ILIKE :${key}`, {
+          [key]: `%${filters[key]}%`,
+        });
+      }
     }
 
     for (const key of ['isRedirected', 'isAbroad'] as const) {

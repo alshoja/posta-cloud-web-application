@@ -25,17 +25,17 @@ const starterPromptGroups = [
   {
     title: 'Location & contact',
     prompts: [
-      'Find records from Pampadumpara',
-      'Find records in Idukki district',
+      'Find records from Springfield',
+      'Find records in Riverside County',
       'Find records with email gmail.com',
-      'Find mobile number 9876'
+      'Find mobile number 555'
     ]
   },
   {
     title: 'Record details',
     prompts: [
       'Find people living abroad',
-      'Show records with a post-retirement address',
+      'Show records with a redirected address',
       'Show records with documents',
       'Show records without financial accounts'
     ]
@@ -58,7 +58,7 @@ const followUpPrompts = [
   'Show completed records',
   'Show draft records',
   'Show records with documents',
-  'Show records with a post-retirement address'
+  'Show records with a redirected address'
 ]
 
 watch(

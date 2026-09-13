@@ -111,6 +111,9 @@ export class AiChatService {
       'state',
       'country',
       'postalCode',
+      'identityDocumentType',
+      'financialAccountType',
+      'financialAccountProvider',
     ] as const) {
       if (typeof value[key] === 'string' && value[key].trim()) {
         filters[key] = value[key].trim();
