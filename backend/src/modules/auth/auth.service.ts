@@ -6,7 +6,7 @@ import {
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { SignInDto } from './dto/signin.dto';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import type { AuthJwtPayload, AuthResponse } from './types/express';
 import { SignUpDto } from './dto/signup.dto';
 import { CreateUserDto } from '../users/dto/create-user.dto';
