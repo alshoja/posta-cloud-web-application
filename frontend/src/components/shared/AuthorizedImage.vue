@@ -23,6 +23,7 @@ const loadImage = async (src?: string) => {
     try {
         const response = await axiosInstance.get(src.replace(/^\/api/, ''), {
             responseType: 'blob',
+            suppressErrorSnackbar: true,
         });
         objectUrl = URL.createObjectURL(response.data);
         imageUrl.value = objectUrl;

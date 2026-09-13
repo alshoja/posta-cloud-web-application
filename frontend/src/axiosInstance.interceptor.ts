@@ -65,6 +65,13 @@ axiosInstance.interceptors.response.use(
     return response
   },
   (error: AxiosError) => {
+    const loaderStore = useLoaderStore()
+
+    if (error.config?.suppressErrorSnackbar) {
+      loaderStore.stopLoading()
+      return Promise.reject(error)
+    }
+
     const snackbar = useSnackbarStore()
     const authStore = useAuthStore()
     let errorMessage = 'An unexpected error occurred. Please try again later.'
@@ -94,8 +101,6 @@ axiosInstance.interceptors.response.use(
     }
 
     snackbar.showSnackbar(errorMessage, 'error', [])
-    const loaderStore = useLoaderStore()
-
     loaderStore.stopLoading()
     return Promise.reject(error)
   }
