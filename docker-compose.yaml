@@ -189,6 +189,14 @@ services:
       - "5001:5001"
     volumes:
       - ./backend:/app
+      # Native, platform-specific packages: host (macOS) npm installs would
+      # prune/overwrite these with Darwin binaries the Linux container can't
+      # load. Carved out so they always keep the container's own Linux build.
+      # If you add a new dependency with per-platform optional packages
+      # (check its package.json for "os"/"cpu" fields), add its scope here too.
+      - /app/node_modules/@napi-rs
+      - /app/node_modules/@swc
+      - /app/node_modules/@msgpackr-extract
     environment:
       - BASE_URL=${VITE_ASSET_URL}
       - NODE_ENV=${NODE_ENV}
