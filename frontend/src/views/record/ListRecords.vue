@@ -7,7 +7,7 @@ import { useSnackbarStore } from '@/stores/snackbar.store';
 import ViewComponent from '@/views/record/components/ViewComponent.vue';
 import AuthorizedImage from '@/components/shared/AuthorizedImage.vue';
 import _ from "lodash";
-import { computed, onMounted, ref, shallowRef, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import {
     CalendarIcon,
@@ -41,6 +41,7 @@ const totalItems = ref(0);
 const itemsPerPage = ref(10);
 const currentPage = ref(1);
 const loading = ref(false);
+const loadingMore = ref(false);
 const reopeningRecordId = ref<string>();
 const statusOptions = [
     { title: 'All', value: 'ALL' },
@@ -55,20 +56,15 @@ const authStore = useAuthStore();
 const snackbar = useSnackbarStore()
 const isAdminUser = authStore.user?.role === 'ADMIN';
 const currentUserId = authStore.user?.id;
-const totalPages = computed(() => Math.max(1, Math.ceil(totalItems.value / itemsPerPage.value)));
-const firstVisibleRecord = computed(() => totalItems.value ? ((currentPage.value - 1) * itemsPerPage.value) + 1 : 0);
-const lastVisibleRecord = computed(() => Math.min(currentPage.value * itemsPerPage.value, totalItems.value));
+const loadedCount = computed(() => serverItems.value?.length || 0);
+const hasMore = computed(() => loadedCount.value < totalItems.value);
 
 const closeDelete = () => {
     dialogDelete.value = false;
 };
 
 const debouncedLoadRecords = _.debounce(() => {
-    if (currentPage.value === 1) {
-        loadCurrentPage();
-    } else {
-        currentPage.value = 1;
-    }
+    resetAndLoad();
 }, 300);
 
 const deleteItem = (item: RecordDetail) => {
@@ -86,11 +82,8 @@ const deleteItemConfirm = async () => {
             try {
                 await recordStore.remove(itemToDelete.id);
                 closeDelete();
-                if (serverItems.value.length === 1 && currentPage.value > 1) {
-                    currentPage.value--;
-                } else {
-                    await loadCurrentPage();
-                }
+                serverItems.value.splice(editedIndex.value, 1);
+                totalItems.value = Math.max(0, totalItems.value - 1);
             } catch (error) {
                 console.error("Failed to delete item remotely:", error);
                 const errorMessage = (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'An error occurred';
@@ -138,8 +131,12 @@ const reopenItem = async (item: RecordDetail) => {
             Object.assign(serverItem.value, reopenedRecord);
         }
 
-        if (statusFilter.value === 'COMPLETED') {
-            await loadCurrentPage();
+        if (statusFilter.value === 'COMPLETED' && serverItems.value) {
+            const removedIndex = serverItems.value.findIndex((record) => record.id === item.id);
+            if (removedIndex > -1) {
+                serverItems.value.splice(removedIndex, 1);
+                totalItems.value = Math.max(0, totalItems.value - 1);
+            }
         }
         snackbar.showSnackbar('Record reopened successfully.', 'success', []);
     } catch (error) {
@@ -151,21 +148,50 @@ const reopenItem = async (item: RecordDetail) => {
     }
 };
 
-const loadCurrentPage = async () => {
-    loading.value = true;
+const fetchPage = async (page: number, { append }: { append: boolean }) => {
+    if (append) loadingMore.value = true; else loading.value = true;
     try {
         await recordStore.fetchAllRecords({
-            page: currentPage.value,
+            page,
             limit: itemsPerPage.value,
             search: search.value || '',
             status: statusFilter.value
         });
-        serverItems.value = recordStore.records.data;
+        currentPage.value = page;
+        serverItems.value = append
+            ? [...(serverItems.value || []), ...recordStore.records.data]
+            : recordStore.records.data;
         totalItems.value = recordStore.records.total;
     } finally {
         loading.value = false;
+        loadingMore.value = false;
     }
 };
+
+const resetAndLoad = () => fetchPage(1, { append: false });
+
+const loadMore = () => {
+    if (loadingMore.value || !hasMore.value) return;
+    fetchPage(currentPage.value + 1, { append: true });
+};
+
+const loadMoreSentinel = ref<HTMLElement | null>(null);
+let loadMoreObserver: IntersectionObserver | null = null;
+
+watch(loadMoreSentinel, (el) => {
+    loadMoreObserver?.disconnect();
+    loadMoreObserver = null;
+    if (!el) return;
+    loadMoreObserver = new IntersectionObserver(
+        (entries) => {
+            if (entries[0]?.isIntersecting) loadMore();
+        },
+        { rootMargin: '200px' },
+    );
+    loadMoreObserver.observe(el);
+});
+
+onUnmounted(() => loadMoreObserver?.disconnect());
 
 const openDialog = (record: RecordDetail) => {
     if (serverItems.value) {
@@ -237,17 +263,9 @@ watch([search, statusFilter], () => {
     debouncedLoadRecords();
 });
 
-watch(currentPage, loadCurrentPage);
+watch(itemsPerPage, resetAndLoad);
 
-watch(itemsPerPage, () => {
-    if (currentPage.value === 1) {
-        loadCurrentPage();
-    } else {
-        currentPage.value = 1;
-    }
-});
-
-onMounted(loadCurrentPage);
+onMounted(resetAndLoad);
 </script>
 
 <template>
@@ -384,11 +402,14 @@ onMounted(loadCurrentPage);
 
         <div v-if="totalItems" class="records-pagination">
             <div class="records-pagination__summary">
-                Showing {{ firstVisibleRecord }}–{{ lastVisibleRecord }} of {{ totalItems }} records
+                Showing {{ loadedCount }} of {{ totalItems }} records
             </div>
-            <v-pagination v-model="currentPage" :length="totalPages" :total-visible="5" color="secondary" />
-            <v-select v-model="itemsPerPage" :items="[5, 10, 20, 50]" label="Per page" variant="outlined"
+            <v-select v-model="itemsPerPage" :items="[5, 10, 20, 50]" label="Items per load" variant="outlined"
                 density="compact" hide-details class="records-pagination__limit" />
+        </div>
+
+        <div v-if="hasMore" ref="loadMoreSentinel" class="records-load-more">
+            <v-progress-circular v-if="loadingMore" indeterminate color="secondary" size="24" />
         </div>
     </v-card>
 
@@ -533,10 +554,17 @@ onMounted(loadCurrentPage);
 
 .records-pagination {
     display: grid;
-    grid-template-columns: 1fr auto 110px;
+    grid-template-columns: 1fr 110px;
     align-items: center;
     gap: 16px;
     margin-top: 20px;
+}
+
+.records-load-more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
 }
 
 .records-pagination__summary {

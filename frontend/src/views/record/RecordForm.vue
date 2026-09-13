@@ -28,11 +28,11 @@ const identityDocumentTypes = ['Passport', 'National ID', "Driver's License", 'V
 const financialAccountTypes = ['Bank Account', 'Insurance Policy', 'Government ID Linked Account', 'Other'];
 const mobileNumberInvalid = ref(false);
 const whatsappNumberInvalid = ref(false);
-const onMobileNumberValidate = (phoneObject: { isValid: boolean; number: string }) => {
-    mobileNumberInvalid.value = Boolean(phoneObject.number) && !phoneObject.isValid;
+const onMobileNumberValidate = (phoneObject: { valid?: boolean; number?: string }) => {
+    mobileNumberInvalid.value = Boolean(phoneObject.number) && !phoneObject.valid;
 };
-const onWhatsappNumberValidate = (phoneObject: { isValid: boolean; number: string }) => {
-    whatsappNumberInvalid.value = Boolean(phoneObject.number) && !phoneObject.isValid;
+const onWhatsappNumberValidate = (phoneObject: { valid?: boolean; number?: string }) => {
+    whatsappNumberInvalid.value = Boolean(phoneObject.number) && !phoneObject.valid;
 };
 const recordStore = useRecordStore();
 const fileStore = useFileStore();
@@ -999,7 +999,7 @@ const downloadDocument = async (index: number) => {
                                     <div class="phone-input-field" :class="{ 'phone-input-field--error': mobileNumberInvalid }">
                                         <span class="phone-input-field__label">Mobile Number</span>
                                         <VueTelInput v-model="stepOne.mobileNumber" mode="international"
-                                            :auto-default-country="false" @validate="onMobileNumberValidate" />
+                                            @validate="onMobileNumberValidate" />
                                     </div>
                                     <div v-if="mobileNumberInvalid" class="phone-input-field__error">
                                         Please enter a valid mobile number.
@@ -1009,7 +1009,7 @@ const downloadDocument = async (index: number) => {
                                     <div class="phone-input-field" :class="{ 'phone-input-field--error': whatsappNumberInvalid }">
                                         <span class="phone-input-field__label">WhatsApp Number</span>
                                         <VueTelInput v-model="stepOne.whatsappNumber" mode="international"
-                                            :auto-default-country="false" :disabled="whatsappSameAsMobile"
+                                            :disabled="whatsappSameAsMobile"
                                             @validate="onWhatsappNumberValidate" />
                                     </div>
                                     <div v-if="whatsappNumberInvalid" class="phone-input-field__error">
