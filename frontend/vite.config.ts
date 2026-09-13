@@ -27,7 +27,7 @@ export default defineConfig({
   server: {
     port: 3000,
     host: '0.0.0.0',
-    allowedHosts: [process.env.APP_DOMAIN || 'posta.test', 'posta-cloud.onrender.com']
+    allowedHosts: [process.env.APP_DOMAIN || 'recordly.techdev', 'posta-cloud.onrender.com']
   },
   plugins,
   resolve: {

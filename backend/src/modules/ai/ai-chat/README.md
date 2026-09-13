@@ -1,6 +1,6 @@
 # AI Chat
 
-Public entry point for Posta Mitra at `POST /api/ai-chat/message`.
+Public entry point for Recordly AI at `POST /api/ai-chat/message`.
 
 - `AiChatController` validates the request DTO and hands it off.
 - `AiChatService` asks for an intent, normalizes untrusted output, and routes by `AiChatIntent`.

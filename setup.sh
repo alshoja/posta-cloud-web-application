@@ -59,8 +59,8 @@ fi
 # Load APP_DOMAIN / API_DOMAIN from .env (fall back to defaults)
 APP_DOMAIN="$(grep -E '^APP_DOMAIN=' "$ROOT_DIR/.env" | cut -d '=' -f2-)"
 API_DOMAIN="$(grep -E '^API_DOMAIN=' "$ROOT_DIR/.env" | cut -d '=' -f2-)"
-APP_DOMAIN="${APP_DOMAIN:-posta.test}"
-API_DOMAIN="${API_DOMAIN:-api.posta.test}"
+APP_DOMAIN="${APP_DOMAIN:-recordly.techdev}"
+API_DOMAIN="${API_DOMAIN:-api.recordly.techdev}"
 
 add_hosts_entry() {
   local domain="$1"

@@ -114,12 +114,12 @@ export class StructuredRetrievalService {
       userContent: JSON.stringify(this.getRecordSummaryData(record)),
       temperature: 0.2,
       unavailableMessage:
-        'Posta AI Assistant cannot summarize this record right now. Make sure Ollama is running and the configured model is installed, then try again.',
+        'Recordly AI Assistant cannot summarize this record right now. Make sure Ollama is running and the configured model is installed, then try again.',
     });
 
     if (!answer) {
       throw new ServiceUnavailableException(
-        'Posta AI Assistant cannot summarize this record right now.',
+        'Recordly AI Assistant cannot summarize this record right now.',
       );
     }
 

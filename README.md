@@ -1,9 +1,9 @@
-# Posta Cloud
-Posta Cloud is a full-stack, Docker-managed record collection platform built with Vue 3, Vuetify, NestJS, PostgreSQL/pgvector, optional Elasticsearch BM25 search, Redis, OCR processing, and a local Ollama-powered AI assistant.
+# Recordly
+Recordly is a full-stack, Docker-managed record collection platform built with Vue 3, Vuetify, NestJS, PostgreSQL/pgvector, optional Elasticsearch BM25 search, Redis, OCR processing, and a local Ollama-powered AI assistant.
 
 I built this as a practical sample project for field-data workflows: users can store structured records for people in a local area, manage address and personal details, upload documents, and ask a local AI assistant to find records using natural language.
 
-![Posta Cloud records screen](https://github.com/user-attachments/assets/6df7fc33-0d4c-4753-a637-4a1124997674)
+![Recordly records screen](https://github.com/user-attachments/assets/6df7fc33-0d4c-4753-a637-4a1124997674)
 
 <img width="2551" height="1311" alt="image" src="https://github.com/user-attachments/assets/2f71a0d8-8649-4e9e-92fc-b7bd630ad74f" />
 
@@ -19,7 +19,7 @@ I built this as a practical sample project for field-data workflows: users can s
 - Redis-backed background processing for OCR tasks.
 - Document upload support with PDF text extraction and OCR for images and scanned PDFs.
 - Optional Elasticsearch BM25 indexing for uploaded document chunks.
-- Posta Mitra, a floating AI assistant for natural-language record search, summaries, and document RAG.
+- Recordly AI, a floating AI assistant for natural-language record search, summaries, and document RAG.
 - Local Ollama integration where the backend validates intents, performs authorized retrieval, and sends only controlled context to the model.
 - Environment-driven configuration for local and production deployments.
 - Security-focused documentation for secrets, personal data, and production setup.
@@ -40,7 +40,7 @@ I built this as a practical sample project for field-data workflows: users can s
 
 - **Record workflow**: multi-step record creation for personal, identity, occupation, family, financial account, and document details.
 - **Document support**: upload files, extract embedded PDF text, and OCR images or scanned PDFs for AI search.
-- **Posta Mitra AI assistant**: search and summarize records or ask questions about accessible uploaded documents.
+- **Recordly AI AI assistant**: search and summarize records or ask questions about accessible uploaded documents.
 - **Document RAG**: redact and embed document chunks, retrieve them with pgvector plus optional BM25 hybrid search, and return document and page citations.
 - **Role-aware access**: regular users see their own records; admins follow the backend’s broader record visibility rules.
 - **Docker-first operation**: frontend, backend, PostgreSQL, Elasticsearch, Redis, OCR worker, Ollama, and pgAdmin run through Compose.
@@ -81,7 +81,7 @@ Backend API (`backend`, NestJS)
        |     -> PostgreSQL/pgvector (`postgres_db`) stores searchable chunks
        |     -> Elasticsearch (`elasticsearch`) optionally stores BM25 text index
        |
-       +-- Posta Mitra chat
+       +-- Recordly AI chat
              -> Ollama classifies the user intent
              -> backend validates the intent
              -> authorized record query
@@ -104,7 +104,7 @@ Run one command from a fresh clone:
 
 This creates `.env` from `.env.example`, installs dependencies, generates a
 locally-trusted TLS certificate (via [mkcert](https://github.com/FiloSottile/mkcert)),
-points `posta.test` / `api.posta.test` at your machine, and starts Docker
+points `recordly.techdev` / `api.recordly.techdev` at your machine, and starts Docker
 Compose behind an nginx reverse proxy. See [Development](docs/DEVELOPMENT.md)
 for what it does under the hood and how to customize the domain.
 
@@ -119,14 +119,14 @@ docker compose down
 
 Open:
 
-- Frontend: `https://posta.test`
-- Backend API: `https://api.posta.test`
+- Frontend: `https://recordly.techdev`
+- Backend API: `https://api.recordly.techdev`
 - Ollama: `http://localhost:11434`
 - pgAdmin: `http://localhost:8080`
 
 ## AI Assistant
 
-Posta Mitra supports natural-language record search, safe record summaries, and
+Recordly AI supports natural-language record search, safe record summaries, and
 questions grounded in uploaded documents. Document answers use pgvector semantic
 retrieval and can optionally add Elasticsearch BM25 keyword retrieval. The
 backend owns permissions and database queries; Ollama never receives direct database access. See the

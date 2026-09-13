@@ -10,8 +10,8 @@ $ErrorActionPreference = "Stop"
 $RootDir = Split-Path -Parent $PSScriptRoot
 $CertDir = Join-Path $RootDir "certs"
 
-$AppDomain = if ($env:APP_DOMAIN) { $env:APP_DOMAIN } else { "posta.test" }
-$ApiDomain = if ($env:API_DOMAIN) { $env:API_DOMAIN } else { "api.posta.test" }
+$AppDomain = if ($env:APP_DOMAIN) { $env:APP_DOMAIN } else { "recordly.techdev" }
+$ApiDomain = if ($env:API_DOMAIN) { $env:API_DOMAIN } else { "api.recordly.techdev" }
 
 function Install-Mkcert {
     if (Get-Command mkcert -ErrorAction SilentlyContinue) {

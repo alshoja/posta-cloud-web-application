@@ -38,7 +38,7 @@ export class StorageService implements OnModuleDestroy {
     if (!(response.Body instanceof Readable)) {
       throw new Error('Storage response is not a readable stream');
     }
-    const directory = join(tmpdir(), 'posta-ocr');
+    const directory = join(tmpdir(), 'recordly-ocr');
     await mkdir(directory, { recursive: true });
     const filePath = join(directory, `${randomUUID()}${extname(object.key)}`);
     await pipeline(response.Body, createWriteStream(filePath));

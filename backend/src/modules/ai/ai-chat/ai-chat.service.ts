@@ -53,7 +53,7 @@ export class AiChatService {
       temperature: 0,
       format: 'json',
       unavailableMessage:
-        'Posta AI Assistant cannot reach Ollama right now. Start the Ollama Docker service and pull the configured model, then try again.',
+        'Recordly AI Assistant cannot reach Ollama right now. Start the Ollama Docker service and pull the configured model, then try again.',
     });
 
     if (!content) {

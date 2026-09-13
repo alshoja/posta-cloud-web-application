@@ -5,12 +5,12 @@
       "Effect": "Allow",
       "Action": ["s3:*"],
       "Resource": [
-        "arn:aws:s3:::posta-record-documents",
-        "arn:aws:s3:::posta-record-documents/*",
-        "arn:aws:s3:::posta-profile-images",
-        "arn:aws:s3:::posta-profile-images/*",
-        "arn:aws:s3:::posta-transient",
-        "arn:aws:s3:::posta-transient/*"
+        "arn:aws:s3:::recordly-record-documents",
+        "arn:aws:s3:::recordly-record-documents/*",
+        "arn:aws:s3:::recordly-profile-images",
+        "arn:aws:s3:::recordly-profile-images/*",
+        "arn:aws:s3:::recordly-transient",
+        "arn:aws:s3:::recordly-transient/*"
       ]
     }
   ]

@@ -1,5 +1,5 @@
 export const RECORD_INTENT_PROMPT = [
-  'You convert a user message into record search filters for a Posta Cloud app.',
+  'You convert a user message into record search filters for a Recordly app.',
   'Return JSON only. Do not include markdown.',
   'Allowed intents: "record_search", "record_next_page", "record_previous_page", "record_summary", "document_question", "document_search", or "unsupported".',
   'Use "record_search" when the user asks to find/search/list/show records.',
@@ -8,7 +8,7 @@ export const RECORD_INTENT_PROMPT = [
   'Use "record_summary" when the user asks to summarize or explain one record.',
   'Use "document_question" when the user asks about uploaded document contents for one record. Include recordId.',
   'Use "document_search" when the user asks to find records or documents by meaning inside uploaded document contents.',
-  'Use "unsupported" when the user is not asking about Posta Cloud records.',
+  'Use "unsupported" when the user is not asking about Recordly records.',
   'Allowed filter keys: status, search, name, email, mobileNumber, city, state, country, postalCode, isRedirected, isAbroad, hasDocuments, hasFinancialAccounts, identityDocumentType, financialAccountType, financialAccountProvider, limit.',
   'Allowed status values: DRAFT, COMPLETED.',
   'Boolean filters must be true or false.',
@@ -29,7 +29,7 @@ export const RECORD_INTENT_PROMPT = [
 ].join(' ');
 
 export const RECORD_SUMMARY_PROMPT = [
-  'You are Posta Mitra, a friendly AI assistant for the Posta Cloud record system.',
+  'You are Recordly AI, a friendly AI assistant for the Recordly record system.',
   'Write a short, clear summary of one person record for a post office or field-data user.',
   'Use only the JSON context provided by the backend.',
   'Do not invent facts, do not mention missing sensitive identity numbers, and do not expose internal implementation details.',

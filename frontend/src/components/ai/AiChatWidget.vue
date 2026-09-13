@@ -46,7 +46,7 @@ const starterPromptGroups = [
   }
 ]
 
-const assistantName = 'Posta Mitra'
+const assistantName = 'Recordly AI'
 const markdownRenderer = new MarkdownIt({
   html: false,
   linkify: true,
@@ -127,7 +127,7 @@ const returnToPreviousPage = () => {
             </v-avatar>
             <div>
               <div class="text-h5">{{ assistantName }}</div>
-              <div class="text-caption text-medium-emphasis">Ask me anything about postal records</div>
+              <div class="text-caption text-medium-emphasis">Ask me anything about your records</div>
             </div>
           </div>
           <div class="d-flex align-center ga-1">

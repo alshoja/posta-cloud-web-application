@@ -26,14 +26,14 @@ docker compose exec ocr-worker sh
 
 ## Local Domain And TLS
 
-The app runs at `https://posta.test` (frontend) and `https://api.posta.test`
+The app runs at `https://recordly.techdev` (frontend) and `https://api.recordly.techdev`
 (backend) instead of `localhost`, so it behaves like a real deployed site and
 can be shared with anyone by domain name.
 
 `./setup.sh` sets this up automatically on macOS and Linux:
 
-1. Reads `APP_DOMAIN` / `API_DOMAIN` from `.env` (defaults: `posta.test` /
-   `api.posta.test`).
+1. Reads `APP_DOMAIN` / `API_DOMAIN` from `.env` (defaults: `recordly.techdev` /
+   `api.recordly.techdev`).
 2. Adds `127.0.0.1 <domain>` entries to `/etc/hosts` for both domains (asks
    for `sudo`; skipped if already present).
 3. Installs [mkcert](https://github.com/FiloSottile/mkcert) if missing (via
@@ -42,7 +42,7 @@ can be shared with anyone by domain name.
    for both domains to `certs/local-cert.pem` / `certs/local-key.pem`.
 4. Starts Docker Compose, including an `nginx` reverse proxy
    (`nginx/local.conf`) that terminates TLS with that certificate and routes
-   `posta.test` to `frontend` and `api.posta.test` to `backend`. Plain HTTP
+   `recordly.techdev` to `frontend` and `api.recordly.techdev` to `backend`. Plain HTTP
    requests on port 80 redirect to HTTPS.
 
 Certificates are machine-specific and gitignored (`certs/*.pem`); every
@@ -64,8 +64,8 @@ No WSL required. Run the native PowerShell setup script instead:
 ./setup.ps1
 ```
 
-It mirrors `setup.sh` step for step: creates `.env`, adds `posta.test` /
-`api.posta.test` to the Windows hosts file (`C:\Windows\System32\drivers\etc\hosts`
+It mirrors `setup.sh` step for step: creates `.env`, adds `recordly.techdev` /
+`api.recordly.techdev` to the Windows hosts file (`C:\Windows\System32\drivers\etc\hosts`
 — a UAC prompt appears just for that step), installs
 [mkcert](https://github.com/FiloSottile/mkcert) via `winget` (or `choco` if
 `winget` isn't available) and trusts its CA in the Windows certificate store,

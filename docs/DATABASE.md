@@ -1,6 +1,6 @@
 # Database
 
-The database is PostgreSQL with pgvector running in the `postgres_db` Docker Compose service. Local data is persisted in the `posta_cloud_db_data` Docker volume.
+The database is PostgreSQL with pgvector running in the `postgres_db` Docker Compose service. Local data is persisted in the `recordly_db_data` Docker volume.
 
 ## Configuration
 
@@ -61,7 +61,7 @@ Seed users and seed values should come from environment variables or safe placeh
 
 ## Volumes And Resets
 
-Local database data is stored in the `posta_cloud_db_data` Docker volume. Removing volumes deletes local database state, so only do it intentionally after taking any needed backup.
+Local database data is stored in the `recordly_db_data` Docker volume. Removing volumes deletes local database state, so only do it intentionally after taking any needed backup.
 
 For ordinary shutdown:
 
