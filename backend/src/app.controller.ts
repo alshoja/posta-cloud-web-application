@@ -1,7 +1,6 @@
 import {
   ClassSerializerInterceptor,
   Controller,
-  Body,
   Get,
   MaxFileSizeValidator,
   Param,
@@ -15,9 +14,7 @@ import {
 import type { Response } from 'express';
 
 import { AppService } from './app.service';
-import { Public } from './modules/auth/public.decorator';
 import { UploadInterceptor } from './shared/interceptors/file-upload.interceptor';
-import { OcrService } from './shared/services/ocr.service';
 import { Throttle } from '@nestjs/throttler';
 import { MimeTypeFileValidator } from './shared/validators/mime-type-file.validator';
 import { StorageService } from './shared/services/storage.service';
@@ -28,7 +25,6 @@ import { AuthenticatedRequest } from './modules/auth/types/express';
 export class AppController {
   constructor(
     private readonly appService: AppService,
-    private readonly ocrService: OcrService,
     private readonly storageService: StorageService,
   ) { }
 
@@ -76,47 +72,6 @@ export class AppController {
       `profile-staging/users/${request.user.sub}/${uploadId}`,
     );
     return this.streamStoredObject(reference, response);
-  }
-
-  @Post('extract/text')
-  @Throttle({ default: { ttl: 60_000, limit: 10 } })
-  @UseInterceptors(UploadInterceptor('file'), ClassSerializerInterceptor)
-  extractText(
-    @Req() request: AuthenticatedRequest,
-    @Body('documentType') documentType: string | undefined,
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 2 * 1024 * 1024 }),
-          new MimeTypeFileValidator({
-            allowedMimeTypes: [
-              'image/png',
-              'image/jpeg',
-              'image/jpg',
-              'image/pjpeg',
-              'application/msword',
-              'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            ],
-          }),
-        ],
-        fileIsRequired: true,
-      }),
-    )
-    file: Express.Multer.File,
-  ) {
-    return this.ocrService.uploadAndQueue(file, request.user.sub, documentType);
-  }
-
-  @Public()
-  @Get('extract/text/status')
-  getOcrStatus() {
-    return this.ocrService.getServiceStatus();
-  }
-
-  @Get('extract/text/:jobId')
-  async getResult(@Param('jobId') jobId: string) {
-    const result = await this.ocrService.getJobResult(jobId);
-    return { jobId, result };
   }
 
   private async streamStoredObject(reference: string, response: Response) {

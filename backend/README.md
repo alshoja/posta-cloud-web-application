@@ -9,6 +9,7 @@ only the README for the feature module you are changing.
 - [`users`](src/modules/users/README.md): user persistence and default admin setup.
 - [`records`](src/modules/records/README.md): six-step record workflow and authorized record queries.
 - [`ai`](src/modules/ai/README.md): Posta Mitra, document embedding, and RAG.
+- [`search`](src/modules/search/README.md): Elasticsearch BM25 indexing for document chunks.
 - [`shared`](src/shared/README.md): queues, Redis, common services, and utilities.
 
 Database migrations live in `database/migrations`.
