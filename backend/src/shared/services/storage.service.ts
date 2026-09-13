@@ -76,10 +76,6 @@ export class StorageService implements OnModuleInit, OnModuleDestroy {
     return `profile-staging/users/${userId}/${randomUUID()}${this.getSafeExtension(originalName)}`;
   }
 
-  createAutofillKey(userId: number, originalName: string): string {
-    return `autofill/users/${userId}/${randomUUID()}${this.getSafeExtension(originalName)}`;
-  }
-
   createProfileKey(userId: number, recordId: number, originalName: string): string {
     return `users/${userId}/records/${recordId}/profiles/${randomUUID()}${this.getSafeExtension(originalName)}`;
   }
