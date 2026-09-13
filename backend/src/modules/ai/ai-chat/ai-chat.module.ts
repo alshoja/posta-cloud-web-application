@@ -3,7 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { RecordsModule } from '../../records/records.module';
 import { DocumentChunk } from '../../records/entities/document-chunk.entity';
 import { SearchModule } from '../../search/search.module';
-import { OllamaModule } from '../ollama/ollama.module';
+import { LlmModule } from '../llm/llm.module';
 import { DocumentHybridSearchService } from '../rag/document-hybrid-search.service';
 import { RecordRagService } from '../rag/record-rag.service';
 import { StructuredRetrievalContextService } from '../structured-retrieval/structured-retrieval-context.service';
@@ -13,7 +13,7 @@ import { AiChatService } from './ai-chat.service';
 
 @Module({
   imports: [
-    OllamaModule,
+    LlmModule,
     RecordsModule,
     SearchModule,
     TypeOrmModule.forFeature([DocumentChunk]),

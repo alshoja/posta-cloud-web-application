@@ -1,11 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { validateEmbedding } from '../../../../shared/utilities/vector.utility';
 import { DocumentChunk } from '../../../records/entities/document-chunk.entity';
 import { Document } from '../../../records/entities/document.entity';
 import { DocumentExtractionStatus } from '../../../records/enums/document-extraction-status.enum';
-import { OllamaService } from '../../ollama/ollama.service';
+import { LLM_CLIENT, LlmClient } from '../../llm/llm-client.interface';
 import { PreparedDocumentChunk } from './document-chunking.service';
 import { DocumentSearchIndexingService } from './document-search-indexing.service';
 
@@ -16,7 +16,7 @@ export class DocumentIngestionService {
     private readonly documentRepository: Repository<Document>,
     @InjectRepository(DocumentChunk)
     private readonly documentChunkRepository: Repository<DocumentChunk>,
-    private readonly ollamaService: OllamaService,
+    @Inject(LLM_CLIENT) private readonly llmClient: LlmClient,
     private readonly documentSearchIndexingService: DocumentSearchIndexingService,
   ) { }
 
@@ -75,7 +75,7 @@ export class DocumentIngestionService {
     document: Document,
     chunk: PreparedDocumentChunk,
   ): Promise<DocumentChunk> {
-    const embedding = await this.ollamaService.embed(chunk.content);
+    const embedding = await this.llmClient.embed(chunk.content);
     validateEmbedding(embedding);
 
     return this.documentChunkRepository.save({

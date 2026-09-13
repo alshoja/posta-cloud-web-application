@@ -1,11 +1,11 @@
-import { Injectable, Scope, ServiceUnavailableException } from '@nestjs/common';
+import { Inject, Injectable, Scope, ServiceUnavailableException } from '@nestjs/common';
 import { RecordSearchFilterDto } from '../../records/dto/search/record-search-filter.dto';
 import { Record as RecordEntity } from '../../records/entities/record.entity';
 import { RecordQueryService } from '../../records/services/record-query.service';
 import { AiChatResponseDto } from '../dto/ai-chat-response.dto';
 import { RecordSummaryDto } from '../dto/record-summary.dto';
 import { AiChatIntent } from '../enums/ai-chat-intent.enum';
-import { OllamaService } from '../ollama/ollama.service';
+import { LLM_CLIENT, LlmClient } from '../llm/llm-client.interface';
 import { RECORD_SUMMARY_PROMPT } from '../prompts/ai-chat.prompts';
 import { StructuredRetrievalContextService } from './structured-retrieval-context.service';
 
@@ -16,7 +16,7 @@ const MAX_RECORD_LIMIT = 50;
 export class StructuredRetrievalService {
   constructor(
     private readonly recordQueryService: RecordQueryService,
-    private readonly ollamaService: OllamaService,
+    @Inject(LLM_CLIENT) private readonly llmClient: LlmClient,
     private readonly contextService: StructuredRetrievalContextService,
   ) {}
 
@@ -109,12 +109,12 @@ export class StructuredRetrievalService {
       'addresses',
       'children',
     ]);
-    const answer = await this.ollamaService.chat({
+    const answer = await this.llmClient.chat({
       systemPrompt: RECORD_SUMMARY_PROMPT,
       userContent: JSON.stringify(this.getRecordSummaryData(record)),
       temperature: 0.2,
       unavailableMessage:
-        'Recordly AI Assistant cannot summarize this record right now. Make sure Ollama is running and the configured model is installed, then try again.',
+        'Recordly AI Assistant cannot summarize this record right now.',
     });
 
     if (!answer) {

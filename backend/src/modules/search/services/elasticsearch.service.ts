@@ -18,7 +18,7 @@ export class ElasticsearchService implements OnModuleInit {
 
   constructor(private readonly configService: ConfigService) {
     this.enabled =
-      this.configService.get<boolean>('config.documentSearchBm25Enabled') ??
+      this.configService.get<boolean>('config.documentSearchHybridEnabled') ??
       false;
     this.indexName =
       this.configService.get<string>('config.elasticsearchIndex') ||

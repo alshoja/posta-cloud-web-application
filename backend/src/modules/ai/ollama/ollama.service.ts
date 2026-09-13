@@ -1,6 +1,7 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { OllamaChatDto } from '../dto/ollama-chat.dto';
+import { ChatRequestDto } from '../dto/chat-request.dto';
+import { LlmClient } from '../llm/llm-client.interface';
 
 interface OllamaChatResponse {
   message?: {
@@ -13,10 +14,10 @@ interface OllamaEmbeddingResponse {
 }
 
 @Injectable()
-export class OllamaService {
+export class OllamaService implements LlmClient {
   constructor(private readonly configService: ConfigService) {}
 
-  async chat(request: OllamaChatDto): Promise<string> {
+  async chat(request: ChatRequestDto): Promise<string> {
     this.ensureAiEnabled();
 
     try {
