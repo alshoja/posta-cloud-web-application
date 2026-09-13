@@ -1,7 +1,7 @@
 # Posta Cloud
 Posta Cloud is a full-stack, Docker-managed record collection platform built with Vue 3, Vuetify, NestJS, PostgreSQL/pgvector, optional Elasticsearch BM25 search, Redis, OCR processing, and a local Ollama-powered AI assistant.
 
-I built this as a practical sample project for field-data workflows: users can store structured records for people in a local area, manage address and personal details, upload documents, use OCR support to reduce manual typing, and ask a local AI assistant to find records using natural language.
+I built this as a practical sample project for field-data workflows: users can store structured records for people in a local area, manage address and personal details, upload documents, and ask a local AI assistant to find records using natural language.
 
 ![Posta Cloud records screen](https://github.com/user-attachments/assets/6df7fc33-0d4c-4753-a637-4a1124997674)
 
@@ -38,9 +38,8 @@ I built this as a practical sample project for field-data workflows: users can s
 
 ## What The App Includes
 
-- **Record workflow**: multi-step record creation for personal, identity, occupation, family, policy, and document details.
-- **Document support**: upload files, extract embedded PDF text, and OCR images or scanned PDFs.
-- **OCR auto-fill**: send supported identity documents to the OCR worker and use extracted details to reduce manual entry.
+- **Record workflow**: multi-step record creation for personal, identity, occupation, family, financial account, and document details.
+- **Document support**: upload files, extract embedded PDF text, and OCR images or scanned PDFs for AI search.
 - **Posta Mitra AI assistant**: search and summarize records or ask questions about accessible uploaded documents.
 - **Document RAG**: redact and embed document chunks, retrieve them with pgvector plus optional BM25 hybrid search, and return document and page citations.
 - **Role-aware access**: regular users see their own records; admins follow the backend’s broader record visibility rules.

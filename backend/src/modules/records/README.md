@@ -7,7 +7,7 @@ record queries.
 
 - `RecordsController` and `RecordsService`: create, update, complete, reopen, list, and delete records.
 - `RecordQueryService`: reusable permission-scoped queries for records and AI retrieval.
-- `entities`: records, addresses, children, policies, documents, and document chunks.
+- `entities`: records, addresses, children, identity documents, financial accounts, documents, and document chunks.
 - `dto`: request validation for each workflow step and record search.
 
 ## Boundaries
