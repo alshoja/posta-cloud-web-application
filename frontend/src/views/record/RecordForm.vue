@@ -2,7 +2,6 @@
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import axiosInstance from '@/axiosInstance.interceptor';
 import DropdownButton from '@/components/shared/DropdownButton.vue';
-import UiParentCard from '@/components/shared/UiParentCard.vue';
 import { useForm } from '@/composables/useForm';
 import { useValidation } from '@/composables/useValidation';
 import type { RecordDetail, RecordStatus } from '@/interfaces/record.interface';
@@ -863,7 +862,6 @@ const downloadDocument = async (index: number) => {
 
 <template>
     <BaseBreadcrumb :title="page.title" :breadcrumbs="breadcrumbs" />
-    <UiParentCard title="Create Record">
 
         <v-stepper rounded="lg" class="record-stepper" :editable="stepper.edit" v-model="stepper.step" :items="stepper.items">
             <template v-slot:icon="{ step }">
@@ -1570,8 +1568,6 @@ const downloadDocument = async (index: number) => {
                 </v-row>
             </template>
         </v-stepper>
-    </UiParentCard>
-
 </template>
 
 <style scoped>

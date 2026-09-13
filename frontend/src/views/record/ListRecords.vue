@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
-import UiParentCard from '@/components/shared/UiParentCard.vue';
 import type { RecordDetail, RecordStatus } from '@/interfaces/record.interface';
 import { useAuthStore } from '@/stores/auth';
 import { useRecordStore } from '@/stores/record';
@@ -253,8 +252,8 @@ onMounted(loadCurrentPage);
 
 <template>
     <BaseBreadcrumb :title="page.title" :breadcrumbs="breadcrumbs" />
-    
-    <UiParentCard title="All Records">
+
+    <v-card class="pa-4" variant="flat">
         <div class="records-toolbar">
             <v-row class="records-toolbar-row align-center">
                 <v-col cols="12" md="5" lg="4">
@@ -391,7 +390,7 @@ onMounted(loadCurrentPage);
             <v-select v-model="itemsPerPage" :items="[5, 10, 20, 50]" label="Per page" variant="outlined"
                 density="compact" hide-details class="records-pagination__limit" />
         </div>
-    </UiParentCard>
+    </v-card>
 
     <div class="text-center pa-4">
         <v-dialog v-model="dialog" transition="dialog-bottom-transition" fullscreen>
@@ -425,6 +424,7 @@ onMounted(loadCurrentPage);
 }
 
 .records-toolbar {
+    padding-top: 12px;
     margin-bottom: 18px;
 }
 
