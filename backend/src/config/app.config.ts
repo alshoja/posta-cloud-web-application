@@ -45,6 +45,11 @@ export default registerAs('config', () => ({
   ollamaBaseUrl: process.env.OLLAMA_BASE_URL || 'http://ollama:11434',
   ollamaModel: process.env.OLLAMA_MODEL || 'llama3.2:3b',
   ollamaEmbeddingModel: process.env.OLLAMA_EMBEDDING_MODEL || 'embeddinggemma',
+  aiProvider: process.env.AI_PROVIDER || 'ollama',
+  openaiApiKey: process.env.OPENAI_API_KEY ?? '',
+  openaiModel: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+  openaiEmbeddingModel:
+    process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small',
   aiChatEnabled: readBooleanEnv(process.env.AI_CHAT_ENABLED, true),
   documentSearchBm25Enabled: readBooleanEnv(
     process.env.DOCUMENT_SEARCH_BM25_ENABLED,

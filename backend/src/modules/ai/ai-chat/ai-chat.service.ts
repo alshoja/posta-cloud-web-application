@@ -1,10 +1,10 @@
-import { Injectable, Scope } from '@nestjs/common';
+import { Inject, Injectable, Scope } from '@nestjs/common';
 import { RecordSearchFilterDto } from '../../records/dto/search/record-search-filter.dto';
 import { RecordStatus } from '../../records/enums/record-status.enum';
 import { AiChatIntentDto } from '../dto/ai-chat-intent.dto';
 import { AiChatResponseDto } from '../dto/ai-chat-response.dto';
 import { AiChatIntent } from '../enums/ai-chat-intent.enum';
-import { OllamaService } from '../ollama/ollama.service';
+import { LLM_CLIENT, LlmClient } from '../llm/llm-client.interface';
 import { RECORD_INTENT_PROMPT } from '../prompts/ai-chat.prompts';
 import { RecordRagService } from '../rag/record-rag.service';
 import { StructuredRetrievalService } from '../structured-retrieval/structured-retrieval.service';
@@ -12,7 +12,7 @@ import { StructuredRetrievalService } from '../structured-retrieval/structured-r
 @Injectable({ scope: Scope.REQUEST })
 export class AiChatService {
   constructor(
-    private readonly ollamaService: OllamaService,
+    @Inject(LLM_CLIENT) private readonly llmClient: LlmClient,
     private readonly recordRagService: RecordRagService,
     private readonly structuredRetrievalService: StructuredRetrievalService,
   ) { }
@@ -47,13 +47,12 @@ export class AiChatService {
   }
 
   private async getRecordIntent(message: string): Promise<AiChatIntentDto> {
-    const content = await this.ollamaService.chat({
+    const content = await this.llmClient.chat({
       systemPrompt: RECORD_INTENT_PROMPT,
       userContent: message,
       temperature: 0,
       format: 'json',
-      unavailableMessage:
-        'Recordly AI Assistant cannot reach Ollama right now. Start the Ollama Docker service and pull the configured model, then try again.',
+      unavailableMessage: 'Recordly AI Assistant cannot reach the AI model right now.',
     });
 
     if (!content) {

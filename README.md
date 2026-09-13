@@ -1,5 +1,5 @@
 # Recordly
-Recordly is a full-stack, Docker-managed record collection platform built with Vue 3, Vuetify, NestJS, PostgreSQL/pgvector, optional Elasticsearch BM25 search, Redis, OCR processing, and a local Ollama-powered AI assistant.
+Recordly is a full-stack, Docker-managed record collection platform built with Vue 3, Vuetify, NestJS, PostgreSQL/pgvector, optional Elasticsearch BM25 search, Redis, OCR processing, and an AI assistant with a pluggable model provider (Ollama locally, OpenAI in production).
 
 I built this as a practical sample project for field-data workflows: users can store structured records for people in a local area, manage address and personal details, upload documents, and ask a local AI assistant to find records using natural language.
 
@@ -20,7 +20,7 @@ I built this as a practical sample project for field-data workflows: users can s
 - Document upload support with PDF text extraction and OCR for images and scanned PDFs.
 - Optional Elasticsearch BM25 indexing for uploaded document chunks.
 - Recordly AI, a floating AI assistant for natural-language record search, summaries, and document RAG.
-- Local Ollama integration where the backend validates intents, performs authorized retrieval, and sends only controlled context to the model.
+- Pluggable AI provider (Ollama by default locally, OpenAI available for production via `AI_PROVIDER`) where the backend validates intents, performs authorized retrieval, and sends only controlled context to the model.
 - Environment-driven configuration for local and production deployments.
 - Security-focused documentation for secrets, personal data, and production setup.
 
@@ -33,7 +33,7 @@ I built this as a practical sample project for field-data workflows: users can s
 | Database | PostgreSQL with pgvector |
 | Queue / Worker | Redis, OCR worker service |
 | Search | pgvector, optional Elasticsearch BM25 |
-| AI | Ollama, local chat and embedding models |
+| AI | Ollama (local) or OpenAI (production), chat and embedding models |
 | Infrastructure | Docker, Docker Compose, pgAdmin |
 
 ## What The App Includes

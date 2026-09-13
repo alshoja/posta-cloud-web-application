@@ -1,4 +1,4 @@
-export class OllamaChatDto {
+export class ChatRequestDto {
   systemPrompt: string;
   userContent: string;
   temperature: number;

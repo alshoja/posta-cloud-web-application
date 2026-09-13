@@ -6,7 +6,7 @@ import { SharedModule } from '../../../shared/shared.module';
 import { DocumentChunk } from '../../records/entities/document-chunk.entity';
 import { Document } from '../../records/entities/document.entity';
 import { SearchModule } from '../../search/search.module';
-import { OllamaModule } from '../ollama/ollama.module';
+import { LlmModule } from '../llm/llm.module';
 import { DocumentIngestionProcessor } from './document-ingestion.processor';
 import { DocumentChunkingService } from './services/document-chunking.service';
 import { DocumentIngestionQueueService } from './services/document-ingestion-queue.service';
@@ -16,7 +16,7 @@ import { DocumentSearchIndexingService } from './services/document-search-indexi
 
 @Module({
   imports: [
-    OllamaModule,
+    LlmModule,
     SearchModule,
     SharedModule,
     TypeOrmModule.forFeature([Document, DocumentChunk]),

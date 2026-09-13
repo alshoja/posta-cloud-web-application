@@ -1,18 +1,18 @@
-import { Injectable, Scope, ServiceUnavailableException } from '@nestjs/common';
+import { Inject, Injectable, Scope, ServiceUnavailableException } from '@nestjs/common';
 import { RecordSearchResultDto } from '../../records/dto/search/record-search-result.dto';
 import { AiChatCitationDto } from '../dto/ai-chat-citation.dto';
 import { AiChatResponseDto } from '../dto/ai-chat-response.dto';
 import { RagDocumentChunkDto } from '../dto/rag-document-chunk.dto';
 import { RetrievedDocumentChunkDto } from '../dto/retrieved-document-chunk.dto';
 import { AiChatIntent } from '../enums/ai-chat-intent.enum';
-import { OllamaService } from '../ollama/ollama.service';
+import { LLM_CLIENT, LlmClient } from '../llm/llm-client.interface';
 import { RAG_ANSWER_PROMPT } from '../prompts/rag.prompts';
 import { DocumentHybridSearchService } from './document-hybrid-search.service';
 
 @Injectable({ scope: Scope.REQUEST })
 export class RecordRagService {
   constructor(
-    private readonly ollamaService: OllamaService,
+    @Inject(LLM_CLIENT) private readonly llmClient: LlmClient,
     private readonly documentHybridSearchService: DocumentHybridSearchService,
   ) {}
 
@@ -59,7 +59,7 @@ export class RecordRagService {
       };
     }
 
-    const answer = await this.ollamaService.chat({
+    const answer = await this.llmClient.chat({
       systemPrompt: RAG_ANSWER_PROMPT,
       userContent: JSON.stringify({ question, documentChunks }),
       temperature: 0.1,
@@ -88,7 +88,7 @@ export class RecordRagService {
     question: string,
     recordId?: number,
   ): Promise<RetrievedDocumentChunkDto[]> {
-    const embedding = await this.ollamaService.embed(question);
+    const embedding = await this.llmClient.embed(question);
     return this.documentHybridSearchService.findRecordDocumentChunks(
       question,
       embedding,
