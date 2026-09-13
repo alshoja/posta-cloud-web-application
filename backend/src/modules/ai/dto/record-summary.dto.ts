@@ -8,11 +8,13 @@ export class RecordSummaryDto {
   location: string;
   documentsCount: number;
   documentNames: string[];
+  identityDocumentsCount: number;
+  identityDocumentTypes: string[];
   financialAccountsCount: number;
   financialAccountTypes: string[];
   addressesCount: number;
   childrenCount: number;
-  postRetirementAddressEnabled: boolean;
+  redirectedAddressEnabled: boolean;
   abroad: boolean;
   lastCompletedStep: number;
 }

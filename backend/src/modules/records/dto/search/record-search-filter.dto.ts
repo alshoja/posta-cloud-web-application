@@ -14,5 +14,8 @@ export class RecordSearchFilterDto {
   isAbroad?: boolean;
   hasDocuments?: boolean;
   hasFinancialAccounts?: boolean;
+  identityDocumentType?: string;
+  financialAccountType?: string;
+  financialAccountProvider?: string;
   limit?: number;
 }

@@ -5,3 +5,9 @@ declare module '@vue/runtime-core' {
     $axios: AxiosInstance
   }
 }
+
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    suppressErrorSnackbar?: boolean
+  }
+}
